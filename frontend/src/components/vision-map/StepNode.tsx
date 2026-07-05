@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { createTask } from '../../api/taskApi';
+import { Badge } from '@/components/ui/badge';
 import type { TaskItem, VisionStep } from '../../types/vision';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
@@ -52,7 +53,7 @@ export function StepNode({ step, tasks, token, onDataChange }: StepNodeProps) {
       <div className="vision-tree-row">
         <span className="vision-tree-code">{step.code}</span>
         <strong>{step.title}</strong>
-        {step.complex && <span className="badge status-complex">Complex</span>}
+        {step.complex && <Badge variant="outline">Complex</Badge>}
         <PriorityBadge priority={step.priority} />
         <StatusBadge status={step.status} />
       </div>

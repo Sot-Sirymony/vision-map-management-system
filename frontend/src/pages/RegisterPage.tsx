@@ -33,7 +33,7 @@ export function RegisterPage() {
 
   return (
     <AuthLayout>
-      <h1>Create account</h1>
+      <h1 className="text-2xl font-semibold">Create account</h1>
       <form className="form-stack" onSubmit={handleSubmit}>
         <label>
           Full name

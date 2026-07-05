@@ -27,3 +27,11 @@ export function archiveGoal(token: string, id: number) {
     token,
   });
 }
+
+export function updateGoalStatus(token: string, id: number, status: string) {
+  return apiClient<Goal>(`/goals/${id}/status`, {
+    method: 'PATCH',
+    token,
+    body: JSON.stringify({ status, manualOverride: true }),
+  });
+}

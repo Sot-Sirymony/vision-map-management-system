@@ -3,24 +3,37 @@ import { Link } from 'react-router-dom';
 import { listGoals } from '../api/goalApi';
 import { archiveStep, createStep, listSteps, updateStep } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '../components/common/Button';
+import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
-import { Modal } from '../components/common/Modal';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
-import { Select } from '../components/common/Select';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
-import type { Goal, Priority, TaskItem, VisionStep, WorkStatus } from '../types/vision';
+import { useCrudEntity } from '../hooks/useCrudEntity';
+import type { Goal, Priority, TaskItem, VisionStep, VisionStepRequest, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
+import { priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function StepsPage() {
   const { token } = useAuth();
-  const [steps, setSteps] = useState<VisionStep[]>([]);
+  const crud = useCrudEntity<VisionStep, VisionStepRequest>({
+    token,
+    entityLabel: 'steps',
+    list: listSteps,
+    create: createStep,
+    update: updateStep,
+    archive: archiveStep,
+  });
   const [goals, setGoals] = useState<Goal[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [goalId, setGoalId] = useState('');
@@ -31,86 +44,51 @@ export function StepsPage() {
   const [priority, setPriority] = useState<Priority>('HIGH');
   const [targetDate, setTargetDate] = useState('');
   const [status, setStatus] = useState<WorkStatus>('NOT_STARTED');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [filterGoalId, setFilterGoalId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [filterOverdueOnly, setFilterOverdueOnly] = useState(false);
 
-  async function load() {
+  useEffect(() => {
     if (!token) {
       return;
     }
-    setLoading(true);
-    try {
-      const [stepData, goalData, taskData] = await Promise.all([listSteps(token), listGoals(token), listTasks(token)]);
-      setSteps(stepData);
+    void crud.reload();
+    void Promise.all([listGoals(token), listTasks(token)]).then(([goalData, taskData]) => {
       setGoals(goalData);
       setTasks(taskData);
       setGoalId((current) => current || String(goalData[0]?.id ?? ''));
-      setError('');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load steps.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token || !goalId) {
+    if (!goalId) {
       return;
     }
-    setSaving(true);
-    try {
-      const request = {
-        goalId: Number(goalId),
-        title,
-        description,
-        sequenceNumber,
-        complex,
-        priority,
-        targetDate: targetDate || undefined,
-        status,
-      };
-      if (editingId !== null) {
-        await updateStep(token, editingId, request);
-        setEditingId(null);
-      } else {
-        await createStep(token, request);
-        setSequenceNumber(sequenceNumber + 1);
-      }
+    const wasCreating = crud.editingId === null;
+    const success = await crud.save({
+      goalId: Number(goalId),
+      title,
+      description,
+      sequenceNumber,
+      complex,
+      priority,
+      targetDate: targetDate || undefined,
+      status,
+    });
+    if (success) {
       setTitle('');
       setDescription('');
-      await load();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save step.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleArchive(id: number) {
-    if (!token) {
-      return;
-    }
-    try {
-      await archiveStep(token, id);
-      await load();
-    } catch (archiveError) {
-      setError(archiveError instanceof Error ? archiveError.message : 'Unable to archive step.');
+      if (wasCreating) {
+        setSequenceNumber(sequenceNumber + 1);
+      }
     }
   }
 
   function startEdit(step: VisionStep) {
-    setEditingId(step.id);
+    crud.startEdit(step.id);
     setGoalId(String(step.goalId));
     setTitle(step.title);
     setDescription(step.description ?? '');
@@ -122,7 +100,7 @@ export function StepsPage() {
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    crud.cancelEdit();
     setTitle('');
     setDescription('');
     setComplex(false);
@@ -131,7 +109,7 @@ export function StepsPage() {
     setStatus('NOT_STARTED');
   }
 
-  const filteredSteps = steps.filter((step) => {
+  const filteredSteps = crud.items.filter((step) => {
     if (filterGoalId && String(step.goalId) !== filterGoalId) {
       return false;
     }
@@ -151,8 +129,13 @@ export function StepsPage() {
     <>
       <label>
         Goal
-        <Select value={goalId} onChange={(event) => setGoalId(event.target.value)} required>
-          {goals.map((goal) => <option value={goal.id} key={goal.id}>{goal.title}</option>)}
+        <Select value={goalId} onValueChange={(value) => setGoalId(value ?? '')} required>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => goals.find((goal) => String(goal.id) === value)?.title}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
@@ -169,27 +152,37 @@ export function StepsPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="CRITICAL">Critical</option>
+        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="LOW">Low</SelectItem>
+            <SelectItem value="MEDIUM">Medium</SelectItem>
+            <SelectItem value="HIGH">High</SelectItem>
+            <SelectItem value="CRITICAL">Critical</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       <label>
         Status
-        <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
-          <option value="NOT_STARTED">Not Started</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="WAITING">Waiting</option>
-          <option value="BLOCKED">Blocked</option>
-          <option value="PAUSED">Paused</option>
-          <option value="COMPLETED">Completed</option>
+        <Select value={status} onValueChange={(value) => setStatus(value as WorkStatus)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="NOT_STARTED">Not Started</SelectItem>
+            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+            <SelectItem value="WAITING">Waiting</SelectItem>
+            <SelectItem value="BLOCKED">Blocked</SelectItem>
+            <SelectItem value="PAUSED">Paused</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       <label className="field-full">
         <span className="inline-meta">
-          <Input type="checkbox" checked={complex} onChange={(event) => setComplex(event.target.checked)} />
+          <Checkbox checked={complex} onCheckedChange={(checked) => setComplex(checked)} />
           Complex step
         </span>
       </label>
@@ -202,89 +195,95 @@ export function StepsPage() {
 
   return (
     <PageSection title="Steps" subtitle="Break goals into ordered action stages.">
-      {editingId === null && (
-        <div className="panel">
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full">
-              <Button type="submit" disabled={saving || goals.length === 0}>{saving ? 'Saving...' : 'Create step'}</Button>
-            </div>
-          </form>
-        </div>
-      )}
-      {editingId !== null && (
-        <Modal title="Edit Step" onClose={cancelEdit}>
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-              <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
-      <div className="panel filter-bar">
+      <CrudModalForm
+        editing={crud.editingId !== null}
+        createLabel="Create step"
+        editTitle="Edit Step"
+        saving={crud.saving}
+        disabled={goals.length === 0}
+        onSubmit={handleSubmit}
+        onCancelEdit={cancelEdit}
+      >
+        {formFields}
+      </CrudModalForm>
+      {crud.loading && <Loading />}
+      {crud.error && <ErrorMessage message={crud.error} />}
+      <Card className="filter-bar flex-row">
         <label>
           Goal
-          <Select value={filterGoalId} onChange={(event) => setFilterGoalId(event.target.value)}>
-            <option value="">All</option>
-            {goals.map((goal) => <option value={goal.id} key={goal.id}>{goal.title}</option>)}
+          <Select value={filterGoalId} onValueChange={(value) => setFilterGoalId(value ?? '')}>
+            <SelectTrigger className="w-full">
+              <SelectValue>{(value: string) => (value ? goals.find((goal) => String(goal.id) === value)?.title : 'All')}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All</SelectItem>
+              {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
+            </SelectContent>
           </Select>
         </label>
         <label>
           Status
-          <Select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
-            <option value="">All</option>
-            <option value="NOT_STARTED">Not Started</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="WAITING">Waiting</option>
-            <option value="BLOCKED">Blocked</option>
-            <option value="PAUSED">Paused</option>
-            <option value="COMPLETED">Completed</option>
+          <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value ?? '')}>
+            <SelectTrigger className="w-full">
+              <SelectValue>{(value: string) => (value ? workStatusLabels[value as WorkStatus] : 'All')}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All</SelectItem>
+              <SelectItem value="NOT_STARTED">Not Started</SelectItem>
+              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+              <SelectItem value="WAITING">Waiting</SelectItem>
+              <SelectItem value="BLOCKED">Blocked</SelectItem>
+              <SelectItem value="PAUSED">Paused</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+            </SelectContent>
           </Select>
         </label>
         <label>
           Priority
-          <Select value={filterPriority} onChange={(event) => setFilterPriority(event.target.value)}>
-            <option value="">All</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-            <option value="CRITICAL">Critical</option>
+          <Select value={filterPriority} onValueChange={(value) => setFilterPriority(value ?? '')}>
+            <SelectTrigger className="w-full">
+              <SelectValue>{(value: string) => (value ? priorityLabels[value as Priority] : 'All')}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All</SelectItem>
+              <SelectItem value="LOW">Low</SelectItem>
+              <SelectItem value="MEDIUM">Medium</SelectItem>
+              <SelectItem value="HIGH">High</SelectItem>
+              <SelectItem value="CRITICAL">Critical</SelectItem>
+            </SelectContent>
           </Select>
         </label>
         <label className="checkbox-field">
-          <Input type="checkbox" checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
+          <Checkbox checked={filterOverdueOnly} onCheckedChange={(checked) => setFilterOverdueOnly(checked)} />
           Overdue only
         </label>
-      </div>
-      <div className="panel table-wrap">
+      </Card>
+      <Card>
+        <CardContent>
         {filteredSteps.length === 0 ? (
-          <div className="empty-state">No steps match these filters.</div>
+          <EmptyState>No steps match these filters.</EmptyState>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Step</th>
-                <th>Seq</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Progress</th>
-                <th>Tasks</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Step</TableHead>
+                <TableHead>Seq</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Progress</TableHead>
+                <TableHead>Tasks</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredSteps.map((step) => {
                 const taskCount = tasks.filter((task) => task.stepId === step.id).length;
                 const needsTasks = step.complex && taskCount === 0;
                 return (
-                  <tr key={step.id} className={isOverdue(step.targetDate, step.status) ? 'row-overdue' : ''}>
-                    <td>{step.code}</td>
-                    <td>
+                  <TableRow key={step.id} className={isOverdue(step.targetDate, step.status) ? 'row-overdue' : ''}>
+                    <TableCell>{step.code}</TableCell>
+                    <TableCell className="font-medium">
                       {step.title}
                       {needsTasks && (
                         <div className="coaching-panel step-needs-tasks">
@@ -293,23 +292,24 @@ export function StepsPage() {
                           <Link to={`/tasks?stepId=${step.id}`}>Break this into tasks →</Link>
                         </div>
                       )}
-                    </td>
-                    <td>{step.sequenceNumber}</td>
-                    <td><PriorityBadge priority={step.priority} /></td>
-                    <td><StatusBadge status={step.status} /></td>
-                    <td><ProgressBar value={Number(step.progressPercent)} /></td>
-                    <td>{taskCount}</td>
-                    <td className="row-actions">
+                    </TableCell>
+                    <TableCell>{step.sequenceNumber}</TableCell>
+                    <TableCell><PriorityBadge priority={step.priority} /></TableCell>
+                    <TableCell><StatusBadge status={step.status} /></TableCell>
+                    <TableCell><ProgressBar value={Number(step.progressPercent)} /></TableCell>
+                    <TableCell>{taskCount}</TableCell>
+                    <TableCell className="row-actions">
                       <Button type="button" variant="secondary" onClick={() => startEdit(step)}>Edit</Button>
-                      <Button type="button" variant="secondary" onClick={() => void handleArchive(step.id)}>Archive</Button>
-                    </td>
-                  </tr>
+                      <Button type="button" variant="secondary" onClick={() => void crud.archive(step.id)}>Archive</Button>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </PageSection>
   );
 }

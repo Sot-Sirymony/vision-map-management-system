@@ -2,27 +2,40 @@ import { DragEvent, FormEvent, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listSteps } from '../api/stepApi';
 import { archiveTask, createTask, listTasks, updateTask, updateTaskStatus } from '../api/taskApi';
+import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '../components/common/Button';
+import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
-import { Modal } from '../components/common/Modal';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
-import { Select } from '../components/common/Select';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
-import type { Priority, TaskItem, VisionStep, WorkStatus } from '../types/vision';
+import { useCrudEntity } from '../hooks/useCrudEntity';
+import type { ObstacleType, Priority, TaskItem, TaskItemRequest, VisionStep, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
+import { suggestPartnerFor } from '../utils/partnerSuggestion';
+import { obstacleTypeLabels, priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 const columns: WorkStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'PAUSED'];
+const blockerCategories: ObstacleType[] = ['KNOWLEDGE', 'SKILL', 'TIME', 'MONEY', 'DECISION', 'PARTNER', 'MOTIVATION'];
 
 export function TasksBoardPage() {
   const { token } = useAuth();
   const [searchParams] = useSearchParams();
   const filterStepId = searchParams.get('stepId');
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const crud = useCrudEntity<TaskItem, TaskItemRequest>({
+    token,
+    entityLabel: 'tasks',
+    list: listTasks,
+    create: createTask,
+    update: updateTask,
+    archive: archiveTask,
+  });
   const [steps, setSteps] = useState<VisionStep[]>([]);
   const [stepId, setStepId] = useState('');
   const [title, setTitle] = useState('');
@@ -34,84 +47,48 @@ export function TasksBoardPage() {
   const [status, setStatus] = useState<WorkStatus>('NOT_STARTED');
   const [progressPercent, setProgressPercent] = useState(0);
   const [blockerReason, setBlockerReason] = useState('');
+  const [blockerCategory, setBlockerCategory] = useState<ObstacleType | ''>('');
   const [nextAction, setNextAction] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<WorkStatus | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
 
-  async function load() {
+  useEffect(() => {
     if (!token) {
       return;
     }
-    setLoading(true);
-    try {
-      const [taskData, stepData] = await Promise.all([listTasks(token), listSteps(token)]);
-      setTasks(taskData);
+    void crud.reload();
+    void listSteps(token).then((stepData) => {
       setSteps(stepData);
       setStepId((current) => current || filterStepId || String(stepData[0]?.id ?? ''));
-      setError('');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load tasks.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token || !stepId) {
+    if (!stepId) {
       return;
     }
-    setSaving(true);
-    try {
-      const request = {
-        stepId: Number(stepId),
-        title,
-        description,
-        owner,
-        priority,
-        startDate: startDate || undefined,
-        dueDate,
-        status,
-        progressPercent,
-        blockerReason: blockerReason || undefined,
-        nextAction,
-      };
-      if (editingId !== null) {
-        await updateTask(token, editingId, request);
-        setEditingId(null);
-      } else {
-        await createTask(token, request);
-      }
+    const success = await crud.save({
+      stepId: Number(stepId),
+      title,
+      description,
+      owner,
+      priority,
+      startDate: startDate || undefined,
+      dueDate,
+      status,
+      progressPercent,
+      blockerReason: blockerReason || undefined,
+      nextAction,
+    });
+    if (success) {
       setTitle('');
       setDescription('');
       setBlockerReason('');
+      setBlockerCategory('');
       setNextAction('');
       setProgressPercent(0);
-      await load();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save task.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleArchive(id: number) {
-    if (!token) {
-      return;
-    }
-    try {
-      await archiveTask(token, id);
-      await load();
-    } catch (archiveError) {
-      setError(archiveError instanceof Error ? archiveError.message : 'Unable to archive task.');
     }
   }
 
@@ -121,9 +98,9 @@ export function TasksBoardPage() {
     }
     try {
       await updateTaskStatus(token, id, nextStatus);
-      await load();
+      await crud.reload();
     } catch (moveError) {
-      setError(moveError instanceof Error ? moveError.message : 'Unable to update task status.');
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update task status.');
     }
   }
 
@@ -151,7 +128,7 @@ export function TasksBoardPage() {
     const taskId = draggedTaskId ?? Number(event.dataTransfer.getData('text/plain'));
     setDraggedTaskId(null);
     setDragOverColumn(null);
-    const task = tasks.find((item) => item.id === taskId);
+    const task = crud.items.find((item) => item.id === taskId);
     if (!task || task.status === column) {
       return;
     }
@@ -159,7 +136,7 @@ export function TasksBoardPage() {
   }
 
   function startEdit(task: TaskItem) {
-    setEditingId(task.id);
+    crud.startEdit(task.id);
     setStepId(String(task.stepId));
     setTitle(task.title);
     setDescription(task.description ?? '');
@@ -170,11 +147,12 @@ export function TasksBoardPage() {
     setStatus(task.status);
     setProgressPercent(task.progressPercent);
     setBlockerReason(task.blockerReason ?? '');
+    setBlockerCategory('');
     setNextAction(task.nextAction ?? '');
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    crud.cancelEdit();
     setTitle('');
     setDescription('');
     setOwner('');
@@ -184,17 +162,23 @@ export function TasksBoardPage() {
     setStatus('NOT_STARTED');
     setProgressPercent(0);
     setBlockerReason('');
+    setBlockerCategory('');
     setNextAction('');
   }
 
-  const visibleTasks = filterStepId ? tasks.filter((task) => String(task.stepId) === filterStepId) : tasks;
+  const visibleTasks = filterStepId ? crud.items.filter((task) => String(task.stepId) === filterStepId) : crud.items;
 
   const formFields = (
     <>
       <label>
         Step
-        <Select value={stepId} onChange={(event) => setStepId(event.target.value)} required>
-          {steps.map((step) => <option value={step.id} key={step.id}>{step.title}</option>)}
+        <Select value={stepId} onValueChange={(value) => setStepId(value ?? '')} required>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => steps.find((step) => String(step.id) === value)?.title}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {steps.map((step) => <SelectItem value={String(step.id)} key={step.id}>{step.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
@@ -219,19 +203,47 @@ export function TasksBoardPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="CRITICAL">Critical</option>
+        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="LOW">Low</SelectItem>
+            <SelectItem value="MEDIUM">Medium</SelectItem>
+            <SelectItem value="HIGH">High</SelectItem>
+            <SelectItem value="CRITICAL">Critical</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       <label>
         Status
-        <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
-          {columns.map((column) => <option value={column} key={column}>{formatLabel(column)}</option>)}
+        <Select value={status} onValueChange={(value) => setStatus(value as WorkStatus)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {columns.map((column) => <SelectItem value={column} key={column}>{workStatusLabels[column]}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
+      {status === 'BLOCKED' && (
+        <label>
+          What's missing?
+          <Select value={blockerCategory} onValueChange={(value) => setBlockerCategory((value as ObstacleType) ?? '')}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a category...">{(value: ObstacleType) => obstacleTypeLabels[value]}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {blockerCategories.map((category) => <SelectItem value={category} key={category}>{obstacleTypeLabels[category]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {blockerCategory && (
+            <span className="field-hint">
+              {suggestPartnerFor(blockerCategory)?.label ?? 'Look for a partner or connector who can help directly.'}
+            </span>
+          )}
+        </label>
+      )}
       <label className="field-full">
         Blocker Reason
         <Textarea value={blockerReason} onChange={(event) => setBlockerReason(event.target.value)} required={status === 'BLOCKED'} />
@@ -249,34 +261,24 @@ export function TasksBoardPage() {
 
   return (
     <PageSection title="Tasks Board" subtitle="Manage executable work by status.">
-      {editingId === null && (
-        <div className="panel">
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full">
-              <Button type="submit" disabled={saving || steps.length === 0}>{saving ? 'Saving...' : 'Create task'}</Button>
-            </div>
-          </form>
-        </div>
-      )}
-      {editingId !== null && (
-        <Modal title="Edit Task" onClose={cancelEdit}>
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-              <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
+      <CrudModalForm
+        editing={crud.editingId !== null}
+        createLabel="Create task"
+        editTitle="Edit Task"
+        saving={crud.saving}
+        disabled={steps.length === 0}
+        onSubmit={handleSubmit}
+        onCancelEdit={cancelEdit}
+      >
+        {formFields}
+      </CrudModalForm>
+      {crud.loading && <Loading />}
+      {crud.error && <ErrorMessage message={crud.error} />}
       {filterStepId && (
-        <div className="panel filter-banner">
+        <Card className="filter-banner flex-row">
           <span>Showing tasks for step: <strong>{steps.find((step) => String(step.id) === filterStepId)?.title ?? filterStepId}</strong></span>
           <Link to="/tasks">Clear filter</Link>
-        </div>
+        </Card>
       )}
       <div className="kanban">
         {columns.map((column) => (
@@ -287,9 +289,9 @@ export function TasksBoardPage() {
             onDragLeave={() => setDragOverColumn((current) => (current === column ? null : current))}
             onDrop={(event) => handleColumnDrop(event, column)}
           >
-            <h3>{formatLabel(column)}</h3>
+            <h3 className="text-sm font-semibold">{formatLabel(column)}</h3>
             {visibleTasks.filter((task) => task.status === column).length === 0 ? (
-              <div className="empty-state">Drop tasks here</div>
+              <EmptyState>Drop tasks here</EmptyState>
             ) : (
               <div className="stack-list">
                 {visibleTasks.filter((task) => task.status === column).map((task) => (
@@ -309,11 +311,16 @@ export function TasksBoardPage() {
                     <ProgressBar value={Number(task.progressPercent)} />
                     {task.blockerReason && <p>{task.blockerReason}</p>}
                     <div className="row-actions">
-                      <Select value={task.status} onChange={(event) => void handleMove(task.id, event.target.value as WorkStatus)}>
-                        {columns.map((targetStatus) => <option value={targetStatus} key={targetStatus}>{formatLabel(targetStatus)}</option>)}
+                      <Select value={task.status} onValueChange={(value) => void handleMove(task.id, value as WorkStatus)}>
+                        <SelectTrigger size="sm">
+                          <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {columns.map((targetStatus) => <SelectItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</SelectItem>)}
+                        </SelectContent>
                       </Select>
                       <Button type="button" variant="secondary" onClick={() => startEdit(task)}>Edit</Button>
-                      <Button type="button" variant="secondary" onClick={() => void handleArchive(task.id)}>Archive</Button>
+                      <Button type="button" variant="secondary" onClick={() => void crud.archive(task.id)}>Archive</Button>
                     </div>
                   </article>
                 ))}

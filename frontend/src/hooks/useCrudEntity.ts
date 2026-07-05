@@ -1,0 +1,107 @@
+import { useState } from 'react';
+import { useToast } from '../context/ToastContext';
+
+type UseCrudEntityConfig<T, TRequest> = {
+  token: string | null;
+  entityLabel: string;
+  list: (token: string) => Promise<T[]>;
+  create: (token: string, request: TRequest) => Promise<T>;
+  update: (token: string, id: number, request: TRequest) => Promise<T>;
+  archive: (token: string, id: number) => Promise<void>;
+  saveMessage?: string;
+  archiveMessage?: string;
+};
+
+/**
+ * Owns the load/save/archive/edit state machine shared by every CRUD page:
+ * list state, loading/saving/error flags, which record (if any) is being
+ * edited, and the create-vs-update branching on submit.
+ *
+ * Does not fetch on its own — call `reload()` from the page's own effect
+ * (alongside any reference-data fetches the page needs for its dropdowns),
+ * the same way the page already orchestrates its own loading today.
+ * Field-specific state (individual useState per form field) stays in the
+ * page, since that genuinely differs per entity.
+ */
+export function useCrudEntity<T extends { id: number }, TRequest>(config: UseCrudEntityConfig<T, TRequest>) {
+  const { token, entityLabel, list, create, update, archive, saveMessage = 'Saved.', archiveMessage = 'Archived.' } = config;
+  const { showToast } = useToast();
+  const [items, setItems] = useState<T[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  async function reload() {
+    if (!token) {
+      return;
+    }
+    setLoading(true);
+    try {
+      setItems(await list(token));
+      setError('');
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : `Unable to load ${entityLabel}.`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function save(request: TRequest) {
+    if (!token) {
+      return false;
+    }
+    setSaving(true);
+    try {
+      if (editingId !== null) {
+        await update(token, editingId, request);
+        setEditingId(null);
+      } else {
+        await create(token, request);
+      }
+      await reload();
+      showToast(saveMessage);
+      return true;
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : `Unable to save ${entityLabel}.`);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove(id: number) {
+    if (!token) {
+      return;
+    }
+    try {
+      await archive(token, id);
+      await reload();
+      showToast(archiveMessage);
+    } catch (archiveError) {
+      setError(archiveError instanceof Error ? archiveError.message : `Unable to archive ${entityLabel}.`);
+    }
+  }
+
+  function startEdit(id: number) {
+    setEditingId(id);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  return {
+    items,
+    loading,
+    saving,
+    error,
+    setError,
+    editingId,
+    reload,
+    save,
+    archive: remove,
+    startEdit,
+    cancelEdit,
+  };
+}

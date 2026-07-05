@@ -1,8 +1,6 @@
+import { Progress } from '@/components/ui/progress';
+
 export function ProgressBar({ value }: { value: number }) {
   const percent = Math.min(100, Math.max(0, value));
-  return (
-    <div className="progress" aria-label={`Progress ${percent}%`}>
-      <span style={{ width: `${percent}%` }} />
-    </div>
-  );
+  return <Progress value={percent} aria-label={`Progress ${percent}%`} className="progress w-full" />;
 }

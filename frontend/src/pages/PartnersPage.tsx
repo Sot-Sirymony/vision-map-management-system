@@ -5,21 +5,39 @@ import { archivePartner, createPartner, listPartners, updatePartner } from '../a
 import { listSteps } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
 import { listVisionAreas } from '../api/visionAreaApi';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '../components/common/Button';
+import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
-import { Modal } from '../components/common/Modal';
-import { Select } from '../components/common/Select';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
-import type { Dream, Goal, Partner, PartnerStatus, PartnerSupportType, TaskItem, VisionArea, VisionStep } from '../types/vision';
+import { useCrudEntity } from '../hooks/useCrudEntity';
+import type { Dream, Goal, Partner, PartnerRequest, PartnerStatus, PartnerSupportType, TaskItem, VisionArea, VisionStep } from '../types/vision';
+import { partnerStatusLabels, partnerSupportTypeLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function PartnersPage() {
   const { token } = useAuth();
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const crud = useCrudEntity<Partner, PartnerRequest>({
+    token,
+    entityLabel: 'partners',
+    list: async (currentToken) => {
+      const result = await listPartners(currentToken, page, 20);
+      setTotalPages(result.totalPages);
+      return result.content;
+    },
+    create: createPartner,
+    update: updatePartner,
+    archive: archivePartner,
+  });
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -38,102 +56,53 @@ export function PartnersPage() {
   const [relatedStepId, setRelatedStepId] = useState('');
   const [relatedTaskId, setRelatedTaskId] = useState('');
   const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
-  async function load() {
+  useEffect(() => {
     if (!token) {
       return;
     }
-    setLoading(true);
-    try {
-      const [partnerPage, areaData, dreamData, goalData, stepData, taskData] = await Promise.all([
-        listPartners(token, page, 20),
-        listVisionAreas(token),
-        listDreams(token),
-        listGoals(token),
-        listSteps(token),
-        listTasks(token),
-      ]);
-      setPartners(partnerPage.content);
-      setTotalPages(partnerPage.totalPages);
-      setVisionAreas(areaData);
-      setDreams(dreamData);
-      setGoals(goalData);
-      setSteps(stepData);
-      setTasks(taskData);
-      setError('');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load partners.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
+    void crud.reload();
+    void Promise.all([listVisionAreas(token), listDreams(token), listGoals(token), listSteps(token), listTasks(token)]).then(
+      ([areaData, dreamData, goalData, stepData, taskData]) => {
+        setVisionAreas(areaData);
+        setDreams(dreamData);
+        setGoals(goalData);
+        setSteps(stepData);
+        setTasks(taskData);
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token) {
-      return;
-    }
-    setSaving(true);
-    try {
-      const request = {
-        name,
-        role,
-        organization,
-        email: email || undefined,
-        strength,
-        supportType,
-        status,
-        relatedVisionAreaId: optionalNumber(relatedVisionAreaId),
-        relatedDreamId: optionalNumber(relatedDreamId),
-        relatedGoalId: optionalNumber(relatedGoalId),
-        relatedStepId: optionalNumber(relatedStepId),
-        relatedTaskId: optionalNumber(relatedTaskId),
-        notes,
-      };
-      if (editingId !== null) {
-        await updatePartner(token, editingId, request);
-        setEditingId(null);
-      } else {
-        await createPartner(token, request);
-      }
+    const success = await crud.save({
+      name,
+      role,
+      organization,
+      email: email || undefined,
+      strength,
+      supportType,
+      status,
+      relatedVisionAreaId: optionalNumber(relatedVisionAreaId),
+      relatedDreamId: optionalNumber(relatedDreamId),
+      relatedGoalId: optionalNumber(relatedGoalId),
+      relatedStepId: optionalNumber(relatedStepId),
+      relatedTaskId: optionalNumber(relatedTaskId),
+      notes,
+    });
+    if (success) {
       setName('');
       setRole('');
       setOrganization('');
       setEmail('');
       setStrength('');
       setNotes('');
-      await load();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save partner.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleArchive(id: number) {
-    if (!token) {
-      return;
-    }
-    try {
-      await archivePartner(token, id);
-      await load();
-    } catch (archiveError) {
-      setError(archiveError instanceof Error ? archiveError.message : 'Unable to archive partner.');
     }
   }
 
   function startEdit(partner: Partner) {
-    setEditingId(partner.id);
+    crud.startEdit(partner.id);
     setName(partner.name);
     setRole(partner.role ?? '');
     setOrganization(partner.organization ?? '');
@@ -150,7 +119,7 @@ export function PartnersPage() {
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    crud.cancelEdit();
     setName('');
     setRole('');
     setOrganization('');
@@ -186,53 +155,88 @@ export function PartnersPage() {
       </label>
       <label>
         Support Type
-        <Select value={supportType} onChange={(event) => setSupportType(event.target.value as PartnerSupportType)}>
-          {['MENTOR', 'EXPERT', 'ADVISOR', 'COLLEAGUE', 'FINANCIAL', 'TECHNICAL', 'EMOTIONAL', 'OTHER'].map((value) => (
-            <option value={value} key={value}>{formatLabel(value)}</option>
-          ))}
+        <Select value={supportType} onValueChange={(value) => setSupportType(value as PartnerSupportType)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: PartnerSupportType) => partnerSupportTypeLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {(['MENTOR', 'EXPERT', 'ADVISOR', 'COLLEAGUE', 'FINANCIAL', 'TECHNICAL', 'EMOTIONAL', 'OTHER'] as const).map((value) => (
+              <SelectItem value={value} key={value}>{partnerSupportTypeLabels[value]}</SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Status
-        <Select value={status} onChange={(event) => setStatus(event.target.value as PartnerStatus)}>
-          {['TO_CONTACT', 'CONTACTED', 'ACTIVE', 'WAITING', 'DECLINED', 'COMPLETED'].map((value) => (
-            <option value={value} key={value}>{formatLabel(value)}</option>
-          ))}
+        <Select value={status} onValueChange={(value) => setStatus(value as PartnerStatus)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: PartnerStatus) => partnerStatusLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {(['TO_CONTACT', 'CONTACTED', 'ACTIVE', 'WAITING', 'DECLINED', 'COMPLETED'] as const).map((value) => (
+              <SelectItem value={value} key={value}>{partnerStatusLabels[value]}</SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Vision Area
-        <Select value={relatedVisionAreaId} onChange={(event) => setRelatedVisionAreaId(event.target.value)}>
-          <option value="">None</option>
-          {visionAreas.map((area) => <option value={area.id} key={area.id}>{area.name}</option>)}
+        <Select value={relatedVisionAreaId} onValueChange={(value) => setRelatedVisionAreaId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? visionAreas.find((area) => String(area.id) === value)?.name : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {visionAreas.map((area) => <SelectItem value={String(area.id)} key={area.id}>{area.name}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Dream
-        <Select value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
-          <option value="">None</option>
-          {dreams.map((dream) => <option value={dream.id} key={dream.id}>{dream.title}</option>)}
+        <Select value={relatedDreamId} onValueChange={(value) => setRelatedDreamId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? dreams.find((dream) => String(dream.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Goal
-        <Select value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
-          <option value="">None</option>
-          {goals.map((goal) => <option value={goal.id} key={goal.id}>{goal.title}</option>)}
+        <Select value={relatedGoalId} onValueChange={(value) => setRelatedGoalId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? goals.find((goal) => String(goal.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Step
-        <Select value={relatedStepId} onChange={(event) => setRelatedStepId(event.target.value)}>
-          <option value="">None</option>
-          {steps.map((step) => <option value={step.id} key={step.id}>{step.title}</option>)}
+        <Select value={relatedStepId} onValueChange={(value) => setRelatedStepId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? steps.find((step) => String(step.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {steps.map((step) => <SelectItem value={String(step.id)} key={step.id}>{step.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Task
-        <Select value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
-          <option value="">None</option>
-          {tasks.map((task) => <option value={task.id} key={task.id}>{task.title}</option>)}
+        <Select value={relatedTaskId} onValueChange={(value) => setRelatedTaskId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? tasks.find((task) => String(task.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {tasks.map((task) => <SelectItem value={String(task.id)} key={task.id}>{task.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
@@ -248,58 +252,48 @@ export function PartnersPage() {
 
   return (
     <PageSection title="Partners" subtitle="Track mentors, experts, advisors, and resources.">
-      {editingId === null && (
-        <div className="panel">
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create partner'}</Button>
-            </div>
-          </form>
-        </div>
-      )}
-      {editingId !== null && (
-        <Modal title="Edit Partner" onClose={cancelEdit}>
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-              <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
-      <div className="panel table-wrap">
-        {partners.length === 0 ? (
-          <div className="empty-state">No partners yet.</div>
+      <CrudModalForm
+        editing={crud.editingId !== null}
+        createLabel="Create partner"
+        editTitle="Edit Partner"
+        saving={crud.saving}
+        onSubmit={handleSubmit}
+        onCancelEdit={cancelEdit}
+      >
+        {formFields}
+      </CrudModalForm>
+      {crud.loading && <Loading />}
+      {crud.error && <ErrorMessage message={crud.error} />}
+      <Card>
+        <CardContent>
+        {crud.items.length === 0 ? (
+          <EmptyState>No partners yet.</EmptyState>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Support</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partners.map((partner) => (
-                <tr key={partner.id}>
-                  <td>{partner.code}</td>
-                  <td>{partner.name}</td>
-                  <td>{formatLabel(partner.supportType)}</td>
-                  <td><StatusBadge status={partner.status} /></td>
-                  <td className="row-actions">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Support</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {crud.items.map((partner) => (
+                <TableRow key={partner.id}>
+                  <TableCell>{partner.code}</TableCell>
+                  <TableCell className="font-medium">{partner.name}</TableCell>
+                  <TableCell>{partnerSupportTypeLabels[partner.supportType]}</TableCell>
+                  <TableCell><StatusBadge status={partner.status} /></TableCell>
+                  <TableCell className="row-actions">
                     <Button type="button" variant="secondary" onClick={() => startEdit(partner)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void handleArchive(partner.id)}>Archive</Button>
-                  </td>
-                </tr>
+                    <Button type="button" variant="secondary" onClick={() => void crud.archive(partner.id)}>Archive</Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
         {totalPages > 1 && (
           <div className="pagination">
@@ -308,15 +302,12 @@ export function PartnersPage() {
             <Button type="button" variant="secondary" disabled={page + 1 >= totalPages} onClick={() => setPage((current) => current + 1)}>Next</Button>
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </PageSection>
   );
 }
 
 function optionalNumber(value: string) {
   return value ? Number(value) : undefined;
-}
-
-function formatLabel(value: string) {
-  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

@@ -1,5 +1,6 @@
 import { ChangeEvent, useState } from 'react';
 import { exportExcelWorkbook, importExcelWorkbook } from '../api/excelApi';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../components/common/Button';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Loading } from '../components/common/Loading';
@@ -56,47 +57,59 @@ export function ImportExportPage() {
       {loading && <Loading />}
       {error && <ErrorMessage message={error} />}
       <div className="two-column">
-        <div className="panel">
-          <h3>Import Excel</h3>
-          <label className="button button-secondary">
-            Choose workbook
-            <input type="file" accept=".xlsx" hidden onChange={(event) => void handleImport(event)} />
-          </label>
-        </div>
-        <div className="panel">
-          <h3>Export Excel</h3>
-          <Button type="button" onClick={() => void handleExport()}>Export workbook</Button>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Import Excel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <label className="button button-secondary">
+              Choose workbook
+              <input type="file" accept=".xlsx" hidden onChange={(event) => void handleImport(event)} />
+            </label>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Export Excel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button type="button" onClick={() => void handleExport()}>Export workbook</Button>
+          </CardContent>
+        </Card>
       </div>
       {summary && (
-        <div className="panel">
-          <h3>Import Summary</h3>
-          <div className="metric-grid">
-            <div className="metric-card">
-              <p>Created</p>
-              <strong>{summary.createdRecords}</strong>
+        <Card>
+          <CardHeader>
+            <CardTitle>Import Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="metric-grid">
+              <div className="metric-card">
+                <p>Created</p>
+                <strong>{summary.createdRecords}</strong>
+              </div>
+              <div className="metric-card">
+                <p>Skipped</p>
+                <strong>{summary.skippedRecords}</strong>
+              </div>
+              <div className="metric-card">
+                <p>Sheets</p>
+                <strong>{Object.keys(summary.rowsBySheet).length}</strong>
+              </div>
+              <div className="metric-card">
+                <p>Errors</p>
+                <strong>{summary.validationErrors.length}</strong>
+              </div>
             </div>
-            <div className="metric-card">
-              <p>Skipped</p>
-              <strong>{summary.skippedRecords}</strong>
-            </div>
-            <div className="metric-card">
-              <p>Sheets</p>
-              <strong>{Object.keys(summary.rowsBySheet).length}</strong>
-            </div>
-            <div className="metric-card">
-              <p>Errors</p>
-              <strong>{summary.validationErrors.length}</strong>
-            </div>
-          </div>
-          {summary.validationErrors.length > 0 && (
-            <div className="stack-list">
-              {summary.validationErrors.map((validationError) => (
-                <ErrorMessage message={validationError} key={validationError} />
-              ))}
-            </div>
-          )}
-        </div>
+            {summary.validationErrors.length > 0 && (
+              <div className="stack-list">
+                {summary.validationErrors.map((validationError) => (
+                  <ErrorMessage message={validationError} key={validationError} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </PageSection>
   );

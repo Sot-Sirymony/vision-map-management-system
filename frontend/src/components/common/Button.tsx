@@ -1,14 +1,21 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Button as ShadcnButton } from '@/components/ui/button';
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'danger';
   children: ReactNode;
 };
 
-export function Button({ variant = 'primary', children, className = '', ...props }: ButtonProps) {
+const VARIANT_MAP = {
+  primary: 'default',
+  secondary: 'secondary',
+  danger: 'destructive',
+} as const;
+
+export function Button({ variant = 'primary', children, type = 'button', ...props }: ButtonProps) {
   return (
-    <button className={`button button-${variant} ${className}`.trim()} type="button" {...props}>
+    <ShadcnButton variant={VARIANT_MAP[variant]} type={type} {...props}>
       {children}
-    </button>
+    </ShadcnButton>
   );
 }

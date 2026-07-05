@@ -2,22 +2,35 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { archiveDream, createDream, listDreams, updateDream } from '../api/dreamApi';
 import { listVisionAreas } from '../api/visionAreaApi';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '../components/common/Button';
+import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
-import { Modal } from '../components/common/Modal';
 import { PriorityBadge } from '../components/common/PriorityBadge';
-import { Select } from '../components/common/Select';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
-import type { Dream, DreamStatus, DreamType, Priority, VisionArea } from '../types/vision';
+import { useCrudEntity } from '../hooks/useCrudEntity';
+import type { Dream, DreamRequest, DreamStatus, DreamType, Priority, VisionArea } from '../types/vision';
+import { dreamStatusLabels, dreamTypeLabels, priorityLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function DreamsPage() {
   const { token } = useAuth();
-  const [dreams, setDreams] = useState<Dream[]>([]);
+  const crud = useCrudEntity<Dream, DreamRequest>({
+    token,
+    entityLabel: 'dreams',
+    list: listDreams,
+    create: createDream,
+    update: updateDream,
+    archive: archiveDream,
+  });
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [visionAreaId, setVisionAreaId] = useState('');
   const [title, setTitle] = useState('');
@@ -28,83 +41,45 @@ export function DreamsPage() {
   const [priority, setPriority] = useState<Priority>('HIGH');
   const [targetDate, setTargetDate] = useState('');
   const [status, setStatus] = useState<DreamStatus>('ACTIVE');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
 
-  async function load() {
+  useEffect(() => {
     if (!token) {
       return;
     }
-    setLoading(true);
-    try {
-      const [dreamData, areaData] = await Promise.all([listDreams(token), listVisionAreas(token)]);
-      setDreams(dreamData);
+    void crud.reload();
+    void listVisionAreas(token).then((areaData) => {
       setVisionAreas(areaData.filter((area) => area.status !== 'ARCHIVED'));
       setVisionAreaId((current) => current || String(areaData[0]?.id ?? ''));
-      setError('');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load dreams.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token || !visionAreaId) {
+    if (!visionAreaId) {
       return;
     }
-    setSaving(true);
-    try {
-      const request = {
-        visionAreaId: Number(visionAreaId),
-        title,
-        description,
-        whyImportant,
-        successDefinition,
-        dreamType,
-        priority,
-        targetDate: targetDate || undefined,
-        status,
-      };
-      if (editingId !== null) {
-        await updateDream(token, editingId, request);
-        setEditingId(null);
-      } else {
-        await createDream(token, request);
-      }
+    const success = await crud.save({
+      visionAreaId: Number(visionAreaId),
+      title,
+      description,
+      whyImportant,
+      successDefinition,
+      dreamType,
+      priority,
+      targetDate: targetDate || undefined,
+      status,
+    });
+    if (success) {
       setTitle('');
       setDescription('');
       setWhyImportant('');
       setSuccessDefinition('');
-      await load();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save dream.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleArchive(id: number) {
-    if (!token) {
-      return;
-    }
-    try {
-      await archiveDream(token, id);
-      await load();
-    } catch (archiveError) {
-      setError(archiveError instanceof Error ? archiveError.message : 'Unable to archive dream.');
     }
   }
 
   function startEdit(dream: Dream) {
-    setEditingId(dream.id);
+    crud.startEdit(dream.id);
     setVisionAreaId(String(dream.visionAreaId));
     setTitle(dream.title);
     setDescription(dream.description ?? '');
@@ -117,7 +92,7 @@ export function DreamsPage() {
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    crud.cancelEdit();
     setTitle('');
     setDescription('');
     setWhyImportant('');
@@ -141,8 +116,15 @@ export function DreamsPage() {
     <>
       <label>
         Vision Area
-        <Select value={visionAreaId} onChange={(event) => setVisionAreaId(event.target.value)} required>
-          {visionAreas.map((area) => <option value={area.id} key={area.id}>{area.name}</option>)}
+        <Select value={visionAreaId} onValueChange={(value) => setVisionAreaId(value ?? '')} required>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a vision area">
+              {(value: string) => visionAreas.find((area) => String(area.id) === value)?.name}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {visionAreas.map((area) => <SelectItem value={String(area.id)} key={area.id}>{area.name}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
@@ -151,10 +133,15 @@ export function DreamsPage() {
       </label>
       <label>
         Type
-        <Select value={dreamType} onChange={(event) => setDreamType(event.target.value as DreamType)}>
-          <option value="SHORT_TERM">Short Term</option>
-          <option value="LONG_TERM">Long Term</option>
-          <option value="LIFETIME">Lifetime</option>
+        <Select value={dreamType} onValueChange={(value) => setDreamType(value as DreamType)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: DreamType) => dreamTypeLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="SHORT_TERM">Short Term</SelectItem>
+            <SelectItem value="LONG_TERM">Long Term</SelectItem>
+            <SelectItem value="LIFETIME">Lifetime</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       <label>
@@ -163,20 +150,30 @@ export function DreamsPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="CRITICAL">Critical</option>
+        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="LOW">Low</SelectItem>
+            <SelectItem value="MEDIUM">Medium</SelectItem>
+            <SelectItem value="HIGH">High</SelectItem>
+            <SelectItem value="CRITICAL">Critical</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       <label>
         Status
-        <Select value={status} onChange={(event) => setStatus(event.target.value as DreamStatus)}>
-          <option value="IDEA">Idea</option>
-          <option value="ACTIVE">Active</option>
-          <option value="PAUSED">Paused</option>
-          <option value="COMPLETED">Completed</option>
+        <Select value={status} onValueChange={(value) => setStatus(value as DreamStatus)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: DreamStatus) => dreamStatusLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="IDEA">Idea</SelectItem>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="PAUSED">Paused</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       {isVague && (
@@ -209,63 +206,55 @@ export function DreamsPage() {
 
   return (
     <PageSection title="Dreams" subtitle="Capture meaningful outcomes and prepare them for goals.">
-      {editingId === null && (
-        <div className="panel">
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full">
-              <Button type="submit" disabled={saving || visionAreas.length === 0}>{saving ? 'Saving...' : 'Create dream'}</Button>
-            </div>
-          </form>
-        </div>
-      )}
-      {editingId !== null && (
-        <Modal title="Edit Dream" onClose={cancelEdit}>
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-              <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
-      <div className="panel table-wrap">
-        {dreams.length === 0 ? (
-          <div className="empty-state">No dreams yet.</div>
+      <CrudModalForm
+        editing={crud.editingId !== null}
+        createLabel="Create dream"
+        editTitle="Edit Dream"
+        saving={crud.saving}
+        disabled={visionAreas.length === 0}
+        onSubmit={handleSubmit}
+        onCancelEdit={cancelEdit}
+      >
+        {formFields}
+      </CrudModalForm>
+      {crud.loading && <Loading />}
+      {crud.error && <ErrorMessage message={crud.error} />}
+      <Card>
+        <CardContent>
+        {crud.items.length === 0 ? (
+          <EmptyState>No dreams yet.</EmptyState>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Dream</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Target</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dreams.map((dream) => (
-                <tr key={dream.id}>
-                  <td>{dream.code}</td>
-                  <td>{dream.title}</td>
-                  <td><PriorityBadge priority={dream.priority} /></td>
-                  <td><StatusBadge status={dream.status} /></td>
-                  <td>{dream.targetDate ?? '-'}</td>
-                  <td className="row-actions">
-                    <Link className="button button-secondary" to={`/dreams/${dream.id}`}>View Map</Link>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Dream</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Target</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {crud.items.map((dream) => (
+                <TableRow key={dream.id}>
+                  <TableCell>{dream.code}</TableCell>
+                  <TableCell className="font-medium">{dream.title}</TableCell>
+                  <TableCell><PriorityBadge priority={dream.priority} /></TableCell>
+                  <TableCell><StatusBadge status={dream.status} /></TableCell>
+                  <TableCell>{dream.targetDate ?? '-'}</TableCell>
+                  <TableCell className="row-actions">
+                    <Link className={buttonVariants({ variant: 'secondary' })} to={`/dreams/${dream.id}`}>View Map</Link>
                     <Button type="button" variant="secondary" onClick={() => startEdit(dream)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void handleArchive(dream.id)}>Archive</Button>
-                  </td>
-                </tr>
+                    <Button type="button" variant="secondary" onClick={() => void crud.archive(dream.id)}>Archive</Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </PageSection>
   );
 }

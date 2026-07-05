@@ -4,21 +4,39 @@ import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listPartners } from '../api/partnerApi';
 import { listTasks } from '../api/taskApi';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '../components/common/Button';
+import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
-import { Modal } from '../components/common/Modal';
-import { Select } from '../components/common/Select';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
-import type { CommunicationMessage, CommunicationStatus, Dream, Goal, Partner, TaskItem } from '../types/vision';
+import { useCrudEntity } from '../hooks/useCrudEntity';
+import type { CommunicationMessage, CommunicationMessageRequest, CommunicationStatus, Dream, Goal, Partner, TaskItem } from '../types/vision';
+import { communicationStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function CommunicationBuilderPage() {
   const { token } = useAuth();
-  const [messages, setMessages] = useState<CommunicationMessage[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const crud = useCrudEntity<CommunicationMessage, CommunicationMessageRequest>({
+    token,
+    entityLabel: 'communication messages',
+    list: async (currentToken) => {
+      const result = await listCommunicationMessages(currentToken, page, 20);
+      setTotalPages(result.totalPages);
+      return result.content;
+    },
+    create: createCommunicationMessage,
+    update: updateCommunicationMessage,
+    archive: archiveCommunicationMessage,
+  });
   const [partners, setPartners] = useState<Partner[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -35,98 +53,50 @@ export function CommunicationBuilderPage() {
   const [messageBody, setMessageBody] = useState('');
   const [status, setStatus] = useState<CommunicationStatus>('DRAFT');
   const [followUpDate, setFollowUpDate] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
-  async function load() {
+  useEffect(() => {
     if (!token) {
       return;
     }
-    setLoading(true);
-    try {
-      const [messagePage, partnerPage, dreamData, goalData, taskData] = await Promise.all([
-        listCommunicationMessages(token, page, 20),
-        listPartners(token, 0, 500),
-        listDreams(token),
-        listGoals(token),
-        listTasks(token),
-      ]);
-      setMessages(messagePage.content);
-      setTotalPages(messagePage.totalPages);
-      setPartners(partnerPage.content);
-      setDreams(dreamData);
-      setGoals(goalData);
-      setTasks(taskData);
-      setError('');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load communication messages.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
+    void crud.reload();
+    void Promise.all([listPartners(token, 0, 500), listDreams(token), listGoals(token), listTasks(token)]).then(
+      ([partnerPage, dreamData, goalData, taskData]) => {
+        setPartners(partnerPage.content);
+        setDreams(dreamData);
+        setGoals(goalData);
+        setTasks(taskData);
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token) {
-      return;
-    }
-    setSaving(true);
-    try {
-      const request_ = {
-        partnerId: optionalNumber(partnerId),
-        relatedDreamId: optionalNumber(relatedDreamId),
-        relatedGoalId: optionalNumber(relatedGoalId),
-        relatedTaskId: optionalNumber(relatedTaskId),
-        audience,
-        purpose,
-        subject,
-        request,
-        expectedOutcome,
-        messageBody,
-        status,
-        followUpDate: followUpDate || undefined,
-      };
-      if (editingId !== null) {
-        await updateCommunicationMessage(token, editingId, request_);
-        setEditingId(null);
-      } else {
-        await createCommunicationMessage(token, request_);
-      }
+    const success = await crud.save({
+      partnerId: optionalNumber(partnerId),
+      relatedDreamId: optionalNumber(relatedDreamId),
+      relatedGoalId: optionalNumber(relatedGoalId),
+      relatedTaskId: optionalNumber(relatedTaskId),
+      audience,
+      purpose,
+      subject,
+      request,
+      expectedOutcome,
+      messageBody,
+      status,
+      followUpDate: followUpDate || undefined,
+    });
+    if (success) {
       setSubject('');
       setPurpose('');
       setRequest('');
       setExpectedOutcome('');
       setMessageBody('');
-      await load();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save message.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleArchive(id: number) {
-    if (!token) {
-      return;
-    }
-    try {
-      await archiveCommunicationMessage(token, id);
-      await load();
-    } catch (archiveError) {
-      setError(archiveError instanceof Error ? archiveError.message : 'Unable to archive message.');
     }
   }
 
   function startEdit(message: CommunicationMessage) {
-    setEditingId(message.id);
+    crud.startEdit(message.id);
     setPartnerId(message.partnerId ? String(message.partnerId) : '');
     setRelatedDreamId(message.relatedDreamId ? String(message.relatedDreamId) : '');
     setRelatedGoalId(message.relatedGoalId ? String(message.relatedGoalId) : '');
@@ -142,7 +112,7 @@ export function CommunicationBuilderPage() {
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    crud.cancelEdit();
     setPartnerId('');
     setRelatedDreamId('');
     setRelatedGoalId('');
@@ -161,9 +131,14 @@ export function CommunicationBuilderPage() {
     <>
       <label>
         Partner
-        <Select value={partnerId} onChange={(event) => setPartnerId(event.target.value)}>
-          <option value="">None</option>
-          {partners.map((partner) => <option value={partner.id} key={partner.id}>{partner.name}</option>)}
+        <Select value={partnerId} onValueChange={(value) => setPartnerId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? partners.find((partner) => String(partner.id) === value)?.name : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {partners.map((partner) => <SelectItem value={String(partner.id)} key={partner.id}>{partner.name}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
@@ -172,23 +147,38 @@ export function CommunicationBuilderPage() {
       </label>
       <label>
         Dream
-        <Select value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
-          <option value="">None</option>
-          {dreams.map((dream) => <option value={dream.id} key={dream.id}>{dream.title}</option>)}
+        <Select value={relatedDreamId} onValueChange={(value) => setRelatedDreamId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? dreams.find((dream) => String(dream.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Goal
-        <Select value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
-          <option value="">None</option>
-          {goals.map((goal) => <option value={goal.id} key={goal.id}>{goal.title}</option>)}
+        <Select value={relatedGoalId} onValueChange={(value) => setRelatedGoalId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? goals.find((goal) => String(goal.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Task
-        <Select value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
-          <option value="">None</option>
-          {tasks.map((task) => <option value={task.id} key={task.id}>{task.title}</option>)}
+        <Select value={relatedTaskId} onValueChange={(value) => setRelatedTaskId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? tasks.find((task) => String(task.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {tasks.map((task) => <SelectItem value={String(task.id)} key={task.id}>{task.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
@@ -201,10 +191,15 @@ export function CommunicationBuilderPage() {
       </label>
       <label>
         Status
-        <Select value={status} onChange={(event) => setStatus(event.target.value as CommunicationStatus)}>
-          {['DRAFT', 'SENT', 'FOLLOWED_UP', 'REPLIED', 'CLOSED'].map((value) => (
-            <option value={value} key={value}>{formatLabel(value)}</option>
-          ))}
+        <Select value={status} onValueChange={(value) => setStatus(value as CommunicationStatus)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: CommunicationStatus) => communicationStatusLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {(['DRAFT', 'SENT', 'FOLLOWED_UP', 'REPLIED', 'CLOSED'] as const).map((value) => (
+              <SelectItem value={value} key={value}>{communicationStatusLabels[value]}</SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </label>
       <label className="field-full">
@@ -242,60 +237,49 @@ Best regards`);
 
   return (
     <PageSection title="Communication" subtitle="Prepare support requests and follow-up messages.">
-      {editingId === null && (
-        <div className="panel">
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="button" variant="secondary" onClick={handleGenerateMessage}>Generate message</Button>
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save message'}</Button>
-            </div>
-          </form>
-        </div>
-      )}
-      {editingId !== null && (
-        <Modal title="Edit Message" onClose={cancelEdit}>
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="button" variant="secondary" onClick={handleGenerateMessage}>Generate message</Button>
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-              <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
-      <div className="panel table-wrap">
-        {messages.length === 0 ? (
-          <div className="empty-state">No messages yet.</div>
+      <CrudModalForm
+        editing={crud.editingId !== null}
+        createLabel="Save message"
+        editTitle="Edit Message"
+        saving={crud.saving}
+        onSubmit={handleSubmit}
+        onCancelEdit={cancelEdit}
+        extraActions={<Button type="button" variant="secondary" onClick={handleGenerateMessage}>Generate message</Button>}
+      >
+        {formFields}
+      </CrudModalForm>
+      {crud.loading && <Loading />}
+      {crud.error && <ErrorMessage message={crud.error} />}
+      <Card>
+        <CardContent>
+        {crud.items.length === 0 ? (
+          <EmptyState>No messages yet.</EmptyState>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Subject</th>
-                <th>Audience</th>
-                <th>Status</th>
-                <th>Follow Up</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {messages.map((message) => (
-                <tr key={message.id}>
-                  <td>{message.subject || '-'}</td>
-                  <td>{message.audience || '-'}</td>
-                  <td><StatusBadge status={message.status} /></td>
-                  <td>{message.followUpDate || '-'}</td>
-                  <td className="row-actions">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Subject</TableHead>
+                <TableHead>Audience</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Follow Up</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {crud.items.map((message) => (
+                <TableRow key={message.id}>
+                  <TableCell className="font-medium">{message.subject || '-'}</TableCell>
+                  <TableCell>{message.audience || '-'}</TableCell>
+                  <TableCell><StatusBadge status={message.status} /></TableCell>
+                  <TableCell>{message.followUpDate || '-'}</TableCell>
+                  <TableCell className="row-actions">
                     <Button type="button" variant="secondary" onClick={() => startEdit(message)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void handleArchive(message.id)}>Archive</Button>
-                  </td>
-                </tr>
+                    <Button type="button" variant="secondary" onClick={() => void crud.archive(message.id)}>Archive</Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
         {totalPages > 1 && (
           <div className="pagination">
@@ -304,15 +288,12 @@ Best regards`);
             <Button type="button" variant="secondary" disabled={page + 1 >= totalPages} onClick={() => setPage((current) => current + 1)}>Next</Button>
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </PageSection>
   );
 }
 
 function optionalNumber(value: string) {
   return value ? Number(value) : undefined;
-}
-
-function formatLabel(value: string) {
-  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

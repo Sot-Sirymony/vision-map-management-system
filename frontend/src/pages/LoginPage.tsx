@@ -34,7 +34,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <h1>Sign in</h1>
+      <h1 className="text-2xl font-semibold">Sign in</h1>
       <form className="form-stack" onSubmit={handleSubmit}>
         <label>
           Email

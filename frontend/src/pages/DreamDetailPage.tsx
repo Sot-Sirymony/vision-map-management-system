@@ -5,7 +5,9 @@ import { listGoals } from '../api/goalApi';
 import { listSteps } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
 import { listVisionAreas } from '../api/visionAreaApi';
-import { Select } from '../components/common/Select';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Loading } from '../components/common/Loading';
 import { VisionMapTree } from '../components/vision-map/VisionMapTree';
@@ -67,19 +69,26 @@ export function DreamDetailPage() {
   return (
     <PageSection title="Vision Map" subtitle="View one dream from area to executable tasks.">
       {dreams.length > 0 && (
-        <div className="panel">
-          <label>
-            Dream
-            <Select value={selectedDream?.id ?? ''} onChange={(event) => navigate(`/dreams/${event.target.value}`)}>
-              {dreams.map((dream) => <option value={dream.id} key={dream.id}>{dream.title}</option>)}
-            </Select>
-          </label>
-        </div>
+        <Card>
+          <CardContent>
+            <label>
+              Dream
+              <Select value={String(selectedDream?.id ?? '')} onValueChange={(value) => value && navigate(`/dreams/${value}`)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>{(value: string) => dreams.find((dream) => String(dream.id) === value)?.title}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </label>
+          </CardContent>
+        </Card>
       )}
       {loading && <Loading />}
       {error && <ErrorMessage message={error} />}
       {!selectedDream ? (
-        <div className="empty-state">No dream selected.</div>
+        <EmptyState>No dream selected.</EmptyState>
       ) : (
         <VisionMapTree
           dream={selectedDream}

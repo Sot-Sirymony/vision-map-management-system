@@ -1,86 +1,54 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { archiveVisionArea, createVisionArea, listVisionAreas, updateVisionArea } from '../api/visionAreaApi';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '../components/common/Button';
+import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
-import { Modal } from '../components/common/Modal';
 import { PriorityBadge } from '../components/common/PriorityBadge';
-import { Select } from '../components/common/Select';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
-import type { LifecycleStatus, Priority, VisionArea } from '../types/vision';
+import { useCrudEntity } from '../hooks/useCrudEntity';
+import type { LifecycleStatus, Priority, VisionArea, VisionAreaRequest } from '../types/vision';
+import { lifecycleStatusLabels, priorityLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function VisionAreasPage() {
   const { token } = useAuth();
-  const [items, setItems] = useState<VisionArea[]>([]);
+  const crud = useCrudEntity<VisionArea, VisionAreaRequest>({
+    token,
+    entityLabel: 'vision areas',
+    list: listVisionAreas,
+    create: createVisionArea,
+    update: updateVisionArea,
+    archive: archiveVisionArea,
+  });
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('HIGH');
   const [status, setStatus] = useState<LifecycleStatus>('ACTIVE');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
-
-  async function load() {
-    if (!token) {
-      return;
-    }
-    setLoading(true);
-    try {
-      setItems(await listVisionAreas(token));
-      setError('');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load vision areas.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   useEffect(() => {
-    void load();
+    void crud.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token) {
-      return;
-    }
-    setSaving(true);
-    try {
-      if (editingId !== null) {
-        await updateVisionArea(token, editingId, { name, description, priority, status });
-        setEditingId(null);
-      } else {
-        await createVisionArea(token, { name, description, priority, status });
-      }
+    const success = await crud.save({ name, description, priority, status });
+    if (success) {
       setName('');
       setDescription('');
-      await load();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save vision area.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleArchive(id: number) {
-    if (!token) {
-      return;
-    }
-    try {
-      await archiveVisionArea(token, id);
-      await load();
-    } catch (archiveError) {
-      setError(archiveError instanceof Error ? archiveError.message : 'Unable to archive vision area.');
     }
   }
 
   function startEdit(area: VisionArea) {
-    setEditingId(area.id);
+    crud.startEdit(area.id);
     setName(area.name);
     setDescription(area.description ?? '');
     setPriority(area.priority);
@@ -88,7 +56,7 @@ export function VisionAreasPage() {
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    crud.cancelEdit();
     setName('');
     setDescription('');
     setPriority('HIGH');
@@ -103,20 +71,30 @@ export function VisionAreasPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="CRITICAL">Critical</option>
+        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="LOW">Low</SelectItem>
+            <SelectItem value="MEDIUM">Medium</SelectItem>
+            <SelectItem value="HIGH">High</SelectItem>
+            <SelectItem value="CRITICAL">Critical</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       <label>
         Status
-        <Select value={status} onChange={(event) => setStatus(event.target.value as LifecycleStatus)}>
-          <option value="ACTIVE">Active</option>
-          <option value="PAUSED">Paused</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="ARCHIVED">Archived</option>
+        <Select value={status} onValueChange={(value) => setStatus(value as LifecycleStatus)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: LifecycleStatus) => lifecycleStatusLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="PAUSED">Paused</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="ARCHIVED">Archived</SelectItem>
+          </SelectContent>
         </Select>
       </label>
       <label className="field-full">
@@ -128,60 +106,51 @@ export function VisionAreasPage() {
 
   return (
     <PageSection title="Vision Areas" subtitle="Organize the major areas of life or work.">
-      {editingId === null && (
-        <div className="panel">
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create vision area'}</Button>
-            </div>
-          </form>
-        </div>
-      )}
-      {editingId !== null && (
-        <Modal title="Edit Vision Area" onClose={cancelEdit}>
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-              <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
-      <div className="panel table-wrap">
-        {items.length === 0 ? (
-          <div className="empty-state">No vision areas yet.</div>
+      <CrudModalForm
+        editing={crud.editingId !== null}
+        createLabel="Create vision area"
+        editTitle="Edit Vision Area"
+        saving={crud.saving}
+        onSubmit={handleSubmit}
+        onCancelEdit={cancelEdit}
+      >
+        {formFields}
+      </CrudModalForm>
+      {crud.loading && <Loading />}
+      {crud.error && <ErrorMessage message={crud.error} />}
+      <Card>
+        <CardContent>
+        {crud.items.length === 0 ? (
+          <EmptyState>No vision areas yet.</EmptyState>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((area) => (
-                <tr key={area.id}>
-                  <td>{area.code}</td>
-                  <td>{area.name}</td>
-                  <td><PriorityBadge priority={area.priority} /></td>
-                  <td><StatusBadge status={area.status} /></td>
-                  <td className="row-actions">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {crud.items.map((area) => (
+                <TableRow key={area.id}>
+                  <TableCell>{area.code}</TableCell>
+                  <TableCell className="font-medium">{area.name}</TableCell>
+                  <TableCell><PriorityBadge priority={area.priority} /></TableCell>
+                  <TableCell><StatusBadge status={area.status} /></TableCell>
+                  <TableCell className="row-actions">
                     <Button type="button" variant="secondary" onClick={() => startEdit(area)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void handleArchive(area.id)}>Archive</Button>
-                  </td>
-                </tr>
+                    <Button type="button" variant="secondary" onClick={() => void crud.archive(area.id)}>Archive</Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </PageSection>
   );
 }

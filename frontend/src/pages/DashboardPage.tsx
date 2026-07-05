@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { getDashboardSummary } from '../api/dashboardApi';
 import { listTasks } from '../api/taskApi';
+import { CategoryBreakdownChart } from '../components/dashboard/CategoryBreakdownChart';
 import { DashboardSummary } from '../components/dashboard/DashboardSummary';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '../context/AuthContext';
 import type { DashboardSummary as DashboardSummaryData, TaskItem } from '../types/vision';
 import { PageSection } from './PageSection';
@@ -44,60 +48,53 @@ export function DashboardPage() {
       {loading && <Loading />}
       {error && <ErrorMessage message={error} />}
       <DashboardSummary summary={summary} />
-      <div className="two-column">
-        <div className="panel">
-          <h3>Priority tasks</h3>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <CategoryBreakdownChart
+          title="Goals by status"
+          description="Current distribution across all active goals"
+          data={summary?.goalsByStatus ?? {}}
+          formatLabel={formatLabel}
+        />
+        <CategoryBreakdownChart
+          title="Dreams by vision area"
+          description="Where active dreams are concentrated"
+          data={summary?.dreamsByVisionArea ?? {}}
+        />
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Priority tasks</CardTitle>
+          <CardDescription>The five highest-priority tasks that are not yet completed</CardDescription>
+        </CardHeader>
+        <CardContent>
           {priorityTasks.length === 0 ? (
-            <div className="empty-state">No open priority tasks.</div>
+            <EmptyState>No open priority tasks.</EmptyState>
           ) : (
-            <div className="stack-list">
-              {priorityTasks.map((task) => (
-                <article className="list-card" key={task.id}>
-                  <div>
-                    <strong>{task.title}</strong>
-                    <p>Due {task.dueDate}</p>
-                  </div>
-                  <div className="inline-meta">
-                    <PriorityBadge priority={task.priority} />
-                    <StatusBadge status={task.status} />
-                  </div>
-                  <ProgressBar value={Number(task.progressPercent)} />
-                </article>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Task</TableHead>
+                  <TableHead>Due</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Progress</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {priorityTasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell className="font-medium">{task.title}</TableCell>
+                    <TableCell>{task.dueDate}</TableCell>
+                    <TableCell><PriorityBadge priority={task.priority} /></TableCell>
+                    <TableCell><StatusBadge status={task.status} /></TableCell>
+                    <TableCell className="w-40"><ProgressBar value={Number(task.progressPercent)} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
-        </div>
-        <div className="panel">
-          <h3>Progress by status</h3>
-          {summary && Object.keys(summary.goalsByStatus).length > 0 ? (
-            <div className="status-grid">
-              {Object.entries(summary.goalsByStatus).map(([status, count]) => (
-                <div className="status-row" key={status}>
-                  <span>{formatLabel(status)}</span>
-                  <strong>{count}</strong>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">No goal status data yet.</div>
-          )}
-        </div>
-      </div>
-      <div className="panel">
-        <h3>Dreams by vision area</h3>
-        {summary && Object.keys(summary.dreamsByVisionArea).length > 0 ? (
-          <div className="status-grid">
-            {Object.entries(summary.dreamsByVisionArea).map(([area, count]) => (
-              <div className="status-row" key={area}>
-                <span>{area}</span>
-                <strong>{count}</strong>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">No dream distribution yet.</div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </PageSection>
   );
 }

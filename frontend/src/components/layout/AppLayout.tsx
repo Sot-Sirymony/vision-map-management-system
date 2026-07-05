@@ -1,17 +1,18 @@
 import { Outlet } from 'react-router-dom';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 
 export function AppLayout() {
   return (
-    <div className="app-shell">
+    <SidebarProvider>
       <Sidebar />
-      <div className="app-main">
+      <SidebarInset>
         <Header />
-        <main className="page-shell">
+        <div className="page-shell">
           <Outlet />
-        </main>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

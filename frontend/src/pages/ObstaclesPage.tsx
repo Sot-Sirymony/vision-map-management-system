@@ -5,16 +5,22 @@ import { acceptObstacle, createObstacle, listObstacles, updateObstacle } from '.
 import { listPartners } from '../api/partnerApi';
 import { listSteps } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '../components/common/Button';
+import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
-import { Modal } from '../components/common/Modal';
-import { Select } from '../components/common/Select';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
-import type { Dream, Goal, Obstacle, ObstacleStatus, ObstacleType, Partner, Severity, TaskItem, VisionStep } from '../types/vision';
+import { useCrudEntity } from '../hooks/useCrudEntity';
+import type { Dream, Goal, Obstacle, ObstacleRequest, ObstacleStatus, ObstacleType, Partner, Severity, TaskItem, VisionStep } from '../types/vision';
+import { suggestPartnerFor } from '../utils/partnerSuggestion';
+import { obstacleStatusLabels, obstacleTypeLabels, priorityLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 const obstacleTypes: ObstacleType[] = ['KNOWLEDGE', 'SKILL', 'TIME', 'MONEY', 'MOTIVATION', 'PARTNER', 'SYSTEM', 'DECISION', 'OTHER'];
@@ -23,7 +29,15 @@ const statuses: ObstacleStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'ACCEPTED
 
 export function ObstaclesPage() {
   const { token } = useAuth();
-  const [obstacles, setObstacles] = useState<Obstacle[]>([]);
+  const crud = useCrudEntity<Obstacle, ObstacleRequest>({
+    token,
+    entityLabel: 'obstacles',
+    list: listObstacles,
+    create: createObstacle,
+    update: updateObstacle,
+    archive: acceptObstacle,
+    archiveMessage: 'Accepted.',
+  });
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [steps, setSteps] = useState<VisionStep[]>([]);
@@ -40,94 +54,48 @@ export function ObstaclesPage() {
   const [obstacleType, setObstacleType] = useState<ObstacleType>('KNOWLEDGE');
   const [severity, setSeverity] = useState<Severity>('MEDIUM');
   const [status, setStatus] = useState<ObstacleStatus>('OPEN');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
 
-  async function load() {
+  useEffect(() => {
     if (!token) {
       return;
     }
-    setLoading(true);
-    try {
-      const [obstacleData, dreamData, goalData, stepData, taskData, partnerPage] = await Promise.all([
-        listObstacles(token),
-        listDreams(token),
-        listGoals(token),
-        listSteps(token),
-        listTasks(token),
-        listPartners(token, 0, 500),
-      ]);
-      setObstacles(obstacleData);
-      setDreams(dreamData);
-      setGoals(goalData);
-      setSteps(stepData);
-      setTasks(taskData);
-      setPartners(partnerPage.content);
-      setError('');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load obstacles.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
+    void crud.reload();
+    void Promise.all([listDreams(token), listGoals(token), listSteps(token), listTasks(token), listPartners(token, 0, 500)]).then(
+      ([dreamData, goalData, stepData, taskData, partnerPage]) => {
+        setDreams(dreamData);
+        setGoals(goalData);
+        setSteps(stepData);
+        setTasks(taskData);
+        setPartners(partnerPage.content);
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token) {
-      return;
-    }
-    setSaving(true);
-    try {
-      const request = {
-        relatedDreamId: optionalNumber(relatedDreamId),
-        relatedGoalId: optionalNumber(relatedGoalId),
-        relatedStepId: optionalNumber(relatedStepId),
-        relatedTaskId: optionalNumber(relatedTaskId),
-        title,
-        description,
-        obstacleType,
-        severity,
-        solution,
-        requiredPartnerId: optionalNumber(requiredPartnerId),
-        status,
-      };
-      if (editingId !== null) {
-        await updateObstacle(token, editingId, request);
-        setEditingId(null);
-      } else {
-        await createObstacle(token, request);
-      }
+    const success = await crud.save({
+      relatedDreamId: optionalNumber(relatedDreamId),
+      relatedGoalId: optionalNumber(relatedGoalId),
+      relatedStepId: optionalNumber(relatedStepId),
+      relatedTaskId: optionalNumber(relatedTaskId),
+      title,
+      description,
+      obstacleType,
+      severity,
+      solution,
+      requiredPartnerId: optionalNumber(requiredPartnerId),
+      status,
+    });
+    if (success) {
       setTitle('');
       setDescription('');
       setSolution('');
-      await load();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save obstacle.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleAccept(id: number) {
-    if (!token) {
-      return;
-    }
-    try {
-      await acceptObstacle(token, id);
-      await load();
-    } catch (acceptError) {
-      setError(acceptError instanceof Error ? acceptError.message : 'Unable to accept obstacle.');
     }
   }
 
   function startEdit(obstacle: Obstacle) {
-    setEditingId(obstacle.id);
+    crud.startEdit(obstacle.id);
     setRelatedDreamId(obstacle.relatedDreamId ? String(obstacle.relatedDreamId) : '');
     setRelatedGoalId(obstacle.relatedGoalId ? String(obstacle.relatedGoalId) : '');
     setRelatedStepId(obstacle.relatedStepId ? String(obstacle.relatedStepId) : '');
@@ -142,7 +110,7 @@ export function ObstaclesPage() {
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    crud.cancelEdit();
     setRelatedDreamId('');
     setRelatedGoalId('');
     setRelatedStepId('');
@@ -156,6 +124,8 @@ export function ObstaclesPage() {
     setStatus('OPEN');
   }
 
+  const partnerSuggestion = suggestPartnerFor(obstacleType);
+
   const formFields = (
     <>
       <label>
@@ -164,55 +134,96 @@ export function ObstaclesPage() {
       </label>
       <label>
         Type
-        <Select value={obstacleType} onChange={(event) => setObstacleType(event.target.value as ObstacleType)}>
-          {obstacleTypes.map((value) => <option value={value} key={value}>{formatLabel(value)}</option>)}
+        <Select value={obstacleType} onValueChange={(value) => setObstacleType(value as ObstacleType)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: ObstacleType) => obstacleTypeLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {obstacleTypes.map((value) => <SelectItem value={value} key={value}>{obstacleTypeLabels[value]}</SelectItem>)}
+          </SelectContent>
         </Select>
+        {partnerSuggestion && <span className="field-hint">Suggested support: {partnerSuggestion.label}</span>}
       </label>
       <label>
         Severity
-        <Select value={severity} onChange={(event) => setSeverity(event.target.value as Severity)}>
-          {severities.map((value) => <option value={value} key={value}>{formatLabel(value)}</option>)}
+        <Select value={severity} onValueChange={(value) => setSeverity(value as Severity)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: Severity) => priorityLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {severities.map((value) => <SelectItem value={value} key={value}>{priorityLabels[value]}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Status
-        <Select value={status} onChange={(event) => setStatus(event.target.value as ObstacleStatus)}>
-          {statuses.map((value) => <option value={value} key={value}>{formatLabel(value)}</option>)}
+        <Select value={status} onValueChange={(value) => setStatus(value as ObstacleStatus)}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: ObstacleStatus) => obstacleStatusLabels[value]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {statuses.map((value) => <SelectItem value={value} key={value}>{obstacleStatusLabels[value]}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Dream
-        <Select value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
-          <option value="">None</option>
-          {dreams.map((dream) => <option value={dream.id} key={dream.id}>{dream.title}</option>)}
+        <Select value={relatedDreamId} onValueChange={(value) => setRelatedDreamId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? dreams.find((dream) => String(dream.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Goal
-        <Select value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
-          <option value="">None</option>
-          {goals.map((goal) => <option value={goal.id} key={goal.id}>{goal.title}</option>)}
+        <Select value={relatedGoalId} onValueChange={(value) => setRelatedGoalId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? goals.find((goal) => String(goal.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Step
-        <Select value={relatedStepId} onChange={(event) => setRelatedStepId(event.target.value)}>
-          <option value="">None</option>
-          {steps.map((step) => <option value={step.id} key={step.id}>{step.title}</option>)}
+        <Select value={relatedStepId} onValueChange={(value) => setRelatedStepId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? steps.find((step) => String(step.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {steps.map((step) => <SelectItem value={String(step.id)} key={step.id}>{step.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Task
-        <Select value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
-          <option value="">None</option>
-          {tasks.map((task) => <option value={task.id} key={task.id}>{task.title}</option>)}
+        <Select value={relatedTaskId} onValueChange={(value) => setRelatedTaskId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? tasks.find((task) => String(task.id) === value)?.title : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {tasks.map((task) => <SelectItem value={String(task.id)} key={task.id}>{task.title}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label>
         Required Partner
-        <Select value={requiredPartnerId} onChange={(event) => setRequiredPartnerId(event.target.value)}>
-          <option value="">None</option>
-          {partners.map((partner) => <option value={partner.id} key={partner.id}>{partner.name}</option>)}
+        <Select value={requiredPartnerId} onValueChange={(value) => setRequiredPartnerId(value ?? '')}>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(value: string) => (value ? partners.find((partner) => String(partner.id) === value)?.name : 'None')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {partners.map((partner) => <SelectItem value={String(partner.id)} key={partner.id}>{partner.name}</SelectItem>)}
+          </SelectContent>
         </Select>
       </label>
       <label className="field-full">
@@ -228,70 +239,62 @@ export function ObstaclesPage() {
 
   return (
     <PageSection title="Obstacles" subtitle="Track blockers and the support needed to resolve them.">
-      {editingId === null && (
-        <div className="panel">
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create obstacle'}</Button>
-            </div>
-          </form>
-        </div>
-      )}
-      {editingId !== null && (
-        <Modal title="Edit Obstacle" onClose={cancelEdit}>
-          <form className="form-grid" onSubmit={handleSubmit}>
-            {formFields}
-            <div className="field-full row-actions">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-              <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
-      <div className="panel table-wrap">
-        {obstacles.length === 0 ? (
-          <div className="empty-state">No obstacles yet.</div>
+      <CrudModalForm
+        editing={crud.editingId !== null}
+        createLabel="Create obstacle"
+        editTitle="Edit Obstacle"
+        saving={crud.saving}
+        onSubmit={handleSubmit}
+        onCancelEdit={cancelEdit}
+      >
+        {formFields}
+      </CrudModalForm>
+      {crud.loading && <Loading />}
+      {crud.error && <ErrorMessage message={crud.error} />}
+      <Card>
+        <CardContent>
+        {crud.items.length === 0 ? (
+          <EmptyState>No obstacles yet.</EmptyState>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Severity</th>
-                <th>Status</th>
-                <th>Solution</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {obstacles.map((obstacle) => (
-                <tr key={obstacle.id}>
-                  <td>{obstacle.title}</td>
-                  <td>{formatLabel(obstacle.obstacleType)}</td>
-                  <td><StatusBadge status={obstacle.severity} /></td>
-                  <td><StatusBadge status={obstacle.status} /></td>
-                  <td>{obstacle.solution || '-'}</td>
-                  <td className="row-actions">
-                    <Button type="button" variant="secondary" onClick={() => startEdit(obstacle)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void handleAccept(obstacle.id)}>Accept</Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Suggested Partner</TableHead>
+                <TableHead>Severity</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Solution</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {crud.items.map((obstacle) => {
+                const suggestion = suggestPartnerFor(obstacle.obstacleType);
+                return (
+                  <TableRow key={obstacle.id}>
+                    <TableCell className="font-medium">{obstacle.title}</TableCell>
+                    <TableCell>{obstacleTypeLabels[obstacle.obstacleType]}</TableCell>
+                    <TableCell>{suggestion ? suggestion.label : '-'}</TableCell>
+                    <TableCell><StatusBadge status={obstacle.severity} /></TableCell>
+                    <TableCell><StatusBadge status={obstacle.status} /></TableCell>
+                    <TableCell>{obstacle.solution || '-'}</TableCell>
+                    <TableCell className="row-actions">
+                      <Button type="button" variant="secondary" onClick={() => startEdit(obstacle)}>Edit</Button>
+                      <Button type="button" variant="secondary" onClick={() => void crud.archive(obstacle.id)}>Accept</Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </PageSection>
   );
 }
 
 function optionalNumber(value: string) {
   return value ? Number(value) : undefined;
-}
-
-function formatLabel(value: string) {
-  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

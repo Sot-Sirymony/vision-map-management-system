@@ -1,3 +1,5 @@
+import { Badge } from '@/components/ui/badge';
+
 export function StatusBadge({ status }: { status: string }) {
-  return <span className={`badge status-${status.toLowerCase().replaceAll('_', '-')}`}>{status.replaceAll('_', ' ')}</span>;
+  return <Badge className={`badge status-${status.toLowerCase().replaceAll('_', '-')}`}>{status.replaceAll('_', ' ')}</Badge>;
 }
