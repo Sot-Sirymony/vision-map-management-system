@@ -85,4 +85,7 @@ public class CommunicationMessage extends BaseAuditableEntity {
 
     @Column(name = "follow_up_date")
     private LocalDate followUpDate;
+
+    @Column(nullable = false)
+    private boolean archived;
 }

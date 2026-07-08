@@ -1,14 +1,13 @@
 import { useLocation } from 'react-router-dom';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Separator } from '@/components/ui/separator';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import IconButton from '@mui/material/IconButton';
+import Breadcrumbs from '@mui/material/Breadcrumbs';
+import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import { PanelLeft } from 'lucide-react';
 import { navItems } from './nav-items';
+import { useSidebarState } from './sidebar-context';
 
 function currentPageLabel(pathname: string) {
   const exact = navItems.find((item) => (item.to === '/' ? pathname === '/' : pathname === item.to));
@@ -21,20 +20,20 @@ function currentPageLabel(pathname: string) {
 
 export function Header() {
   const location = useLocation();
+  const { toggle } = useSidebarState();
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>Vision Mapping</BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{currentPageLabel(location.pathname)}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-    </header>
+    <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default' }}>
+      <Toolbar sx={{ gap: 1.5, minHeight: '56px !important' }}>
+        <IconButton onClick={toggle} aria-label="Toggle sidebar" edge="start" size="small">
+          <PanelLeft size={18} />
+        </IconButton>
+        <Divider orientation="vertical" flexItem sx={{ height: 20, alignSelf: 'center' }} />
+        <Breadcrumbs separator="›">
+          <Typography variant="body2" color="text.secondary">Vision Mapping</Typography>
+          <Typography variant="body2" color="text.primary">{currentPageLabel(location.pathname)}</Typography>
+        </Breadcrumbs>
+      </Toolbar>
+    </AppBar>
   );
 }

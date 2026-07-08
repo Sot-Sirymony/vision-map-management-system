@@ -8,5 +8,9 @@ public interface VisionStepRepository extends JpaRepository<VisionStep, Long> {
 
     List<VisionStep> findByUser_Id(Long userId);
 
+    List<VisionStep> findByUser_IdAndArchivedFalse(Long userId);
+
     List<VisionStep> findByGoal_IdAndUser_Id(Long goalId, Long userId);
+
+    List<VisionStep> findByGoal_IdAndUser_IdAndArchivedFalse(Long goalId, Long userId);
 }

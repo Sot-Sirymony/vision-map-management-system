@@ -2,11 +2,19 @@ import { FormEvent, useEffect, useState } from 'react';
 import { listDreams } from '../api/dreamApi';
 import { archiveGoal, createGoal, listGoals, updateGoal, updateGoalStatus } from '../api/goalApi';
 import { listVisionAreas } from '../api/visionAreaApi';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '../components/common/EmptyState';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { ErrorMessage } from '../components/common/ErrorMessage';
@@ -21,7 +29,6 @@ import { useToast } from '../context/ToastContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { Dream, Goal, GoalRequest, Priority, VisionArea, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
-import { priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 const statusOptions: { value: WorkStatus; label: string }[] = [
@@ -178,14 +185,11 @@ export function GoalsPage() {
     <>
       <label>
         Dream
-        <Select value={dreamId} onValueChange={(value) => setDreamId(value ?? '')} required>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => dreams.find((dream) => String(dream.id) === value)?.title}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small" required>
+          <Select value={dreamId} onChange={(event) => setDreamId(event.target.value)}>
+            {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Title
@@ -193,33 +197,27 @@ export function GoalsPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="LOW">Low</SelectItem>
-            <SelectItem value="MEDIUM">Medium</SelectItem>
-            <SelectItem value="HIGH">High</SelectItem>
-            <SelectItem value="CRITICAL">Critical</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+            <MenuItem value="LOW">Low</MenuItem>
+            <MenuItem value="MEDIUM">Medium</MenuItem>
+            <MenuItem value="HIGH">High</MenuItem>
+            <MenuItem value="CRITICAL">Critical</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Status
-        <Select value={status} onValueChange={(value) => setStatus(value as WorkStatus)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="NOT_STARTED">Not Started</SelectItem>
-            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-            <SelectItem value="WAITING">Waiting</SelectItem>
-            <SelectItem value="BLOCKED">Blocked</SelectItem>
-            <SelectItem value="PAUSED">Paused</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
+            <MenuItem value="NOT_STARTED">Not Started</MenuItem>
+            <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+            <MenuItem value="WAITING">Waiting</MenuItem>
+            <MenuItem value="BLOCKED">Blocked</MenuItem>
+            <MenuItem value="PAUSED">Paused</MenuItem>
+            <MenuItem value="COMPLETED">Completed</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Target Date
@@ -254,59 +252,47 @@ export function GoalsPage() {
       <Card className="filter-bar flex-row">
         <label>
           Vision Area
-          <Select value={filterVisionAreaId} onValueChange={(value) => setFilterVisionAreaId(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue>{(value: string) => (value ? visionAreas.find((area) => String(area.id) === value)?.name : 'All')}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              {visionAreas.map((area) => <SelectItem value={String(area.id)} key={area.id}>{area.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterVisionAreaId} onChange={(event) => setFilterVisionAreaId(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
+            </Select>
+          </FormControl>
         </label>
         <label>
           Dream
-          <Select value={filterDreamId} onValueChange={(value) => setFilterDreamId(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue>{(value: string) => (value ? dreams.find((dream) => String(dream.id) === value)?.title : 'All')}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterDreamId} onChange={(event) => setFilterDreamId(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
+            </Select>
+          </FormControl>
         </label>
         <label>
           Status
-          <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue>{(value: string) => (value ? workStatusLabels[value as WorkStatus] : 'All')}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              <SelectItem value="NOT_STARTED">Not Started</SelectItem>
-              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-              <SelectItem value="WAITING">Waiting</SelectItem>
-              <SelectItem value="BLOCKED">Blocked</SelectItem>
-              <SelectItem value="PAUSED">Paused</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="NOT_STARTED">Not Started</MenuItem>
+              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+              <MenuItem value="WAITING">Waiting</MenuItem>
+              <MenuItem value="BLOCKED">Blocked</MenuItem>
+              <MenuItem value="PAUSED">Paused</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
+            </Select>
+          </FormControl>
         </label>
         <label>
           Priority
-          <Select value={filterPriority} onValueChange={(value) => setFilterPriority(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue>{(value: string) => (value ? priorityLabels[value as Priority] : 'All')}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              <SelectItem value="LOW">Low</SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="HIGH">High</SelectItem>
-              <SelectItem value="CRITICAL">Critical</SelectItem>
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterPriority} onChange={(event) => setFilterPriority(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="LOW">Low</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="HIGH">High</MenuItem>
+              <MenuItem value="CRITICAL">Critical</MenuItem>
+            </Select>
+          </FormControl>
         </label>
         <label className="checkbox-field">
           <Checkbox checked={filterOverdueOnly} onCheckedChange={(checked) => setFilterOverdueOnly(checked)} />
@@ -318,14 +304,11 @@ export function GoalsPage() {
           <span className="bulk-count">{selectedIds.size} selected</span>
           <label>
             Set status
-            <Select value={bulkStatus} onValueChange={(value) => setBulkStatus(value as WorkStatus)}>
-              <SelectTrigger className="w-full">
-                <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => <SelectItem value={option.value} key={option.value}>{option.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <FormControl fullWidth size="small">
+              <Select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value as WorkStatus)}>
+                {statusOptions.map((option) => <MenuItem value={option.value} key={option.value}>{option.label}</MenuItem>)}
+              </Select>
+            </FormControl>
           </label>
           <Button type="button" onClick={() => void handleBulkApply()} disabled={bulkApplying}>
             {bulkApplying ? 'Applying...' : 'Apply'}
@@ -338,20 +321,21 @@ export function GoalsPage() {
         {filteredGoals.length === 0 ? (
           <EmptyState>No goals match these filters.</EmptyState>
         ) : (
+          <TableContainer>
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>
+                <TableCell>
                   <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} aria-label="Select all goals" />
-                </TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Goal</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Action</TableHead>
+                </TableCell>
+                <TableCell>Code</TableCell>
+                <TableCell>Goal</TableCell>
+                <TableCell>Priority</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Progress</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {filteredGoals.map((goal) => (
                 <TableRow key={goal.id} className={isOverdue(goal.targetDate, goal.status) ? 'row-overdue' : ''}>
@@ -359,7 +343,7 @@ export function GoalsPage() {
                     <Checkbox checked={selectedIds.has(goal.id)} onCheckedChange={() => toggleSelected(goal.id)} aria-label={`Select ${goal.title}`} />
                   </TableCell>
                   <TableCell>{goal.code}</TableCell>
-                  <TableCell className="font-medium">{goal.title}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{goal.title}</TableCell>
                   <TableCell><PriorityBadge priority={goal.priority} /></TableCell>
                   <TableCell><StatusBadge status={goal.status} /></TableCell>
                   <TableCell><ProgressBar value={Number(goal.progressPercent)} /></TableCell>
@@ -371,6 +355,7 @@ export function GoalsPage() {
               ))}
             </TableBody>
           </Table>
+          </TableContainer>
         )}
         </CardContent>
       </Card>

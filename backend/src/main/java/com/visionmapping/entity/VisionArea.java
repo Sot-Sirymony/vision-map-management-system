@@ -52,4 +52,7 @@ public class VisionArea extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
     private LifecycleStatus status;
+
+    @Column(nullable = false)
+    private boolean archived;
 }

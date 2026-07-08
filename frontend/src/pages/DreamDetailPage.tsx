@@ -5,8 +5,11 @@ import { listGoals } from '../api/goalApi';
 import { listSteps } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
 import { listVisionAreas } from '../api/visionAreaApi';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Loading } from '../components/common/Loading';
@@ -73,14 +76,14 @@ export function DreamDetailPage() {
           <CardContent>
             <label>
               Dream
-              <Select value={String(selectedDream?.id ?? '')} onValueChange={(value) => value && navigate(`/dreams/${value}`)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>{(value: string) => dreams.find((dream) => String(dream.id) === value)?.title}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={String(selectedDream?.id ?? '')}
+                  onChange={(event) => event.target.value && navigate(`/dreams/${event.target.value}`)}
+                >
+                  {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
+                </Select>
+              </FormControl>
             </label>
           </CardContent>
         </Card>

@@ -11,4 +11,6 @@ public interface CommunicationMessageRepository extends JpaRepository<Communicat
     List<CommunicationMessage> findByUser_Id(Long userId);
 
     Page<CommunicationMessage> findByUser_Id(Long userId, Pageable pageable);
+
+    Page<CommunicationMessage> findByUser_IdAndArchivedFalse(Long userId, Pageable pageable);
 }

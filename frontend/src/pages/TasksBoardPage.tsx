@@ -2,8 +2,10 @@ import { DragEvent, FormEvent, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listSteps } from '../api/stepApi';
 import { archiveTask, createTask, listTasks, updateTask, updateTaskStatus } from '../api/taskApi';
-import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Card from '@mui/material/Card';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
@@ -18,7 +20,7 @@ import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { ObstacleType, Priority, TaskItem, TaskItemRequest, VisionStep, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
-import { obstacleTypeLabels, priorityLabels, workStatusLabels } from '../utils/enumLabels';
+import { obstacleTypeLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 const columns: WorkStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'PAUSED'];
@@ -172,14 +174,11 @@ export function TasksBoardPage() {
     <>
       <label>
         Step
-        <Select value={stepId} onValueChange={(value) => setStepId(value ?? '')} required>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => steps.find((step) => String(step.id) === value)?.title}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {steps.map((step) => <SelectItem value={String(step.id)} key={step.id}>{step.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small" required>
+          <Select value={stepId} onChange={(event) => setStepId(event.target.value)}>
+            {steps.map((step) => <MenuItem value={String(step.id)} key={step.id}>{step.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Title
@@ -203,40 +202,32 @@ export function TasksBoardPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="LOW">Low</SelectItem>
-            <SelectItem value="MEDIUM">Medium</SelectItem>
-            <SelectItem value="HIGH">High</SelectItem>
-            <SelectItem value="CRITICAL">Critical</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+            <MenuItem value="LOW">Low</MenuItem>
+            <MenuItem value="MEDIUM">Medium</MenuItem>
+            <MenuItem value="HIGH">High</MenuItem>
+            <MenuItem value="CRITICAL">Critical</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Status
-        <Select value={status} onValueChange={(value) => setStatus(value as WorkStatus)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {columns.map((column) => <SelectItem value={column} key={column}>{workStatusLabels[column]}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
+            {columns.map((column) => <MenuItem value={column} key={column}>{workStatusLabels[column]}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       {status === 'BLOCKED' && (
         <label>
           What's missing?
-          <Select value={blockerCategory} onValueChange={(value) => setBlockerCategory((value as ObstacleType) ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a category...">{(value: ObstacleType) => obstacleTypeLabels[value]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {blockerCategories.map((category) => <SelectItem value={category} key={category}>{obstacleTypeLabels[category]}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={blockerCategory} onChange={(event) => setBlockerCategory(event.target.value as ObstacleType)}>
+              <MenuItem value="" disabled><em>Select a category...</em></MenuItem>
+              {blockerCategories.map((category) => <MenuItem value={category} key={category}>{obstacleTypeLabels[category]}</MenuItem>)}
+            </Select>
+          </FormControl>
           {blockerCategory && (
             <span className="field-hint">
               {suggestPartnerFor(blockerCategory)?.label ?? 'Look for a partner or connector who can help directly.'}
@@ -311,14 +302,11 @@ export function TasksBoardPage() {
                     <ProgressBar value={Number(task.progressPercent)} />
                     {task.blockerReason && <p>{task.blockerReason}</p>}
                     <div className="row-actions">
-                      <Select value={task.status} onValueChange={(value) => void handleMove(task.id, value as WorkStatus)}>
-                        <SelectTrigger size="sm">
-                          <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {columns.map((targetStatus) => <SelectItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <FormControl size="small">
+                        <Select value={task.status} onChange={(event) => void handleMove(task.id, event.target.value as WorkStatus)}>
+                          {columns.map((targetStatus) => <MenuItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</MenuItem>)}
+                        </Select>
+                      </FormControl>
                       <Button type="button" variant="secondary" onClick={() => startEdit(task)}>Edit</Button>
                       <Button type="button" variant="secondary" onClick={() => void crud.archive(task.id)}>Archive</Button>
                     </div>

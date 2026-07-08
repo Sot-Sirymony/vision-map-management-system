@@ -2,9 +2,17 @@ import { FormEvent, useEffect, useState } from 'react';
 import { listDreams } from '../api/dreamApi';
 import { archiveReview, createReview, listReviews, updateReview } from '../api/reviewApi';
 import { listVisionAreas } from '../api/visionAreaApi';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
@@ -105,16 +113,13 @@ export function ReviewsPage() {
     <>
       <label>
         Type
-        <Select value={reviewType} onValueChange={(value) => setReviewType(value as ReviewType)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: ReviewType) => reviewTypeLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
+        <FormControl fullWidth size="small">
+          <Select value={reviewType} onChange={(event) => setReviewType(event.target.value as ReviewType)}>
             {(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY'] as const).map((value) => (
-              <SelectItem value={value} key={value}>{reviewTypeLabels[value]}</SelectItem>
+              <MenuItem value={value} key={value}>{reviewTypeLabels[value]}</MenuItem>
             ))}
-          </SelectContent>
-        </Select>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Date
@@ -122,27 +127,21 @@ export function ReviewsPage() {
       </label>
       <label>
         Vision Area
-        <Select value={relatedVisionAreaId} onValueChange={(value) => setRelatedVisionAreaId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? visionAreas.find((area) => String(area.id) === value)?.name : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {visionAreas.map((area) => <SelectItem value={String(area.id)} key={area.id}>{area.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedVisionAreaId} onChange={(event) => setRelatedVisionAreaId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Dream
-        <Select value={relatedDreamId} onValueChange={(value) => setRelatedDreamId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? dreams.find((dream) => String(dream.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label className="field-full">
         Summary
@@ -186,16 +185,17 @@ export function ReviewsPage() {
         {crud.items.length === 0 ? (
           <EmptyState>No reviews yet.</EmptyState>
         ) : (
+          <TableContainer>
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Summary</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell>Type</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Summary</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {crud.items.map((review) => (
                 <TableRow key={review.id}>
@@ -211,6 +211,7 @@ export function ReviewsPage() {
               ))}
             </TableBody>
           </Table>
+          </TableContainer>
         )}
         </CardContent>
       </Card>

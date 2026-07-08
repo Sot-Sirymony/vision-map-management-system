@@ -13,11 +13,14 @@ import com.visionmapping.dto.response.TaskItemResponse;
 import com.visionmapping.entity.AppUser;
 import com.visionmapping.entity.Dream;
 import com.visionmapping.entity.Goal;
+import com.visionmapping.entity.Partner;
 import com.visionmapping.entity.TaskItem;
 import com.visionmapping.entity.VisionArea;
 import com.visionmapping.entity.VisionStep;
 import com.visionmapping.entity.enums.DreamStatus;
 import com.visionmapping.entity.enums.LifecycleStatus;
+import com.visionmapping.entity.enums.PartnerStatus;
+import com.visionmapping.entity.enums.PartnerSupportType;
 import com.visionmapping.entity.enums.Priority;
 import com.visionmapping.entity.enums.UserRole;
 import com.visionmapping.entity.enums.UserStatus;
@@ -125,8 +128,8 @@ class VisionMappingServiceTest {
         TaskItem task2 = task(31L, step, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(60));
 
         when(taskItemRepository.findById(30L)).thenReturn(Optional.of(task1));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(task1, task2));
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(step));
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of(task1, task2));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(step));
 
         TaskItemResponse response = service.updateTaskStatus(30L, "COMPLETED");
 
@@ -145,8 +148,8 @@ class VisionMappingServiceTest {
         TaskItem task2 = task(31L, step, WorkStatus.COMPLETED, BigDecimal.valueOf(100));
 
         when(taskItemRepository.findById(30L)).thenReturn(Optional.of(task1));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(task1, task2));
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(step));
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of(task1, task2));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(step));
 
         service.updateTaskStatus(30L, "COMPLETED");
 
@@ -163,7 +166,7 @@ class VisionMappingServiceTest {
         TaskItem task = task(30L, step, WorkStatus.NOT_STARTED, BigDecimal.valueOf(10));
 
         when(taskItemRepository.findById(30L)).thenReturn(Optional.of(task));
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(step));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(step));
 
         service.updateTaskStatus(30L, "IN_PROGRESS");
 
@@ -184,10 +187,10 @@ class VisionMappingServiceTest {
         TaskItem dueThisWeek = task(32L, step, WorkStatus.NOT_STARTED, BigDecimal.ZERO);
         dueThisWeek.setDueDate(LocalDate.now().plusDays(3));
 
-        when(visionAreaRepository.findByUser_Id(1L)).thenReturn(List.of());
-        when(dreamRepository.findByUser_Id(1L)).thenReturn(List.of());
-        when(goalRepository.findByUser_Id(1L)).thenReturn(List.of());
-        when(taskItemRepository.findByUser_Id(1L)).thenReturn(List.of(overdue, overdueButCompleted, dueThisWeek));
+        when(visionAreaRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of());
+        when(dreamRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of());
+        when(goalRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of());
+        when(taskItemRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of(overdue, overdueButCompleted, dueThisWeek));
 
         DashboardSummaryResponse summary = service.dashboard();
 
@@ -204,10 +207,10 @@ class VisionMappingServiceTest {
         Goal g2 = goal(11L, dream, WorkStatus.COMPLETED, BigDecimal.valueOf(100), false);
         Goal g3 = goal(12L, dream, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(30), false);
 
-        when(visionAreaRepository.findByUser_Id(1L)).thenReturn(List.of());
-        when(dreamRepository.findByUser_Id(1L)).thenReturn(List.of());
-        when(goalRepository.findByUser_Id(1L)).thenReturn(List.of(g1, g2, g3));
-        when(taskItemRepository.findByUser_Id(1L)).thenReturn(List.of());
+        when(visionAreaRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of());
+        when(dreamRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of());
+        when(goalRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of(g1, g2, g3));
+        when(taskItemRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of());
 
         DashboardSummaryResponse summary = service.dashboard();
 
@@ -240,8 +243,8 @@ class VisionMappingServiceTest {
         when(visionStepRepository.findById(20L)).thenReturn(Optional.of(step));
         when(taskItemRepository.findByUser_Id(1L)).thenReturn(List.of());
         when(taskItemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of());
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of());
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of());
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of());
 
         TaskItemRequest request = new TaskItemRequest(20L, "Blocked task", null, "Owner", Priority.HIGH, null,
                 LocalDate.now().plusDays(5), WorkStatus.BLOCKED, BigDecimal.TEN, null, null, "Waiting on mentor", null);
@@ -259,7 +262,7 @@ class VisionMappingServiceTest {
         Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.IN_PROGRESS, BigDecimal.ZERO, false);
         VisionStep incompleteStep = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.ZERO, false, false);
         when(goalRepository.findById(10L)).thenReturn(Optional.of(goal));
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(incompleteStep));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(incompleteStep));
 
         assertThatThrownBy(() -> service.updateGoalStatus(10L, "COMPLETED", false))
                 .isInstanceOf(BusinessRuleException.class)
@@ -271,7 +274,7 @@ class VisionMappingServiceTest {
         Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.IN_PROGRESS, BigDecimal.ZERO, false);
         VisionStep incompleteStep = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.ZERO, false, false);
         when(goalRepository.findById(10L)).thenReturn(Optional.of(goal));
-        lenient().when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(incompleteStep));
+        lenient().when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(incompleteStep));
 
         service.updateGoalStatus(10L, "COMPLETED", true);
 
@@ -286,7 +289,7 @@ class VisionMappingServiceTest {
         Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.NOT_STARTED, BigDecimal.ZERO, false);
         VisionStep complexStep = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.ZERO, true, false);
         when(visionStepRepository.findById(20L)).thenReturn(Optional.of(complexStep));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of());
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.updateStepStatus(20L, "COMPLETED", false))
                 .isInstanceOf(BusinessRuleException.class)
@@ -299,8 +302,8 @@ class VisionMappingServiceTest {
         VisionStep complexStep = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.ZERO, true, false);
         TaskItem existingTask = task(30L, complexStep, WorkStatus.COMPLETED, BigDecimal.valueOf(100));
         when(visionStepRepository.findById(20L)).thenReturn(Optional.of(complexStep));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(existingTask));
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(complexStep));
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of(existingTask));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(complexStep));
 
         service.updateStepStatus(20L, "COMPLETED", false);
 
@@ -369,8 +372,8 @@ class VisionMappingServiceTest {
         when(visionStepRepository.findById(20L)).thenReturn(Optional.of(step));
         when(taskItemRepository.findByUser_Id(1L)).thenReturn(List.of());
         when(taskItemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of());
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of());
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of());
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of());
 
         TaskItemRequest request = new TaskItemRequest(20L, "Task", null, "Owner", Priority.HIGH, null,
                 LocalDate.now().plusDays(5), WorkStatus.COMPLETED, BigDecimal.valueOf(40), null, null, null, null);
@@ -389,11 +392,79 @@ class VisionMappingServiceTest {
         completedTask.setCompletedAt(java.time.Instant.now());
 
         when(taskItemRepository.findById(30L)).thenReturn(Optional.of(completedTask));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(completedTask));
-        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(step));
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of(completedTask));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(step));
 
         TaskItemResponse response = service.updateTaskStatus(30L, "IN_PROGRESS");
 
         assertThat(response.completedAt()).isNull();
+    }
+
+    // --- Delete / archive ---------------------------------------------------
+
+    @Test
+    void archivingGoalSetsArchivedFlagWithoutChangingStatusAndCascadesToChildren() {
+        Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50), false);
+        VisionStep step = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50), false, false);
+        TaskItem task = task(30L, step, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50));
+
+        when(goalRepository.findById(10L)).thenReturn(Optional.of(goal));
+        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(step));
+        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(task));
+
+        service.archiveGoal(10L);
+
+        assertThat(goal.isArchived()).isTrue();
+        assertThat(goal.getStatus()).isEqualTo(WorkStatus.IN_PROGRESS);
+        assertThat(step.isArchived()).isTrue();
+        assertThat(task.isArchived()).isTrue();
+    }
+
+    @Test
+    void archivingStepCascadesToTasksAndRecalculatesParentGoal() {
+        Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50), false);
+        VisionStep step = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50), false, false);
+        VisionStep otherStep = step(21L, goal, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(20), false, false);
+        TaskItem task = task(30L, step, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50));
+
+        when(visionStepRepository.findById(20L)).thenReturn(Optional.of(step));
+        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(task));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(otherStep));
+
+        service.archiveStep(20L);
+
+        assertThat(step.isArchived()).isTrue();
+        assertThat(task.isArchived()).isTrue();
+        assertThat(goal.getProgressPercent()).isEqualByComparingTo("20.00");
+    }
+
+    @Test
+    void archivingTaskExcludesItFromStepAndGoalProgressRecalculation() {
+        Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.IN_PROGRESS, BigDecimal.ZERO, false);
+        VisionStep step = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.ZERO, false, false);
+        TaskItem task1 = task(30L, step, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(40));
+        TaskItem task2 = task(31L, step, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(80));
+
+        when(taskItemRepository.findById(30L)).thenReturn(Optional.of(task1));
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of(task2));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(step));
+
+        service.archiveTask(30L);
+
+        assertThat(task1.isArchived()).isTrue();
+        assertThat(step.getProgressPercent()).isEqualByComparingTo("80.00");
+        assertThat(goal.getProgressPercent()).isEqualByComparingTo("80.00");
+    }
+
+    @Test
+    void archivingPartnerSetsArchivedFlagWithoutOverwritingStatus() {
+        Partner partner = Partner.builder().id(40L).user(testUser).code("P-001").name("Mentor")
+                .supportType(PartnerSupportType.MENTOR).status(PartnerStatus.ACTIVE).build();
+        when(partnerRepository.findById(40L)).thenReturn(Optional.of(partner));
+
+        service.archivePartner(40L);
+
+        assertThat(partner.isArchived()).isTrue();
+        assertThat(partner.getStatus()).isEqualTo(PartnerStatus.ACTIVE);
     }
 }

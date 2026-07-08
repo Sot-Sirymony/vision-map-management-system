@@ -3,10 +3,18 @@ import { Link } from 'react-router-dom';
 import { listGoals } from '../api/goalApi';
 import { archiveStep, createStep, listSteps, updateStep } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
@@ -21,7 +29,6 @@ import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { Goal, Priority, TaskItem, VisionStep, VisionStepRequest, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
-import { priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function StepsPage() {
@@ -129,14 +136,11 @@ export function StepsPage() {
     <>
       <label>
         Goal
-        <Select value={goalId} onValueChange={(value) => setGoalId(value ?? '')} required>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => goals.find((goal) => String(goal.id) === value)?.title}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small" required>
+          <Select value={goalId} onChange={(event) => setGoalId(event.target.value)}>
+            {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Title
@@ -152,33 +156,27 @@ export function StepsPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="LOW">Low</SelectItem>
-            <SelectItem value="MEDIUM">Medium</SelectItem>
-            <SelectItem value="HIGH">High</SelectItem>
-            <SelectItem value="CRITICAL">Critical</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+            <MenuItem value="LOW">Low</MenuItem>
+            <MenuItem value="MEDIUM">Medium</MenuItem>
+            <MenuItem value="HIGH">High</MenuItem>
+            <MenuItem value="CRITICAL">Critical</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Status
-        <Select value={status} onValueChange={(value) => setStatus(value as WorkStatus)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: WorkStatus) => workStatusLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="NOT_STARTED">Not Started</SelectItem>
-            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-            <SelectItem value="WAITING">Waiting</SelectItem>
-            <SelectItem value="BLOCKED">Blocked</SelectItem>
-            <SelectItem value="PAUSED">Paused</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
+            <MenuItem value="NOT_STARTED">Not Started</MenuItem>
+            <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+            <MenuItem value="WAITING">Waiting</MenuItem>
+            <MenuItem value="BLOCKED">Blocked</MenuItem>
+            <MenuItem value="PAUSED">Paused</MenuItem>
+            <MenuItem value="COMPLETED">Completed</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label className="field-full">
         <span className="inline-meta">
@@ -211,47 +209,38 @@ export function StepsPage() {
       <Card className="filter-bar flex-row">
         <label>
           Goal
-          <Select value={filterGoalId} onValueChange={(value) => setFilterGoalId(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue>{(value: string) => (value ? goals.find((goal) => String(goal.id) === value)?.title : 'All')}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterGoalId} onChange={(event) => setFilterGoalId(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
+            </Select>
+          </FormControl>
         </label>
         <label>
           Status
-          <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue>{(value: string) => (value ? workStatusLabels[value as WorkStatus] : 'All')}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              <SelectItem value="NOT_STARTED">Not Started</SelectItem>
-              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-              <SelectItem value="WAITING">Waiting</SelectItem>
-              <SelectItem value="BLOCKED">Blocked</SelectItem>
-              <SelectItem value="PAUSED">Paused</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="NOT_STARTED">Not Started</MenuItem>
+              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+              <MenuItem value="WAITING">Waiting</MenuItem>
+              <MenuItem value="BLOCKED">Blocked</MenuItem>
+              <MenuItem value="PAUSED">Paused</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
+            </Select>
+          </FormControl>
         </label>
         <label>
           Priority
-          <Select value={filterPriority} onValueChange={(value) => setFilterPriority(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue>{(value: string) => (value ? priorityLabels[value as Priority] : 'All')}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              <SelectItem value="LOW">Low</SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="HIGH">High</SelectItem>
-              <SelectItem value="CRITICAL">Critical</SelectItem>
-            </SelectContent>
-          </Select>
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterPriority} onChange={(event) => setFilterPriority(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="LOW">Low</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="HIGH">High</MenuItem>
+              <MenuItem value="CRITICAL">Critical</MenuItem>
+            </Select>
+          </FormControl>
         </label>
         <label className="checkbox-field">
           <Checkbox checked={filterOverdueOnly} onCheckedChange={(checked) => setFilterOverdueOnly(checked)} />
@@ -263,19 +252,20 @@ export function StepsPage() {
         {filteredSteps.length === 0 ? (
           <EmptyState>No steps match these filters.</EmptyState>
         ) : (
+          <TableContainer>
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Step</TableHead>
-                <TableHead>Seq</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Tasks</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell>Code</TableCell>
+                <TableCell>Step</TableCell>
+                <TableCell>Seq</TableCell>
+                <TableCell>Priority</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Progress</TableCell>
+                <TableCell>Tasks</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {filteredSteps.map((step) => {
                 const taskCount = tasks.filter((task) => task.stepId === step.id).length;
@@ -283,7 +273,7 @@ export function StepsPage() {
                 return (
                   <TableRow key={step.id} className={isOverdue(step.targetDate, step.status) ? 'row-overdue' : ''}>
                     <TableCell>{step.code}</TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell sx={{ fontWeight: 500 }}>
                       {step.title}
                       {needsTasks && (
                         <div className="coaching-panel step-needs-tasks">
@@ -307,6 +297,7 @@ export function StepsPage() {
               })}
             </TableBody>
           </Table>
+          </TableContainer>
         )}
         </CardContent>
       </Card>

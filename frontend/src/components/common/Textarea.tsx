@@ -1,6 +1,15 @@
-import type { TextareaHTMLAttributes } from 'react';
-import { Textarea as ShadcnTextarea } from '@/components/ui/textarea';
+import type { ChangeEventHandler } from 'react';
+import TextField from '@mui/material/TextField';
 
-export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <ShadcnTextarea {...props} />;
+type TextareaProps = {
+  value?: string;
+  onChange?: ChangeEventHandler<HTMLTextAreaElement>;
+  required?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  name?: string;
+};
+
+export function Textarea(props: TextareaProps) {
+  return <TextField variant="outlined" size="small" fullWidth multiline minRows={3} {...props} />;
 }

@@ -87,4 +87,7 @@ public class Partner extends BaseAuditableEntity {
 
     @Column(length = 3000)
     private String notes;
+
+    @Column(nullable = false)
+    private boolean archived;
 }

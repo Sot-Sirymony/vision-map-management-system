@@ -1,6 +1,8 @@
 import { ChangeEvent, useState } from 'react';
 import { exportExcelWorkbook, importExcelWorkbook } from '../api/excelApi';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
 import { Button } from '../components/common/Button';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Loading } from '../components/common/Loading';
@@ -58,9 +60,7 @@ export function ImportExportPage() {
       {error && <ErrorMessage message={error} />}
       <div className="two-column">
         <Card>
-          <CardHeader>
-            <CardTitle>Import Excel</CardTitle>
-          </CardHeader>
+          <CardHeader title="Import Excel" />
           <CardContent>
             <label className="button button-secondary">
               Choose workbook
@@ -69,9 +69,7 @@ export function ImportExportPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Export Excel</CardTitle>
-          </CardHeader>
+          <CardHeader title="Export Excel" />
           <CardContent>
             <Button type="button" onClick={() => void handleExport()}>Export workbook</Button>
           </CardContent>
@@ -79,9 +77,7 @@ export function ImportExportPage() {
       </div>
       {summary && (
         <Card>
-          <CardHeader>
-            <CardTitle>Import Summary</CardTitle>
-          </CardHeader>
+          <CardHeader title="Import Summary" />
           <CardContent>
             <div className="metric-grid">
               <div className="metric-card">

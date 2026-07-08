@@ -4,9 +4,17 @@ import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listPartners } from '../api/partnerApi';
 import { listTasks } from '../api/taskApi';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
@@ -131,15 +139,12 @@ export function CommunicationBuilderPage() {
     <>
       <label>
         Partner
-        <Select value={partnerId} onValueChange={(value) => setPartnerId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? partners.find((partner) => String(partner.id) === value)?.name : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {partners.map((partner) => <SelectItem value={String(partner.id)} key={partner.id}>{partner.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={partnerId} onChange={(event) => setPartnerId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {partners.map((partner) => <MenuItem value={String(partner.id)} key={partner.id}>{partner.name}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Audience
@@ -147,39 +152,30 @@ export function CommunicationBuilderPage() {
       </label>
       <label>
         Dream
-        <Select value={relatedDreamId} onValueChange={(value) => setRelatedDreamId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? dreams.find((dream) => String(dream.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Goal
-        <Select value={relatedGoalId} onValueChange={(value) => setRelatedGoalId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? goals.find((goal) => String(goal.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Task
-        <Select value={relatedTaskId} onValueChange={(value) => setRelatedTaskId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? tasks.find((task) => String(task.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {tasks.map((task) => <SelectItem value={String(task.id)} key={task.id}>{task.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {tasks.map((task) => <MenuItem value={String(task.id)} key={task.id}>{task.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Follow Up
@@ -191,16 +187,13 @@ export function CommunicationBuilderPage() {
       </label>
       <label>
         Status
-        <Select value={status} onValueChange={(value) => setStatus(value as CommunicationStatus)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: CommunicationStatus) => communicationStatusLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
+        <FormControl fullWidth size="small">
+          <Select value={status} onChange={(event) => setStatus(event.target.value as CommunicationStatus)}>
             {(['DRAFT', 'SENT', 'FOLLOWED_UP', 'REPLIED', 'CLOSED'] as const).map((value) => (
-              <SelectItem value={value} key={value}>{communicationStatusLabels[value]}</SelectItem>
+              <MenuItem value={value} key={value}>{communicationStatusLabels[value]}</MenuItem>
             ))}
-          </SelectContent>
-        </Select>
+          </Select>
+        </FormControl>
       </label>
       <label className="field-full">
         Purpose
@@ -255,20 +248,21 @@ Best regards`);
         {crud.items.length === 0 ? (
           <EmptyState>No messages yet.</EmptyState>
         ) : (
+          <TableContainer>
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Subject</TableHead>
-                <TableHead>Audience</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Follow Up</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell>Subject</TableCell>
+                <TableCell>Audience</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Follow Up</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {crud.items.map((message) => (
                 <TableRow key={message.id}>
-                  <TableCell className="font-medium">{message.subject || '-'}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{message.subject || '-'}</TableCell>
                   <TableCell>{message.audience || '-'}</TableCell>
                   <TableCell><StatusBadge status={message.status} /></TableCell>
                   <TableCell>{message.followUpDate || '-'}</TableCell>
@@ -280,6 +274,7 @@ Best regards`);
               ))}
             </TableBody>
           </Table>
+          </TableContainer>
         )}
         {totalPages > 1 && (
           <div className="pagination">

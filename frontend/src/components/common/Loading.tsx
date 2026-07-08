@@ -1,11 +1,12 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import MuiSkeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
 
 export function Loading() {
   return (
-    <div className="grid gap-2" role="status" aria-label="Loading">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-4/5" />
-      <Skeleton className="h-4 w-3/5" />
-    </div>
+    <Stack spacing={1} role="status" aria-label="Loading">
+      <MuiSkeleton variant="text" height={16} width="100%" />
+      <MuiSkeleton variant="text" height={16} width="80%" />
+      <MuiSkeleton variant="text" height={16} width="60%" />
+    </Stack>
   );
 }

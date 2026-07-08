@@ -11,4 +11,6 @@ public interface PartnerRepository extends JpaRepository<Partner, Long> {
     List<Partner> findByUser_Id(Long userId);
 
     Page<Partner> findByUser_Id(Long userId, Pageable pageable);
+
+    Page<Partner> findByUser_IdAndArchivedFalse(Long userId, Pageable pageable);
 }

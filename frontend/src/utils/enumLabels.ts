@@ -19,6 +19,16 @@ export const priorityLabels: Record<Priority, string> = {
   CRITICAL: 'Critical',
 };
 
+// A sequential (not categorical) ramp — priority is ordinal, so color should read
+// as increasing urgency rather than four unrelated hues. Critical matches the
+// theme's --destructive red already used for high-priority badges.
+export const priorityColors: Record<Priority, string> = {
+  LOW: '#a3a3a3',
+  MEDIUM: '#d97706',
+  HIGH: '#ea580c',
+  CRITICAL: '#dc2626',
+};
+
 export const workStatusLabels: Record<WorkStatus, string> = {
   NOT_STARTED: 'Not Started',
   IN_PROGRESS: 'In Progress',
@@ -26,6 +36,17 @@ export const workStatusLabels: Record<WorkStatus, string> = {
   BLOCKED: 'Blocked',
   PAUSED: 'Paused',
   COMPLETED: 'Completed',
+};
+
+// Matches the semantic scheme already used for Excel export conditional formatting
+// (completed = green, blocked = orange) so the dashboard chart reads the same way.
+export const workStatusColors: Record<WorkStatus, string> = {
+  NOT_STARTED: '#a3a3a3',
+  IN_PROGRESS: '#2563eb',
+  WAITING: '#d97706',
+  BLOCKED: '#ea580c',
+  PAUSED: '#7c3aed',
+  COMPLETED: '#16a34a',
 };
 
 export const dreamStatusLabels: Record<DreamStatus, string> = {

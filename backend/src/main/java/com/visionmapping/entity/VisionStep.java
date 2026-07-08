@@ -73,4 +73,7 @@ public class VisionStep extends BaseAuditableEntity {
 
     @Column(name = "manual_progress_override", nullable = false)
     private boolean manualProgressOverride;
+
+    @Column(nullable = false)
+    private boolean archived;
 }

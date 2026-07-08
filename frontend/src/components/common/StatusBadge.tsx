@@ -1,5 +1,5 @@
-import { Badge } from '@/components/ui/badge';
+import Chip from '@mui/material/Chip';
 
 export function StatusBadge({ status }: { status: string }) {
-  return <Badge className={`badge status-${status.toLowerCase().replaceAll('_', '-')}`}>{status.replaceAll('_', ' ')}</Badge>;
+  return <Chip size="small" label={status.replaceAll('_', ' ')} />;
 }

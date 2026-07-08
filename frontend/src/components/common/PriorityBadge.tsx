@@ -1,5 +1,13 @@
-import { Badge } from '@/components/ui/badge';
+import Chip from '@mui/material/Chip';
+
+const HIGH_PRIORITY = new Set(['HIGH', 'CRITICAL']);
 
 export function PriorityBadge({ priority }: { priority: string }) {
-  return <Badge className={`badge priority-${priority.toLowerCase()}`}>{priority}</Badge>;
+  return (
+    <Chip
+      size="small"
+      label={priority}
+      color={HIGH_PRIORITY.has(priority.toUpperCase()) ? 'error' : 'default'}
+    />
+  );
 }

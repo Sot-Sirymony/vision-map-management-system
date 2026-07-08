@@ -18,6 +18,7 @@ public record DreamResponse(
         Priority priority,
         LocalDate targetDate,
         DreamStatus status,
+        boolean archived,
         Instant createdAt,
         Instant updatedAt
 ) {

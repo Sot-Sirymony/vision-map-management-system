@@ -55,6 +55,6 @@ public class GoalController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        service.updateGoalStatus(id, "PAUSED", true);
+        service.archiveGoal(id);
     }
 }

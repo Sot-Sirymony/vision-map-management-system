@@ -55,6 +55,6 @@ public class VisionStepController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        service.updateStepStatus(id, "PAUSED", true);
+        service.archiveStep(id);
     }
 }

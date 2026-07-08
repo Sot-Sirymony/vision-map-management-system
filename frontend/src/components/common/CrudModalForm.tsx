@@ -1,5 +1,6 @@
 import type { FormEvent, ReactNode } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 import { Button } from './Button';
 import { Modal } from './Modal';
 

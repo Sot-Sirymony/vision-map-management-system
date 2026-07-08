@@ -23,6 +23,7 @@ public record TaskItemResponse(
         String blockerReason,
         String nextAction,
         Instant completedAt,
+        boolean archived,
         Instant createdAt,
         Instant updatedAt
 ) {

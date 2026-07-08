@@ -18,6 +18,7 @@ export type VisionArea = {
   description?: string;
   priority: Priority;
   status: LifecycleStatus;
+  archived: boolean;
 };
 
 export type VisionAreaRequest = {
@@ -39,6 +40,7 @@ export type Dream = {
   priority: Priority;
   targetDate?: string;
   status: DreamStatus;
+  archived: boolean;
 };
 
 export type DreamRequest = {
@@ -64,6 +66,7 @@ export type Goal = {
   targetDate?: string;
   status: WorkStatus;
   progressPercent: number;
+  archived: boolean;
 };
 
 export type GoalRequest = {
@@ -88,6 +91,7 @@ export type VisionStep = {
   targetDate?: string;
   status: WorkStatus;
   progressPercent: number;
+  archived: boolean;
 };
 
 export type VisionStepRequest = {
@@ -117,6 +121,7 @@ export type TaskItem = {
   actualHours?: number;
   blockerReason?: string;
   nextAction?: string;
+  archived: boolean;
 };
 
 export type TaskItemRequest = {
@@ -152,6 +157,7 @@ export type Partner = {
   relatedTaskId?: number;
   status: PartnerStatus;
   notes?: string;
+  archived: boolean;
 };
 
 export type PartnerRequest = {
@@ -188,9 +194,10 @@ export type CommunicationMessage = {
   messageBody?: string;
   status: CommunicationStatus;
   followUpDate?: string;
+  archived: boolean;
 };
 
-export type CommunicationMessageRequest = Omit<CommunicationMessage, 'id'>;
+export type CommunicationMessageRequest = Omit<CommunicationMessage, 'id' | 'archived'>;
 
 export type Review = {
   id: number;
@@ -222,9 +229,20 @@ export type Obstacle = {
   solution?: string;
   requiredPartnerId?: number;
   status: ObstacleStatus;
+  archived: boolean;
 };
 
-export type ObstacleRequest = Omit<Obstacle, 'id'>;
+export type ObstacleRequest = Omit<Obstacle, 'id' | 'archived'>;
+
+export type ProgressLog = {
+  id: number;
+  relatedTaskId: number;
+  progressPercentBefore: number;
+  progressPercentAfter: number;
+  note?: string;
+  loggedAt: string;
+  archived: boolean;
+};
 
 export type ExcelImportSummary = {
   createdRecords: number;

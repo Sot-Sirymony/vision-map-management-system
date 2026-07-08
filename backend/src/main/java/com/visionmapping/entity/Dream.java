@@ -71,4 +71,7 @@ public class Dream extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
     private DreamStatus status;
+
+    @Column(nullable = false)
+    private boolean archived;
 }

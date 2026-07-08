@@ -558,30 +558,6 @@ a {
   background: #dbeafe;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  border-radius: 999px;
-  padding: 0 10px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: #e2e8f0;
-}
-
-.priority-high,
-.priority-critical {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.progress {
-  height: 8px;
-  border-radius: 999px;
-  background: #e2e8f0;
-  overflow: hidden;
-}
-
 .auth-shell {
   min-height: 100vh;
   display: grid;
@@ -597,18 +573,6 @@ a {
 
 .auth-link {
   color: #64748b;
-}
-
-.error-message {
-  margin: 0;
-  color: #b91c1c;
-}
-
-.modal {
-  width: min(560px, 100%);
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 18px;
 }
 
 @media (max-width: 960px) {

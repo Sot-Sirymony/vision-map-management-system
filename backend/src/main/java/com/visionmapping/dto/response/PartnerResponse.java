@@ -21,6 +21,7 @@ public record PartnerResponse(
         Long relatedTaskId,
         PartnerStatus status,
         String notes,
+        boolean archived,
         Instant createdAt,
         Instant updatedAt
 ) {

@@ -19,6 +19,7 @@ public record VisionStepResponse(
         WorkStatus status,
         BigDecimal progressPercent,
         boolean manualProgressOverride,
+        boolean archived,
         Instant createdAt,
         Instant updatedAt
 ) {

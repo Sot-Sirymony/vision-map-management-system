@@ -21,6 +21,7 @@ public record CommunicationMessageResponse(
         String messageBody,
         CommunicationStatus status,
         LocalDate followUpDate,
+        boolean archived,
         Instant createdAt,
         Instant updatedAt
 ) {

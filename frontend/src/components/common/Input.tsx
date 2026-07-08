@@ -1,6 +1,16 @@
 import type { InputHTMLAttributes } from 'react';
-import { Input as ShadcnInput } from '@/components/ui/input';
+import TextField from '@mui/material/TextField';
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <ShadcnInput {...props} />;
+type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'color'>;
+
+export function Input({ min, max, minLength, maxLength, step, pattern, ...props }: InputProps) {
+  return (
+    <TextField
+      variant="outlined"
+      size="small"
+      fullWidth
+      slotProps={{ htmlInput: { min, max, minLength, maxLength, step, pattern } }}
+      {...props}
+    />
+  );
 }

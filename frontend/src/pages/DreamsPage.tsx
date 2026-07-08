@@ -2,10 +2,18 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { archiveDream, createDream, listDreams, updateDream } from '../api/dreamApi';
 import { listVisionAreas } from '../api/visionAreaApi';
-import { buttonVariants } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import MuiButton from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
@@ -18,7 +26,6 @@ import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { Dream, DreamRequest, DreamStatus, DreamType, Priority, VisionArea } from '../types/vision';
-import { dreamStatusLabels, dreamTypeLabels, priorityLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function DreamsPage() {
@@ -116,16 +123,12 @@ export function DreamsPage() {
     <>
       <label>
         Vision Area
-        <Select value={visionAreaId} onValueChange={(value) => setVisionAreaId(value ?? '')} required>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a vision area">
-              {(value: string) => visionAreas.find((area) => String(area.id) === value)?.name}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {visionAreas.map((area) => <SelectItem value={String(area.id)} key={area.id}>{area.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small" required>
+          <Select displayEmpty value={visionAreaId} onChange={(event) => setVisionAreaId(event.target.value)}>
+            <MenuItem value="" disabled><em>Select a vision area</em></MenuItem>
+            {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Title
@@ -133,16 +136,13 @@ export function DreamsPage() {
       </label>
       <label>
         Type
-        <Select value={dreamType} onValueChange={(value) => setDreamType(value as DreamType)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: DreamType) => dreamTypeLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="SHORT_TERM">Short Term</SelectItem>
-            <SelectItem value="LONG_TERM">Long Term</SelectItem>
-            <SelectItem value="LIFETIME">Lifetime</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={dreamType} onChange={(event) => setDreamType(event.target.value as DreamType)}>
+            <MenuItem value="SHORT_TERM">Short Term</MenuItem>
+            <MenuItem value="LONG_TERM">Long Term</MenuItem>
+            <MenuItem value="LIFETIME">Lifetime</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Target Date
@@ -150,31 +150,25 @@ export function DreamsPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="LOW">Low</SelectItem>
-            <SelectItem value="MEDIUM">Medium</SelectItem>
-            <SelectItem value="HIGH">High</SelectItem>
-            <SelectItem value="CRITICAL">Critical</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+            <MenuItem value="LOW">Low</MenuItem>
+            <MenuItem value="MEDIUM">Medium</MenuItem>
+            <MenuItem value="HIGH">High</MenuItem>
+            <MenuItem value="CRITICAL">Critical</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Status
-        <Select value={status} onValueChange={(value) => setStatus(value as DreamStatus)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: DreamStatus) => dreamStatusLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="IDEA">Idea</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="PAUSED">Paused</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={status} onChange={(event) => setStatus(event.target.value as DreamStatus)}>
+            <MenuItem value="IDEA">Idea</MenuItem>
+            <MenuItem value="ACTIVE">Active</MenuItem>
+            <MenuItem value="PAUSED">Paused</MenuItem>
+            <MenuItem value="COMPLETED">Completed</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       {isVague && (
         <div className="field-full coaching-panel">
@@ -224,27 +218,28 @@ export function DreamsPage() {
         {crud.items.length === 0 ? (
           <EmptyState>No dreams yet.</EmptyState>
         ) : (
+          <TableContainer>
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Dream</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell>Code</TableCell>
+                <TableCell>Dream</TableCell>
+                <TableCell>Priority</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Target</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {crud.items.map((dream) => (
                 <TableRow key={dream.id}>
                   <TableCell>{dream.code}</TableCell>
-                  <TableCell className="font-medium">{dream.title}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{dream.title}</TableCell>
                   <TableCell><PriorityBadge priority={dream.priority} /></TableCell>
                   <TableCell><StatusBadge status={dream.status} /></TableCell>
                   <TableCell>{dream.targetDate ?? '-'}</TableCell>
                   <TableCell className="row-actions">
-                    <Link className={buttonVariants({ variant: 'secondary' })} to={`/dreams/${dream.id}`}>View Map</Link>
+                    <MuiButton component={Link} to={`/dreams/${dream.id}`} variant="contained" color="secondary" size="small" disableElevation>View Map</MuiButton>
                     <Button type="button" variant="secondary" onClick={() => startEdit(dream)}>Edit</Button>
                     <Button type="button" variant="secondary" onClick={() => void crud.archive(dream.id)}>Archive</Button>
                   </TableCell>
@@ -252,6 +247,7 @@ export function DreamsPage() {
               ))}
             </TableBody>
           </Table>
+          </TableContainer>
         )}
         </CardContent>
       </Card>

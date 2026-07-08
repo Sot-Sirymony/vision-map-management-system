@@ -1,9 +1,5 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import MuiAlert from '@mui/material/Alert';
 
 export function ErrorMessage({ message }: { message: string }) {
-  return (
-    <Alert variant="destructive" className="error-message">
-      <AlertDescription>{message}</AlertDescription>
-    </Alert>
-  );
+  return <MuiAlert severity="error">{message}</MuiAlert>;
 }

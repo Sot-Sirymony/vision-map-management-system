@@ -8,5 +8,7 @@ public interface ProgressLogRepository extends JpaRepository<ProgressLog, Long> 
 
     List<ProgressLog> findByUser_Id(Long userId);
 
+    List<ProgressLog> findByUser_IdAndArchivedFalse(Long userId);
+
     List<ProgressLog> findByRelatedTask_IdAndUser_Id(Long taskId, Long userId);
 }

@@ -21,7 +21,7 @@ export function updateObstacle(token: string, id: number, request: ObstacleReque
   });
 }
 
-export function acceptObstacle(token: string, id: number) {
+export function archiveObstacle(token: string, id: number) {
   return apiClient<void>(`/obstacles/${id}`, {
     method: 'DELETE',
     token,

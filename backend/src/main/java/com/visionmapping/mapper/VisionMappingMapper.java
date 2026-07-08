@@ -27,19 +27,20 @@ public class VisionMappingMapper {
 
     public VisionAreaResponse toResponse(VisionArea entity) {
         return new VisionAreaResponse(entity.getId(), entity.getCode(), entity.getName(), entity.getDescription(),
-                entity.getPriority(), entity.getStatus(), entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getPriority(), entity.getStatus(), entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public DreamResponse toResponse(Dream entity) {
         return new DreamResponse(entity.getId(), entity.getCode(), entity.getVisionArea().getId(), entity.getTitle(),
                 entity.getDescription(), entity.getWhyImportant(), entity.getSuccessDefinition(), entity.getDreamType(),
-                entity.getPriority(), entity.getTargetDate(), entity.getStatus(), entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getPriority(), entity.getTargetDate(), entity.getStatus(), entity.isArchived(), entity.getCreatedAt(),
+                entity.getUpdatedAt());
     }
 
     public GoalResponse toResponse(Goal entity) {
         return new GoalResponse(entity.getId(), entity.getCode(), entity.getDream().getId(), entity.getTitle(),
                 entity.getDescription(), entity.getSuccessCriteria(), entity.getPriority(), entity.getTargetDate(),
-                entity.getStatus(), entity.getProgressPercent(), entity.isManualProgressOverride(),
+                entity.getStatus(), entity.getProgressPercent(), entity.isManualProgressOverride(), entity.isArchived(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
@@ -47,15 +48,15 @@ public class VisionMappingMapper {
         return new VisionStepResponse(entity.getId(), entity.getCode(), entity.getGoal().getId(), entity.getTitle(),
                 entity.getDescription(), entity.getSequenceNumber(), entity.isComplex(), entity.getPriority(),
                 entity.getTargetDate(), entity.getStatus(), entity.getProgressPercent(), entity.isManualProgressOverride(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public TaskItemResponse toResponse(TaskItem entity) {
         return new TaskItemResponse(entity.getId(), entity.getCode(), entity.getStep().getId(), entity.getTitle(),
                 entity.getDescription(), entity.getOwner(), entity.getPriority(), entity.getStartDate(), entity.getDueDate(),
                 entity.getStatus(), entity.getProgressPercent(), entity.getEstimatedHours(), entity.getActualHours(),
-                entity.getBlockerReason(), entity.getNextAction(), entity.getCompletedAt(), entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getBlockerReason(), entity.getNextAction(), entity.getCompletedAt(), entity.isArchived(),
+                entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public PartnerResponse toResponse(Partner entity) {
@@ -63,7 +64,7 @@ public class VisionMappingMapper {
                 entity.getOrganization(), entity.getEmail(), entity.getPhone(), entity.getStrength(), entity.getSupportType(),
                 id(entity.getRelatedVisionArea()), id(entity.getRelatedDream()), id(entity.getRelatedGoal()),
                 id(entity.getRelatedStep()), id(entity.getRelatedTask()), entity.getStatus(), entity.getNotes(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public CommunicationMessageResponse toResponse(CommunicationMessage entity) {
@@ -71,7 +72,7 @@ public class VisionMappingMapper {
                 id(entity.getRelatedGoal()), id(entity.getRelatedTask()), entity.getAudience(), entity.getPurpose(),
                 entity.getSubject(), entity.getHook(), entity.getProblem(), entity.getRequest(),
                 entity.getBenefitToPartner(), entity.getExpectedOutcome(), entity.getMessageBody(), entity.getStatus(),
-                entity.getFollowUpDate(), entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getFollowUpDate(), entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public ReviewResponse toResponse(Review entity) {
@@ -85,7 +86,7 @@ public class VisionMappingMapper {
         return new ObstacleResponse(entity.getId(), id(entity.getRelatedDream()), id(entity.getRelatedGoal()),
                 id(entity.getRelatedStep()), id(entity.getRelatedTask()), entity.getTitle(), entity.getDescription(),
                 entity.getObstacleType(), entity.getSeverity(), entity.getSolution(), id(entity.getRequiredPartner()),
-                entity.getStatus(), entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getStatus(), entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public ProgressLogResponse toResponse(ProgressLog entity) {

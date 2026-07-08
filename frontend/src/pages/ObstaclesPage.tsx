@@ -1,13 +1,21 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
-import { acceptObstacle, createObstacle, listObstacles, updateObstacle } from '../api/obstacleApi';
+import { archiveObstacle, createObstacle, listObstacles, updateObstacle } from '../api/obstacleApi';
 import { listPartners } from '../api/partnerApi';
 import { listSteps } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
@@ -35,8 +43,8 @@ export function ObstaclesPage() {
     list: listObstacles,
     create: createObstacle,
     update: updateObstacle,
-    archive: acceptObstacle,
-    archiveMessage: 'Accepted.',
+    archive: archiveObstacle,
+    archiveMessage: 'Archived.',
   });
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -134,97 +142,73 @@ export function ObstaclesPage() {
       </label>
       <label>
         Type
-        <Select value={obstacleType} onValueChange={(value) => setObstacleType(value as ObstacleType)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: ObstacleType) => obstacleTypeLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {obstacleTypes.map((value) => <SelectItem value={value} key={value}>{obstacleTypeLabels[value]}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={obstacleType} onChange={(event) => setObstacleType(event.target.value as ObstacleType)}>
+            {obstacleTypes.map((value) => <MenuItem value={value} key={value}>{obstacleTypeLabels[value]}</MenuItem>)}
+          </Select>
+        </FormControl>
         {partnerSuggestion && <span className="field-hint">Suggested support: {partnerSuggestion.label}</span>}
       </label>
       <label>
         Severity
-        <Select value={severity} onValueChange={(value) => setSeverity(value as Severity)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: Severity) => priorityLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {severities.map((value) => <SelectItem value={value} key={value}>{priorityLabels[value]}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={severity} onChange={(event) => setSeverity(event.target.value as Severity)}>
+            {severities.map((value) => <MenuItem value={value} key={value}>{priorityLabels[value]}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Status
-        <Select value={status} onValueChange={(value) => setStatus(value as ObstacleStatus)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: ObstacleStatus) => obstacleStatusLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {statuses.map((value) => <SelectItem value={value} key={value}>{obstacleStatusLabels[value]}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={status} onChange={(event) => setStatus(event.target.value as ObstacleStatus)}>
+            {statuses.map((value) => <MenuItem value={value} key={value}>{obstacleStatusLabels[value]}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Dream
-        <Select value={relatedDreamId} onValueChange={(value) => setRelatedDreamId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? dreams.find((dream) => String(dream.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {dreams.map((dream) => <SelectItem value={String(dream.id)} key={dream.id}>{dream.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Goal
-        <Select value={relatedGoalId} onValueChange={(value) => setRelatedGoalId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? goals.find((goal) => String(goal.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {goals.map((goal) => <SelectItem value={String(goal.id)} key={goal.id}>{goal.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Step
-        <Select value={relatedStepId} onValueChange={(value) => setRelatedStepId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? steps.find((step) => String(step.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {steps.map((step) => <SelectItem value={String(step.id)} key={step.id}>{step.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedStepId} onChange={(event) => setRelatedStepId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {steps.map((step) => <MenuItem value={String(step.id)} key={step.id}>{step.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Task
-        <Select value={relatedTaskId} onValueChange={(value) => setRelatedTaskId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? tasks.find((task) => String(task.id) === value)?.title : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {tasks.map((task) => <SelectItem value={String(task.id)} key={task.id}>{task.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {tasks.map((task) => <MenuItem value={String(task.id)} key={task.id}>{task.title}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label>
         Required Partner
-        <Select value={requiredPartnerId} onValueChange={(value) => setRequiredPartnerId(value ?? '')}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: string) => (value ? partners.find((partner) => String(partner.id) === value)?.name : 'None')}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {partners.map((partner) => <SelectItem value={String(partner.id)} key={partner.id}>{partner.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={requiredPartnerId} onChange={(event) => setRequiredPartnerId(event.target.value)}>
+            <MenuItem value="">None</MenuItem>
+            {partners.map((partner) => <MenuItem value={String(partner.id)} key={partner.id}>{partner.name}</MenuItem>)}
+          </Select>
+        </FormControl>
       </label>
       <label className="field-full">
         Description
@@ -256,24 +240,25 @@ export function ObstaclesPage() {
         {crud.items.length === 0 ? (
           <EmptyState>No obstacles yet.</EmptyState>
         ) : (
+          <TableContainer>
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Suggested Partner</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Solution</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell>Title</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Suggested Partner</TableCell>
+                <TableCell>Severity</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Solution</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {crud.items.map((obstacle) => {
                 const suggestion = suggestPartnerFor(obstacle.obstacleType);
                 return (
                   <TableRow key={obstacle.id}>
-                    <TableCell className="font-medium">{obstacle.title}</TableCell>
+                    <TableCell sx={{ fontWeight: 500 }}>{obstacle.title}</TableCell>
                     <TableCell>{obstacleTypeLabels[obstacle.obstacleType]}</TableCell>
                     <TableCell>{suggestion ? suggestion.label : '-'}</TableCell>
                     <TableCell><StatusBadge status={obstacle.severity} /></TableCell>
@@ -281,13 +266,14 @@ export function ObstaclesPage() {
                     <TableCell>{obstacle.solution || '-'}</TableCell>
                     <TableCell className="row-actions">
                       <Button type="button" variant="secondary" onClick={() => startEdit(obstacle)}>Edit</Button>
-                      <Button type="button" variant="secondary" onClick={() => void crud.archive(obstacle.id)}>Accept</Button>
+                      <Button type="button" variant="secondary" onClick={() => void crud.archive(obstacle.id)}>Archive</Button>
                     </TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
           </Table>
+          </TableContainer>
         )}
         </CardContent>
       </Card>

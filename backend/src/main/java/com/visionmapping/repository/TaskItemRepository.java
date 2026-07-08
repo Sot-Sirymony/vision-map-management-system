@@ -8,5 +8,9 @@ public interface TaskItemRepository extends JpaRepository<TaskItem, Long> {
 
     List<TaskItem> findByUser_Id(Long userId);
 
+    List<TaskItem> findByUser_IdAndArchivedFalse(Long userId);
+
     List<TaskItem> findByStep_IdAndUser_Id(Long stepId, Long userId);
+
+    List<TaskItem> findByStep_IdAndUser_IdAndArchivedFalse(Long stepId, Long userId);
 }

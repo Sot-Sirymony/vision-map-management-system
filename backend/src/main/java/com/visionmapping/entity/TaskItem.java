@@ -86,4 +86,7 @@ public class TaskItem extends BaseAuditableEntity {
 
     @Column(name = "completed_at")
     private Instant completedAt;
+
+    @Column(nullable = false)
+    private boolean archived;
 }

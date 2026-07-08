@@ -187,3 +187,6 @@ https://claude.ai/code/artifact/199cd8cd-8af3-4bd9-b68f-9c2d414def2f?via=auto_pr
 
 ** Fixing
 DATA-1
+
+
+TRUNCATE TABLE flyway_schema_history  RESTART IDENTITY CASCADE;

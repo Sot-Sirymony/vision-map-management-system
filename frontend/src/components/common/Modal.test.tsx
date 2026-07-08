@@ -24,7 +24,7 @@ describe('Modal', () => {
       </Modal>,
     );
 
-    await user.click(document.querySelector('[data-slot="dialog-overlay"]')!);
+    await user.click(document.querySelector('.MuiBackdrop-root')!);
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

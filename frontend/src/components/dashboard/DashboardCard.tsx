@@ -1,4 +1,8 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import type { LucideIcon } from 'lucide-react';
 
 type DashboardCardProps = {
@@ -10,11 +14,15 @@ type DashboardCardProps = {
 export function DashboardCard({ label, value, icon: Icon }: DashboardCardProps) {
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardDescription>{label}</CardDescription>
-        <Icon className="size-4 text-muted-foreground" />
-      </CardHeader>
-      <CardTitle className="px-(--card-spacing) text-2xl font-semibold">{value}</CardTitle>
+      <CardContent>
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="body2" color="text.secondary">{label}</Typography>
+          <Box sx={{ color: 'text.secondary', display: 'flex' }}>
+            <Icon size={16} />
+          </Box>
+        </Stack>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>{value}</Typography>
+      </CardContent>
     </Card>
   );
 }

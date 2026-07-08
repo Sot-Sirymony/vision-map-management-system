@@ -1,8 +1,16 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { archiveVisionArea, createVisionArea, listVisionAreas, updateVisionArea } from '../api/visionAreaApi';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
@@ -15,7 +23,6 @@ import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { LifecycleStatus, Priority, VisionArea, VisionAreaRequest } from '../types/vision';
-import { lifecycleStatusLabels, priorityLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function VisionAreasPage() {
@@ -71,31 +78,25 @@ export function VisionAreasPage() {
       </label>
       <label>
         Priority
-        <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: Priority) => priorityLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="LOW">Low</SelectItem>
-            <SelectItem value="MEDIUM">Medium</SelectItem>
-            <SelectItem value="HIGH">High</SelectItem>
-            <SelectItem value="CRITICAL">Critical</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+            <MenuItem value="LOW">Low</MenuItem>
+            <MenuItem value="MEDIUM">Medium</MenuItem>
+            <MenuItem value="HIGH">High</MenuItem>
+            <MenuItem value="CRITICAL">Critical</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label>
         Status
-        <Select value={status} onValueChange={(value) => setStatus(value as LifecycleStatus)}>
-          <SelectTrigger className="w-full">
-            <SelectValue>{(value: LifecycleStatus) => lifecycleStatusLabels[value]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="PAUSED">Paused</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-            <SelectItem value="ARCHIVED">Archived</SelectItem>
-          </SelectContent>
-        </Select>
+        <FormControl fullWidth size="small">
+          <Select value={status} onChange={(event) => setStatus(event.target.value as LifecycleStatus)}>
+            <MenuItem value="ACTIVE">Active</MenuItem>
+            <MenuItem value="PAUSED">Paused</MenuItem>
+            <MenuItem value="COMPLETED">Completed</MenuItem>
+            <MenuItem value="ARCHIVED">Archived</MenuItem>
+          </Select>
+        </FormControl>
       </label>
       <label className="field-full">
         Description
@@ -123,21 +124,22 @@ export function VisionAreasPage() {
         {crud.items.length === 0 ? (
           <EmptyState>No vision areas yet.</EmptyState>
         ) : (
+          <TableContainer>
           <Table>
-            <TableHeader>
+            <TableHead>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell>Code</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Priority</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            </TableHeader>
+            </TableHead>
             <TableBody>
               {crud.items.map((area) => (
                 <TableRow key={area.id}>
                   <TableCell>{area.code}</TableCell>
-                  <TableCell className="font-medium">{area.name}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{area.name}</TableCell>
                   <TableCell><PriorityBadge priority={area.priority} /></TableCell>
                   <TableCell><StatusBadge status={area.status} /></TableCell>
                   <TableCell className="row-actions">
@@ -148,6 +150,7 @@ export function VisionAreasPage() {
               ))}
             </TableBody>
           </Table>
+          </TableContainer>
         )}
         </CardContent>
       </Card>

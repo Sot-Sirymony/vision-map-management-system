@@ -18,6 +18,7 @@ public record ObstacleResponse(
         String solution,
         Long requiredPartnerId,
         ObstacleStatus status,
+        boolean archived,
         Instant createdAt,
         Instant updatedAt
 ) {
