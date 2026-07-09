@@ -297,6 +297,12 @@ a {
   border-radius: 8px;
   background: #ffffff;
   cursor: grab;
+  min-width: 0;
+}
+
+.list-card strong,
+.list-card p {
+  overflow-wrap: anywhere;
 }
 
 .list-card p {
@@ -403,6 +409,7 @@ a {
 .kanban-column {
   padding: 14px;
   min-height: 220px;
+  min-width: 0;
   border-radius: 8px;
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
