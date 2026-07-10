@@ -81,6 +81,7 @@ export function ReviewsPage() {
       setLessonsLearned('');
       setNextActions('');
     }
+    return success;
   }
 
   function startEdit(review: Review) {

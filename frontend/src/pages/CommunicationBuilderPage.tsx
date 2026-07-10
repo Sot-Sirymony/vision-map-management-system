@@ -101,6 +101,7 @@ export function CommunicationBuilderPage() {
       setExpectedOutcome('');
       setMessageBody('');
     }
+    return success;
   }
 
   function startEdit(message: CommunicationMessage) {

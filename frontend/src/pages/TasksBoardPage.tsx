@@ -1,12 +1,17 @@
-import { DragEvent, FormEvent, useEffect, useState } from 'react';
+import { DragEvent, FormEvent, type MouseEvent, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { MoreVertical } from 'lucide-react';
+import { listDreams } from '../api/dreamApi';
+import { listGoals } from '../api/goalApi';
 import { listSteps } from '../api/stepApi';
 import { archiveTask, createTask, listTasks, updateTask, updateTaskStatus } from '../api/taskApi';
+import { Checkbox } from '@/components/ui/checkbox';
 import Card from '@mui/material/Card';
 import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
@@ -17,11 +22,36 @@ import { ProgressBar } from '../components/common/ProgressBar';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
-import type { ObstacleType, Priority, TaskItem, TaskItemRequest, VisionStep, WorkStatus } from '../types/vision';
+import type { Dream, Goal, ObstacleType, Priority, TaskItem, TaskItemRequest, VisionStep, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
 import { obstacleTypeLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
+
+function TaskCardMenu({ onEdit, onArchive }: { onEdit: () => void; onArchive: () => void }) {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+  function handleOpen(event: MouseEvent<HTMLElement>) {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  }
+
+  function handleClose() {
+    setAnchorEl(null);
+  }
+
+  return (
+    <>
+      <IconButton size="small" onClick={handleOpen} aria-label="Task actions">
+        <MoreVertical size={16} />
+      </IconButton>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+        <MenuItem onClick={() => { handleClose(); onEdit(); }}>Edit</MenuItem>
+        <MenuItem onClick={() => { handleClose(); onArchive(); }}>Archive</MenuItem>
+      </Menu>
+    </>
+  );
+}
 
 const columns: WorkStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'PAUSED'];
 const blockerCategories: ObstacleType[] = ['KNOWLEDGE', 'SKILL', 'TIME', 'MONEY', 'DECISION', 'PARTNER', 'MOTIVATION'];
@@ -39,6 +69,8 @@ export function TasksBoardPage() {
     archive: archiveTask,
   });
   const [steps, setSteps] = useState<VisionStep[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [dreams, setDreams] = useState<Dream[]>([]);
   const [stepId, setStepId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -53,6 +85,11 @@ export function TasksBoardPage() {
   const [nextAction, setNextAction] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<WorkStatus | null>(null);
+  const [filterOwner, setFilterOwner] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
+  const [filterDreamId, setFilterDreamId] = useState('');
+  const [filterGoalId, setFilterGoalId] = useState('');
+  const [filterOverdueOnly, setFilterOverdueOnly] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -63,13 +100,15 @@ export function TasksBoardPage() {
       setSteps(stepData);
       setStepId((current) => current || filterStepId || String(stepData[0]?.id ?? ''));
     });
+    void listGoals(token).then(setGoals);
+    void listDreams(token).then(setDreams);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!stepId) {
-      return;
+      return false;
     }
     const success = await crud.save({
       stepId: Number(stepId),
@@ -92,6 +131,7 @@ export function TasksBoardPage() {
       setNextAction('');
       setProgressPercent(0);
     }
+    return success;
   }
 
   async function handleMove(id: number, nextStatus: WorkStatus) {
@@ -168,7 +208,37 @@ export function TasksBoardPage() {
     setNextAction('');
   }
 
-  const visibleTasks = filterStepId ? crud.items.filter((task) => String(task.stepId) === filterStepId) : crud.items;
+  const stepById = new Map(steps.map((step) => [step.id, step]));
+  const goalById = new Map(goals.map((goal) => [goal.id, goal]));
+  const goalsForFilter = filterDreamId
+    ? goals.filter((goal) => String(goal.dreamId) === filterDreamId)
+    : goals;
+
+  const visibleTasks = crud.items.filter((task) => {
+    if (filterStepId && String(task.stepId) !== filterStepId) {
+      return false;
+    }
+    if (filterOwner && !task.owner.toLowerCase().includes(filterOwner.toLowerCase())) {
+      return false;
+    }
+    if (filterPriority && task.priority !== filterPriority) {
+      return false;
+    }
+    if (filterOverdueOnly && !isOverdue(task.dueDate, task.status)) {
+      return false;
+    }
+    const step = stepById.get(task.stepId);
+    if (filterGoalId && String(step?.goalId ?? '') !== filterGoalId) {
+      return false;
+    }
+    if (filterDreamId) {
+      const goal = step ? goalById.get(step.goalId) : undefined;
+      if (String(goal?.dreamId ?? '') !== filterDreamId) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   const formFields = (
     <>
@@ -265,6 +335,53 @@ export function TasksBoardPage() {
       </CrudModalForm>
       {crud.loading && <Loading />}
       {crud.error && <ErrorMessage message={crud.error} />}
+      <Card className="filter-bar flex-row">
+        <label>
+          Owner
+          <Input value={filterOwner} onChange={(event) => setFilterOwner(event.target.value)} placeholder="Any owner" />
+        </label>
+        <label>
+          Priority
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterPriority} onChange={(event) => setFilterPriority(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="LOW">Low</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="HIGH">High</MenuItem>
+              <MenuItem value="CRITICAL">Critical</MenuItem>
+            </Select>
+          </FormControl>
+        </label>
+        <label>
+          Dream
+          <FormControl fullWidth size="small">
+            <Select
+              displayEmpty
+              value={filterDreamId}
+              onChange={(event) => {
+                setFilterDreamId(event.target.value);
+                setFilterGoalId('');
+              }}
+            >
+              <MenuItem value="">All</MenuItem>
+              {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </label>
+        <label>
+          Goal
+          <FormControl fullWidth size="small">
+            <Select displayEmpty value={filterGoalId} onChange={(event) => setFilterGoalId(event.target.value)}>
+              <MenuItem value="">All</MenuItem>
+              {goalsForFilter.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </label>
+        <label className="checkbox-field">
+          <Checkbox checked={filterOverdueOnly} onCheckedChange={(checked) => setFilterOverdueOnly(checked)} />
+          Overdue only
+        </label>
+      </Card>
       {filterStepId && (
         <Card className="filter-banner flex-row">
           <span>Showing tasks for step: <strong>{steps.find((step) => String(step.id) === filterStepId)?.title ?? filterStepId}</strong></span>
@@ -272,7 +389,9 @@ export function TasksBoardPage() {
         </Card>
       )}
       <div className="kanban">
-        {columns.map((column) => (
+        {columns.map((column) => {
+          const columnTasks = visibleTasks.filter((task) => task.status === column);
+          return (
           <section
             className={`kanban-column${dragOverColumn === column ? ' kanban-column--over' : ''}`}
             key={column}
@@ -280,12 +399,15 @@ export function TasksBoardPage() {
             onDragLeave={() => setDragOverColumn((current) => (current === column ? null : current))}
             onDrop={(event) => handleColumnDrop(event, column)}
           >
-            <h3 className="text-sm font-semibold">{formatLabel(column)}</h3>
-            {visibleTasks.filter((task) => task.status === column).length === 0 ? (
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              {formatLabel(column)}
+              <span className="text-muted-foreground font-normal">{columnTasks.length}</span>
+            </h3>
+            {columnTasks.length === 0 ? (
               <EmptyState>Drop tasks here</EmptyState>
             ) : (
               <div className="stack-list">
-                {visibleTasks.filter((task) => task.status === column).map((task) => (
+                {columnTasks.map((task) => (
                   <article
                     className={`list-card${draggedTaskId === task.id ? ' list-card--dragging' : ''}${taskHighlightClass(task)}`}
                     key={task.id}
@@ -307,15 +429,15 @@ export function TasksBoardPage() {
                           {columns.map((targetStatus) => <MenuItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</MenuItem>)}
                         </Select>
                       </FormControl>
-                      <Button type="button" variant="secondary" onClick={() => startEdit(task)}>Edit</Button>
-                      <Button type="button" variant="secondary" onClick={() => void crud.archive(task.id)}>Archive</Button>
+                      <TaskCardMenu onEdit={() => startEdit(task)} onArchive={() => void crud.archive(task.id)} />
                     </div>
                   </article>
                 ))}
               </div>
             )}
           </section>
-        ))}
+          );
+        })}
       </div>
     </PageSection>
   );

@@ -85,7 +85,7 @@ export function GoalsPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!dreamId) {
-      return;
+      return false;
     }
     const success = await crud.save({
       dreamId: Number(dreamId),
@@ -101,6 +101,7 @@ export function GoalsPage() {
       setDescription('');
       setSuccessCriteria('');
     }
+    return success;
   }
 
   function startEdit(goal: Goal) {

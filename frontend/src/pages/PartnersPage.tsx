@@ -107,6 +107,7 @@ export function PartnersPage() {
       setStrength('');
       setNotes('');
     }
+    return success;
   }
 
   function startEdit(partner: Partner) {

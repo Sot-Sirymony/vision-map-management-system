@@ -72,7 +72,7 @@ export function StepsPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!goalId) {
-      return;
+      return false;
     }
     const wasCreating = crud.editingId === null;
     const success = await crud.save({
@@ -92,6 +92,7 @@ export function StepsPage() {
         setSequenceNumber(sequenceNumber + 1);
       }
     }
+    return success;
   }
 
   function startEdit(step: VisionStep) {

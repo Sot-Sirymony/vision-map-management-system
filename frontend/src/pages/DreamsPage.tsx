@@ -64,7 +64,7 @@ export function DreamsPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!visionAreaId) {
-      return;
+      return false;
     }
     const success = await crud.save({
       visionAreaId: Number(visionAreaId),
@@ -83,6 +83,7 @@ export function DreamsPage() {
       setWhyImportant('');
       setSuccessDefinition('');
     }
+    return success;
   }
 
   function startEdit(dream: Dream) {

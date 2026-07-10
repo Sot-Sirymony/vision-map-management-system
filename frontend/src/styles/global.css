@@ -81,6 +81,10 @@ a {
   gap: 18px;
 }
 
+.create-trigger {
+  justify-self: start;
+}
+
 .page-heading p {
   margin: 8px 0 0;
 }
@@ -415,11 +419,22 @@ a {
 }
 
 .kanban-column {
+  display: flex;
+  flex-direction: column;
   padding: 14px;
   min-height: 220px;
+  max-height: 640px;
   min-width: 0;
   border-radius: 8px;
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kanban-column .stack-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
 }
 
 @media (max-width: 720px) {

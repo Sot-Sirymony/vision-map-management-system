@@ -1,6 +1,4 @@
-import type { FormEvent, ReactNode } from 'react';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from './Button';
 import { Modal } from './Modal';
 
@@ -11,17 +9,22 @@ type CrudModalFormProps = {
   saving: boolean;
   disabled?: boolean;
   extraActions?: ReactNode;
-  onSubmit: (event: FormEvent) => void;
+  onSubmit: (event: FormEvent) => void | Promise<boolean>;
   onCancelEdit: () => void;
   children: ReactNode;
 };
 
 /**
- * The create-panel/edit-modal scaffold repeated across every CRUD page:
- * an inline panel with a "Create X" button when nothing is being edited,
- * or the same fields inside a Modal with Save/Cancel when editing.
- * `extraActions` renders before the submit button, for pages with an extra
- * action (e.g. Communication's "Generate message").
+ * The create-button/edit-modal scaffold repeated across every CRUD page:
+ * a "Create X" button that opens the fields in a Modal, or the same fields
+ * in a Modal with Save/Cancel when editing an existing record. `extraActions`
+ * renders before the submit button, for pages with an extra action (e.g.
+ * Communication's "Generate message").
+ *
+ * `onSubmit` may return the save's success boolean (every page's handler
+ * already gets this back from `crud.save()`) so the create modal can close
+ * itself only once the record actually saved, instead of staying open on
+ * a validation error.
  */
 export function CrudModalForm({
   editing,
@@ -34,32 +37,46 @@ export function CrudModalForm({
   onCancelEdit,
   children,
 }: CrudModalFormProps) {
-  if (!editing) {
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreateSubmit(event: FormEvent) {
+    const result = onSubmit(event);
+    const success = result instanceof Promise ? await result : true;
+    if (success) {
+      setCreating(false);
+    }
+  }
+
+  if (editing) {
     return (
-      <Card>
-        <CardContent>
-          <form className="form-grid" onSubmit={onSubmit}>
-            {children}
-            <div className="field-full row-actions">
-              {extraActions}
-              <Button type="submit" disabled={saving || disabled}>{saving ? 'Saving...' : createLabel}</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <Modal title={editTitle} onClose={onCancelEdit}>
+        <form className="form-grid" onSubmit={onSubmit}>
+          {children}
+          <div className="field-full row-actions">
+            {extraActions}
+            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
+            <Button type="button" variant="secondary" onClick={onCancelEdit}>Cancel</Button>
+          </div>
+        </form>
+      </Modal>
     );
   }
 
   return (
-    <Modal title={editTitle} onClose={onCancelEdit}>
-      <form className="form-grid" onSubmit={onSubmit}>
-        {children}
-        <div className="field-full row-actions">
-          {extraActions}
-          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
-          <Button type="button" variant="secondary" onClick={onCancelEdit}>Cancel</Button>
-        </div>
-      </form>
-    </Modal>
+    <>
+      <Button type="button" className="create-trigger" onClick={() => setCreating(true)} disabled={disabled}>{createLabel}</Button>
+      {creating && (
+        <Modal title={editTitle.replace('Edit', 'Create')} onClose={() => setCreating(false)}>
+          <form className="form-grid" onSubmit={(event) => void handleCreateSubmit(event)}>
+            {children}
+            <div className="field-full row-actions">
+              {extraActions}
+              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : createLabel}</Button>
+              <Button type="button" variant="secondary" onClick={() => setCreating(false)}>Cancel</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </>
   );
 }

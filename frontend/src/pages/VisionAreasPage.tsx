@@ -52,6 +52,7 @@ export function VisionAreasPage() {
       setName('');
       setDescription('');
     }
+    return success;
   }
 
   function startEdit(area: VisionArea) {

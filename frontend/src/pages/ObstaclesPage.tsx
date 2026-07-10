@@ -100,6 +100,7 @@ export function ObstaclesPage() {
       setDescription('');
       setSolution('');
     }
+    return success;
   }
 
   function startEdit(obstacle: Obstacle) {
