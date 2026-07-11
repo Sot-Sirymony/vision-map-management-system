@@ -14,13 +14,13 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
+import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -220,7 +220,7 @@ export function DreamsPage() {
           <EmptyState>No dreams yet.</EmptyState>
         ) : (
           <TableContainer>
-          <Table>
+          <Table className="data-table">
             <TableHead>
               <TableRow>
                 <TableCell>Code</TableCell>
@@ -241,8 +241,7 @@ export function DreamsPage() {
                   <TableCell>{dream.targetDate ?? '-'}</TableCell>
                   <TableCell className="row-actions">
                     <MuiButton component={Link} to={`/dreams/${dream.id}`} variant="contained" color="secondary" size="small" disableElevation>View Map</MuiButton>
-                    <Button type="button" variant="secondary" onClick={() => startEdit(dream)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void crud.archive(dream.id)}>Archive</Button>
+                    <RowActionsMenu onEdit={() => startEdit(dream)} onArchive={() => void crud.archive(dream.id)} label="Dream actions" />
                   </TableCell>
                 </TableRow>
               ))}

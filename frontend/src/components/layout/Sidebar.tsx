@@ -133,6 +133,10 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: ()
               borderRadius: 1.5,
               justifyContent: collapsed ? 'center' : 'flex-start',
               px: collapsed ? 1 : 1.5,
+              borderLeft: '3px solid transparent',
+              transition: (theme) => theme.transitions.create(['background-color', 'border-color'], { duration: 120 }),
+              '&:hover': { borderLeftColor: 'primary.light' },
+              '&.Mui-selected': { borderLeftColor: 'primary.main' },
             }}
           >
             <ListItemIcon sx={{ minWidth: 0, mr: collapsed ? 0 : 1.5, justifyContent: 'center', color: 'inherit' }}>

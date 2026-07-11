@@ -22,6 +22,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
+import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -258,7 +259,7 @@ export function PartnersPage() {
           <EmptyState>No partners yet.</EmptyState>
         ) : (
           <TableContainer>
-          <Table>
+          <Table className="data-table">
             <TableHead>
               <TableRow>
                 <TableCell>Code</TableCell>
@@ -276,8 +277,7 @@ export function PartnersPage() {
                   <TableCell>{partnerSupportTypeLabels[partner.supportType]}</TableCell>
                   <TableCell><StatusBadge status={partner.status} /></TableCell>
                   <TableCell className="row-actions">
-                    <Button type="button" variant="secondary" onClick={() => startEdit(partner)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void crud.archive(partner.id)}>Archive</Button>
+                    <RowActionsMenu onEdit={() => startEdit(partner)} onArchive={() => void crud.archive(partner.id)} label="Partner actions" />
                   </TableCell>
                 </TableRow>
               ))}

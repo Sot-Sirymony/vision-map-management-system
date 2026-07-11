@@ -2,10 +2,10 @@ import { FormEvent, useEffect, useState } from 'react';
 import { listDreams } from '../api/dreamApi';
 import { archiveGoal, createGoal, listGoals, updateGoal, updateGoalStatus } from '../api/goalApi';
 import { listVisionAreas } from '../api/visionAreaApi';
-import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '../components/common/EmptyState';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -22,6 +22,7 @@ import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
+import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -296,7 +297,7 @@ export function GoalsPage() {
           </FormControl>
         </label>
         <label className="checkbox-field">
-          <Checkbox checked={filterOverdueOnly} onCheckedChange={(checked) => setFilterOverdueOnly(checked)} />
+          <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
         </label>
       </Card>
@@ -323,11 +324,11 @@ export function GoalsPage() {
           <EmptyState>No goals match these filters.</EmptyState>
         ) : (
           <TableContainer>
-          <Table>
+          <Table className="data-table">
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} aria-label="Select all goals" />
+                  <Checkbox checked={allFilteredSelected} onChange={toggleSelectAll} aria-label="Select all goals" />
                 </TableCell>
                 <TableCell>Code</TableCell>
                 <TableCell>Goal</TableCell>
@@ -341,7 +342,7 @@ export function GoalsPage() {
               {filteredGoals.map((goal) => (
                 <TableRow key={goal.id} className={isOverdue(goal.targetDate, goal.status) ? 'row-overdue' : ''}>
                   <TableCell>
-                    <Checkbox checked={selectedIds.has(goal.id)} onCheckedChange={() => toggleSelected(goal.id)} aria-label={`Select ${goal.title}`} />
+                    <Checkbox checked={selectedIds.has(goal.id)} onChange={() => toggleSelected(goal.id)} aria-label={`Select ${goal.title}`} />
                   </TableCell>
                   <TableCell>{goal.code}</TableCell>
                   <TableCell sx={{ fontWeight: 500 }}>{goal.title}</TableCell>
@@ -349,8 +350,7 @@ export function GoalsPage() {
                   <TableCell><StatusBadge status={goal.status} /></TableCell>
                   <TableCell><ProgressBar value={Number(goal.progressPercent)} /></TableCell>
                   <TableCell className="row-actions">
-                    <Button type="button" variant="secondary" onClick={() => startEdit(goal)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void crud.archive(goal.id)}>Archive</Button>
+                    <RowActionsMenu onEdit={() => startEdit(goal)} onArchive={() => void crud.archive(goal.id)} label="Goal actions" />
                   </TableCell>
                 </TableRow>
               ))}

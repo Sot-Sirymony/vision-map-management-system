@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { listGoals } from '../api/goalApi';
 import { archiveStep, createStep, listSteps, updateStep } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
-import { Checkbox } from '@/components/ui/checkbox';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -15,7 +15,6 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
@@ -23,6 +22,7 @@ import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
+import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -181,7 +181,7 @@ export function StepsPage() {
       </label>
       <label className="field-full">
         <span className="inline-meta">
-          <Checkbox checked={complex} onCheckedChange={(checked) => setComplex(checked)} />
+          <Checkbox checked={complex} onChange={(event) => setComplex(event.target.checked)} />
           Complex step
         </span>
       </label>
@@ -244,7 +244,7 @@ export function StepsPage() {
           </FormControl>
         </label>
         <label className="checkbox-field">
-          <Checkbox checked={filterOverdueOnly} onCheckedChange={(checked) => setFilterOverdueOnly(checked)} />
+          <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
         </label>
       </Card>
@@ -254,7 +254,7 @@ export function StepsPage() {
           <EmptyState>No steps match these filters.</EmptyState>
         ) : (
           <TableContainer>
-          <Table>
+          <Table className="data-table">
             <TableHead>
               <TableRow>
                 <TableCell>Code</TableCell>
@@ -290,8 +290,7 @@ export function StepsPage() {
                     <TableCell><ProgressBar value={Number(step.progressPercent)} /></TableCell>
                     <TableCell>{taskCount}</TableCell>
                     <TableCell className="row-actions">
-                      <Button type="button" variant="secondary" onClick={() => startEdit(step)}>Edit</Button>
-                      <Button type="button" variant="secondary" onClick={() => void crud.archive(step.id)}>Archive</Button>
+                      <RowActionsMenu onEdit={() => startEdit(step)} onArchive={() => void crud.archive(step.id)} label="Step actions" />
                     </TableCell>
                   </TableRow>
                 );

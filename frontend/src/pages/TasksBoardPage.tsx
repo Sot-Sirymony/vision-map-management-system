@@ -1,16 +1,13 @@
-import { DragEvent, FormEvent, type MouseEvent, useEffect, useState } from 'react';
+import { DragEvent, FormEvent, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { MoreVertical } from 'lucide-react';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listSteps } from '../api/stepApi';
 import { archiveTask, createTask, listTasks, updateTask, updateTaskStatus } from '../api/taskApi';
-import { Checkbox } from '@/components/ui/checkbox';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Table from '@mui/material/Table';
@@ -28,6 +25,7 @@ import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
+import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -37,31 +35,6 @@ import { isOverdue } from '../utils/overdue';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
 import { obstacleTypeLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
-
-function TaskCardMenu({ onEdit, onArchive }: { onEdit: () => void; onArchive: () => void }) {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-
-  function handleOpen(event: MouseEvent<HTMLElement>) {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-  }
-
-  function handleClose() {
-    setAnchorEl(null);
-  }
-
-  return (
-    <>
-      <IconButton size="small" onClick={handleOpen} aria-label="Task actions">
-        <MoreVertical size={16} />
-      </IconButton>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-        <MenuItem onClick={() => { handleClose(); onEdit(); }}>Edit</MenuItem>
-        <MenuItem onClick={() => { handleClose(); onArchive(); }}>Archive</MenuItem>
-      </Menu>
-    </>
-  );
-}
 
 const columns: WorkStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'PAUSED'];
 const blockerCategories: ObstacleType[] = ['KNOWLEDGE', 'SKILL', 'TIME', 'MONEY', 'DECISION', 'PARTNER', 'MOTIVATION'];
@@ -396,7 +369,7 @@ export function TasksBoardPage() {
           </FormControl>
         </label>
         <label className="checkbox-field">
-          <Checkbox checked={filterOverdueOnly} onCheckedChange={(checked) => setFilterOverdueOnly(checked)} />
+          <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
         </label>
       </Card>
@@ -453,7 +426,7 @@ export function TasksBoardPage() {
                         <TableCell><StatusBadge status={task.status} /></TableCell>
                         <TableCell sx={{ width: 160 }}><ProgressBar value={Number(task.progressPercent)} /></TableCell>
                         <TableCell className="row-actions">
-                          <TaskCardMenu onEdit={() => startEdit(task)} onArchive={() => void crud.archive(task.id)} />
+                          <RowActionsMenu onEdit={() => startEdit(task)} onArchive={() => void crud.archive(task.id)} label="Task actions" />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -505,7 +478,7 @@ export function TasksBoardPage() {
                           {columns.map((targetStatus) => <MenuItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</MenuItem>)}
                         </Select>
                       </FormControl>
-                      <TaskCardMenu onEdit={() => startEdit(task)} onArchive={() => void crud.archive(task.id)} />
+                      <RowActionsMenu onEdit={() => startEdit(task)} onArchive={() => void crud.archive(task.id)} label="Task actions" />
                     </div>
                   </article>
                 ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 import { getDashboardSummary } from '../api/dashboardApi';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
@@ -10,6 +10,7 @@ import { listReviews } from '../api/reviewApi';
 import { listTasks } from '../api/taskApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import { CategoryBreakdownChart } from '../components/dashboard/CategoryBreakdownChart';
+import { ChartTooltipContent } from '../components/dashboard/ChartTooltipContent';
 import { DashboardSummary } from '../components/dashboard/DashboardSummary';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
@@ -30,7 +31,6 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useAuth } from '../context/AuthContext';
 import type { DashboardSummary as DashboardSummaryData, Dream, Goal, Obstacle, Partner, PartnerStatus, Priority, ProgressLog, Review, TaskItem, VisionArea, WorkStatus } from '../types/vision';
 import { obstacleTypeLabels, partnerStatusLabels, priorityColors, workStatusColors } from '../utils/enumLabels';
@@ -44,43 +44,46 @@ const HEATMAP_WEEKS = 12;
 const HEATMAP_LEVEL_COLORS = ['#e5e5e5', '#86efac', '#4ade80', '#22c55e', '#15803d'];
 const PROGRESS_TREND_WEEKS = 12;
 
-const progressTrendConfig = {
-  progress: { label: 'Average progress', color: '#2563eb' },
-} satisfies ChartConfig;
-
-const partnerPipelineConfig = {
-  count: { label: 'Partners' },
-} satisfies ChartConfig;
-
 // Pipeline stage colors — not/yet (gray) → reached out (blue) → engaged (green) /
 // stalled (amber) / declined (red) → done (teal, kept distinct from the green
 // "active" state so a finished engagement doesn't read as still-in-progress).
+// Each stage keeps its own hue on purpose (unlike the blue-only ramp used for
+// obstacle types below) — this is real status information, not an arbitrary
+// category, and collapsing "declined" and "active" into shades of the same
+// blue would erase the one thing this chart needs to communicate at a glance.
+// Hex values are Fluent's actual tokens from each hue's shared color ramp.
 const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = {
-  TO_CONTACT: '#a3a3a3',
-  CONTACTED: '#2563eb',
-  ACTIVE: '#16a34a',
-  WAITING: '#d97706',
-  DECLINED: '#dc2626',
-  COMPLETED: '#0891b2',
+  TO_CONTACT: '#8a8886',
+  CONTACTED: '#0078d4',
+  ACTIVE: '#107c10',
+  WAITING: '#d83b01',
+  DECLINED: '#d13438',
+  COMPLETED: '#038387',
 };
-
-const visionAreaChartConfig = {
-  progress: { label: 'Progress', color: '#7c3aed' },
-} satisfies ChartConfig;
 
 // Local to this compact widget (Decision A) — not the app-wide enum color
 // system, since this only ever shows the top few types plus a rollup bucket.
+// Unlike the partner pipeline above, no obstacle type is inherently "worse"
+// than another (Knowledge isn't more urgent than Time), so category is
+// encoded as depth along Fluent's blue ramp rather than hue — matching the
+// same "Depth, applied to data" treatment as the default donut/bar palette.
+// Deliberately stops at #71afe5 rather than running all the way to the
+// lightest tints (#c7e0f4/#deecf9) — those are legible as a large donut/bar
+// fill only when paired with a visible border, which these chart shapes
+// don't draw, so anything past this point washes out against a white card.
+// OTHER and the rollup bucket stay neutral gray, marking them as "not a
+// specific single category" rather than another step in the ramp.
 const OBSTACLE_TYPE_COLORS: Record<string, string> = {
-  KNOWLEDGE: '#2563eb',
-  SKILL: '#0891b2',
-  TIME: '#d97706',
-  MONEY: '#16a34a',
-  MOTIVATION: '#7c3aed',
-  PARTNER: '#db2777',
-  SYSTEM: '#525252',
-  DECISION: '#ea580c',
-  OTHER: '#a3a3a3',
-  [OTHER_OBSTACLE_TYPES_KEY]: '#d4d4d4',
+  KNOWLEDGE: '#004578',
+  SKILL: '#005a9e',
+  TIME: '#0063b1',
+  MONEY: '#106ebe',
+  MOTIVATION: '#0078d4',
+  PARTNER: '#2b88d8',
+  SYSTEM: '#4ba0e1',
+  DECISION: '#71afe5',
+  OTHER: '#8a8886',
+  [OTHER_OBSTACLE_TYPES_KEY]: '#e1e1e1',
 };
 
 export function DashboardPage() {
@@ -197,23 +200,25 @@ export function DashboardPage() {
           {progressTrend.length === 0 ? (
             <EmptyState>No progress logged yet — update a task's progress to start the trend.</EmptyState>
           ) : (
-            <ChartContainer config={progressTrendConfig} className="aspect-auto h-[220px] w-full">
-              <AreaChart data={progressTrend} margin={{ left: 8, right: 16 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} tickLine={false} axisLine={false} width={40} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Area
-                  dataKey="progress"
-                  name="Average progress %"
-                  type="monotone"
-                  fill="#2563eb"
-                  fillOpacity={0.15}
-                  stroke="#2563eb"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ChartContainer>
+            <Box sx={{ width: '100%', height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={progressTrend} margin={{ left: 8, right: 16 }}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} tickLine={false} axisLine={false} width={40} />
+                  <RechartsTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    dataKey="progress"
+                    name="Average progress %"
+                    type="monotone"
+                    fill="#2563eb"
+                    fillOpacity={0.15}
+                    stroke="#2563eb"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </Box>
           )}
         </CardContent>
       </Card>
@@ -262,19 +267,17 @@ export function DashboardPage() {
           {visionAreaProgress.length === 0 ? (
             <EmptyState>No vision areas yet.</EmptyState>
           ) : (
-            <ChartContainer
-              config={visionAreaChartConfig}
-              className="aspect-auto w-full"
-              style={{ height: Math.max(220, visionAreaProgress.length * 44) }}
-            >
-              <BarChart data={visionAreaProgress} layout="vertical" margin={{ left: 8, right: 16 }}>
-                <CartesianGrid horizontal={false} />
-                <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={120} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="progress" name="Progress %" radius={4} fill="#7c3aed" />
-              </BarChart>
-            </ChartContainer>
+            <Box sx={{ width: '100%', height: Math.max(220, visionAreaProgress.length * 44) }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={visionAreaProgress} layout="vertical" margin={{ left: 8, right: 16 }}>
+                  <CartesianGrid horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={120} />
+                  <RechartsTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="progress" name="Progress %" radius={4} fill="#7c3aed" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
           )}
         </CardContent>
       </Card>
@@ -285,16 +288,18 @@ export function DashboardPage() {
             <EmptyState>No partners yet.</EmptyState>
           ) : (
             <>
-              <ChartContainer config={partnerPipelineConfig} className="aspect-auto w-full" style={{ height: 72 }}>
-                <BarChart data={partnerPipelineData} layout="vertical" margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
-                  <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" hide />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  {PARTNER_STATUS_ORDER.map((status) => (
-                    <Bar key={status} dataKey={status} stackId="pipeline" name={partnerStatusLabels[status]} fill={PARTNER_STATUS_COLORS[status]} />
-                  ))}
-                </BarChart>
-              </ChartContainer>
+              <Box sx={{ width: '100%', height: 72 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={partnerPipelineData} layout="vertical" margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
+                    <XAxis type="number" hide />
+                    <YAxis type="category" dataKey="name" hide />
+                    <RechartsTooltip content={<ChartTooltipContent />} />
+                    {PARTNER_STATUS_ORDER.map((status) => (
+                      <Bar key={status} dataKey={status} stackId="pipeline" name={partnerStatusLabels[status]} fill={PARTNER_STATUS_COLORS[status]} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
               <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', justifyContent: 'center', pt: 1.5 }}>
                 {PARTNER_STATUS_ORDER.map((status) => (
                   <Stack key={status} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>

@@ -21,6 +21,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
+import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -250,7 +251,7 @@ Best regards`);
           <EmptyState>No messages yet.</EmptyState>
         ) : (
           <TableContainer>
-          <Table>
+          <Table className="data-table">
             <TableHead>
               <TableRow>
                 <TableCell>Subject</TableCell>
@@ -268,8 +269,7 @@ Best regards`);
                   <TableCell><StatusBadge status={message.status} /></TableCell>
                   <TableCell>{message.followUpDate || '-'}</TableCell>
                   <TableCell className="row-actions">
-                    <Button type="button" variant="secondary" onClick={() => startEdit(message)}>Edit</Button>
-                    <Button type="button" variant="secondary" onClick={() => void crud.archive(message.id)}>Archive</Button>
+                    <RowActionsMenu onEdit={() => startEdit(message)} onArchive={() => void crud.archive(message.id)} label="Message actions" />
                   </TableCell>
                 </TableRow>
               ))}

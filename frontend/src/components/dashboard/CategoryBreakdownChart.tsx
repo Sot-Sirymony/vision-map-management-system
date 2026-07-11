@@ -1,17 +1,21 @@
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, Rectangle, Sector, XAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, Rectangle, ResponsiveContainer, Sector, Tooltip, XAxis } from 'recharts';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartTooltipContent } from './ChartTooltipContent';
 
-const chartConfig = {
-  count: { label: 'Count', color: 'var(--primary)' },
-} satisfies ChartConfig;
-
-const DEFAULT_DONUT_COLORS = ['#171717', '#525252', '#a3a3a3', '#737373', '#d4d4d4', '#0a0a0a'];
+// A single-hue depth ramp off Fluent's Communication Blue — pressed to light
+// tint — for charts with no specific semantic color mapping. Category is
+// encoded as shade rather than hue, so the chart reads as one calibrated
+// system instead of a rainbow of unrelated colors. Warm hues (red/amber/
+// green) are reserved for status/priority semantics elsewhere. Ordered
+// darkest-first (not light-to-dark) since most charts here only ever show
+// 2-4 categories — the pale end of the ramp is a fallback for the rare
+// 5th/6th slot, not what a typical 3-category chart should lead with.
+const DEFAULT_DONUT_COLORS = ['#005a9e', '#0078d4', '#2b88d8', '#71afe5', '#c7e0f4', '#deecf9'];
 
 type CategoryBreakdownChartProps = {
   title: string;
@@ -47,23 +51,25 @@ export function CategoryBreakdownChart({
           </Box>
         ) : variant === 'donut' ? (
           <>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent nameKey="category" hideLabel />} />
-                <Pie
-                  data={chartData}
-                  dataKey="count"
-                  nameKey="category"
-                  innerRadius={55}
-                  outerRadius={85}
-                  paddingAngle={2}
-                  shape={(props) => {
-                    const { payload, ...sectorProps } = props;
-                    return <Sector {...sectorProps} fill={payload.fill} />;
-                  }}
-                />
-              </PieChart>
-            </ChartContainer>
+            <Box sx={{ width: '100%', height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip content={<ChartTooltipContent />} />
+                  <Pie
+                    data={chartData}
+                    dataKey="count"
+                    nameKey="category"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={2}
+                    shape={(props) => {
+                      const { payload, ...sectorProps } = props;
+                      return <Sector {...sectorProps} fill={payload.fill} />;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </Box>
             <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', justifyContent: 'center', pt: 1.5 }}>
               {chartData.map((entry) => (
                 <Stack key={entry.key} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
@@ -74,28 +80,28 @@ export function CategoryBreakdownChart({
             </Stack>
           </>
         ) : (
-          <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-            <BarChart data={chartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="category" tickLine={false} axisLine={false} tickMargin={8} />
-              <ChartTooltip
-                content={<ChartTooltipContent nameKey="category" color={colorForKey ? undefined : 'var(--color-count)'} />}
-              />
-              <Bar
-                dataKey="count"
-                fill="var(--color-count)"
-                radius={4}
-                shape={
-                  colorForKey
-                    ? (props) => {
-                        const { payload, ...rectProps } = props;
-                        return <Rectangle {...rectProps} fill={payload.fill} />;
-                      }
-                    : undefined
-                }
-              />
-            </BarChart>
-          </ChartContainer>
+          <Box sx={{ width: '100%', height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="category" tickLine={false} axisLine={false} tickMargin={8} />
+                <Tooltip content={<ChartTooltipContent />} />
+                <Bar
+                  dataKey="count"
+                  fill="#0078d4"
+                  radius={4}
+                  shape={
+                    colorForKey
+                      ? (props) => {
+                          const { payload, ...rectProps } = props;
+                          return <Rectangle {...rectProps} fill={payload.fill} />;
+                        }
+                      : undefined
+                  }
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </Box>
         )}
       </CardContent>
     </Card>

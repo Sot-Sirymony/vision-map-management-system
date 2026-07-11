@@ -16,12 +16,12 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
+import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -242,7 +242,7 @@ export function ObstaclesPage() {
           <EmptyState>No obstacles yet.</EmptyState>
         ) : (
           <TableContainer>
-          <Table>
+          <Table className="data-table">
             <TableHead>
               <TableRow>
                 <TableCell>Title</TableCell>
@@ -266,8 +266,7 @@ export function ObstaclesPage() {
                     <TableCell><StatusBadge status={obstacle.status} /></TableCell>
                     <TableCell>{obstacle.solution || '-'}</TableCell>
                     <TableCell className="row-actions">
-                      <Button type="button" variant="secondary" onClick={() => startEdit(obstacle)}>Edit</Button>
-                      <Button type="button" variant="secondary" onClick={() => void crud.archive(obstacle.id)}>Archive</Button>
+                      <RowActionsMenu onEdit={() => startEdit(obstacle)} onArchive={() => void crud.archive(obstacle.id)} label="Obstacle actions" />
                     </TableCell>
                   </TableRow>
                 );
