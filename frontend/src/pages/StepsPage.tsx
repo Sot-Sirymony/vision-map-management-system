@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listGoals } from '../api/goalApi';
-import { archiveStep, createStep, listSteps, updateStep } from '../api/stepApi';
+import { archiveStep, createStep, getStepArchiveImpact, listSteps, restoreStep, updateStep } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -23,6 +23,7 @@ import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -40,6 +41,7 @@ export function StepsPage() {
     create: createStep,
     update: updateStep,
     archive: archiveStep,
+    restore: restoreStep,
   });
   const [goals, setGoals] = useState<Goal[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -115,6 +117,14 @@ export function StepsPage() {
     setPriority('HIGH');
     setTargetDate('');
     setStatus('NOT_STARTED');
+  }
+
+  async function archiveImpactMessage(step: VisionStep) {
+    if (!token) {
+      return 'Archive this step?';
+    }
+    const impact = await getStepArchiveImpact(token, step.id);
+    return `Archiving "${step.title}" also archives ${impact.tasks} task(s). Everything can be restored later with "Show archived".`;
   }
 
   const filteredSteps = crud.items.filter((step) => {
@@ -247,6 +257,7 @@ export function StepsPage() {
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
         </label>
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
       <Card>
         <CardContent>
@@ -272,7 +283,7 @@ export function StepsPage() {
                 const taskCount = tasks.filter((task) => task.stepId === step.id).length;
                 const needsTasks = step.complex && taskCount === 0;
                 return (
-                  <TableRow key={step.id} className={isOverdue(step.targetDate, step.status) ? 'row-overdue' : ''}>
+                  <TableRow key={step.id} className={step.archived ? 'row-archived' : isOverdue(step.targetDate, step.status) ? 'row-overdue' : ''}>
                     <TableCell>{step.code}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>
                       {step.title}
@@ -290,7 +301,14 @@ export function StepsPage() {
                     <TableCell><ProgressBar value={Number(step.progressPercent)} /></TableCell>
                     <TableCell>{taskCount}</TableCell>
                     <TableCell className="row-actions">
-                      <RowActionsMenu onEdit={() => startEdit(step)} onArchive={() => void crud.archive(step.id)} label="Step actions" />
+                      <RowActionsMenu
+                        onEdit={() => startEdit(step)}
+                        onArchive={() => void crud.archive(step.id)}
+                        onRestore={() => void crud.restore(step.id)}
+                        archived={step.archived}
+                        confirmArchive={() => archiveImpactMessage(step)}
+                        label="Step actions"
+                      />
                     </TableCell>
                   </TableRow>
                 );

@@ -10,6 +10,7 @@ import com.visionmapping.dto.request.ReviewRequest;
 import com.visionmapping.dto.request.TaskItemRequest;
 import com.visionmapping.dto.request.VisionAreaRequest;
 import com.visionmapping.dto.request.VisionStepRequest;
+import com.visionmapping.dto.response.ArchiveImpactResponse;
 import com.visionmapping.dto.response.CommunicationMessageResponse;
 import com.visionmapping.dto.response.DashboardSummaryResponse;
 import com.visionmapping.dto.response.DreamResponse;
@@ -58,6 +59,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -92,8 +94,11 @@ public class VisionMappingService {
     private final ProgressLogRepository progressLogRepository;
 
     @Transactional(readOnly = true)
-    public List<VisionAreaResponse> listVisionAreas() {
-        return visionAreaRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+    public List<VisionAreaResponse> listVisionAreas(boolean includeArchived) {
+        List<VisionArea> entities = includeArchived
+                ? visionAreaRepository.findByUser_Id(userId())
+                : visionAreaRepository.findByUser_IdAndArchivedFalse(userId());
+        return entities.stream().map(mapper::toResponse).toList();
     }
 
     public VisionAreaResponse createVisionArea(VisionAreaRequest request) {
@@ -137,8 +142,11 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<DreamResponse> listDreams() {
-        return dreamRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+    public List<DreamResponse> listDreams(boolean includeArchived) {
+        List<Dream> entities = includeArchived
+                ? dreamRepository.findByUser_Id(userId())
+                : dreamRepository.findByUser_IdAndArchivedFalse(userId());
+        return entities.stream().map(mapper::toResponse).toList();
     }
 
     public DreamResponse createDream(DreamRequest request) {
@@ -193,8 +201,11 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<GoalResponse> listGoals() {
-        return goalRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+    public List<GoalResponse> listGoals(boolean includeArchived) {
+        List<Goal> entities = includeArchived
+                ? goalRepository.findByUser_Id(userId())
+                : goalRepository.findByUser_IdAndArchivedFalse(userId());
+        return entities.stream().map(mapper::toResponse).toList();
     }
 
     public GoalResponse createGoal(GoalRequest request) {
@@ -212,6 +223,8 @@ public class VisionMappingService {
                 .status(request.status())
                 .progressPercent(ZERO)
                 .manualProgressOverride(false)
+                .moonshot(request.moonshot())
+                .moonshotVision(request.moonshotVision())
                 .build();
         return mapper.toResponse(goalRepository.save(entity));
     }
@@ -230,6 +243,8 @@ public class VisionMappingService {
         entity.setPriority(request.priority());
         entity.setTargetDate(request.targetDate());
         entity.setStatus(request.status());
+        entity.setMoonshot(request.moonshot());
+        entity.setMoonshotVision(request.moonshotVision());
         validateGoalCompletion(entity, false);
         return mapper.toResponse(entity);
     }
@@ -251,8 +266,11 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<VisionStepResponse> listSteps() {
-        return visionStepRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+    public List<VisionStepResponse> listSteps(boolean includeArchived) {
+        List<VisionStep> entities = includeArchived
+                ? visionStepRepository.findByUser_Id(userId())
+                : visionStepRepository.findByUser_IdAndArchivedFalse(userId());
+        return entities.stream().map(mapper::toResponse).toList();
     }
 
     public VisionStepResponse createStep(VisionStepRequest request) {
@@ -318,8 +336,11 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<TaskItemResponse> listTasks() {
-        return taskItemRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+    public List<TaskItemResponse> listTasks(boolean includeArchived) {
+        List<TaskItem> entities = includeArchived
+                ? taskItemRepository.findByUser_Id(userId())
+                : taskItemRepository.findByUser_IdAndArchivedFalse(userId());
+        return entities.stream().map(mapper::toResponse).toList();
     }
 
     public TaskItemResponse createTask(TaskItemRequest request) {
@@ -410,8 +431,11 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PartnerResponse> listPartners(Pageable pageable) {
-        return partnerRepository.findByUser_IdAndArchivedFalse(userId(), pageable).map(mapper::toResponse);
+    public Page<PartnerResponse> listPartners(Pageable pageable, boolean includeArchived) {
+        Page<Partner> entities = includeArchived
+                ? partnerRepository.findByUser_Id(userId(), pageable)
+                : partnerRepository.findByUser_IdAndArchivedFalse(userId(), pageable);
+        return entities.map(mapper::toResponse);
     }
 
     public PartnerResponse createPartner(PartnerRequest request) {
@@ -472,8 +496,11 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CommunicationMessageResponse> listCommunicationMessages(Pageable pageable) {
-        return communicationMessageRepository.findByUser_IdAndArchivedFalse(userId(), pageable).map(mapper::toResponse);
+    public Page<CommunicationMessageResponse> listCommunicationMessages(Pageable pageable, boolean includeArchived) {
+        Page<CommunicationMessage> entities = includeArchived
+                ? communicationMessageRepository.findByUser_Id(userId(), pageable)
+                : communicationMessageRepository.findByUser_IdAndArchivedFalse(userId(), pageable);
+        return entities.map(mapper::toResponse);
     }
 
     public CommunicationMessageResponse createCommunicationMessage(CommunicationMessageRequest request) {
@@ -505,11 +532,15 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReviewResponse> listReviews() {
-        return reviewRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+    public List<ReviewResponse> listReviews(boolean includeArchived) {
+        List<Review> entities = includeArchived
+                ? reviewRepository.findByUser_Id(userId())
+                : reviewRepository.findByUser_IdAndArchivedFalse(userId());
+        return entities.stream().map(mapper::toResponse).toList();
     }
 
     public ReviewResponse createReview(ReviewRequest request) {
+        validateDiligenceChecklist(request);
         Review entity = Review.builder()
                 .user(userScope.currentUser())
                 .reviewType(request.reviewType())
@@ -522,8 +553,32 @@ public class VisionMappingService {
                 .blockedTasks(request.blockedTasks())
                 .lessonsLearned(request.lessonsLearned())
                 .nextActions(request.nextActions())
+                .diligenceClearVision(request.diligenceClearVision())
+                .diligenceWorkedPlan(request.diligenceWorkedPlan())
+                .diligenceUsedLeverage(request.diligenceUsedLeverage())
+                .diligencePriorityFirst(request.diligencePriorityFirst())
+                .diligenceSmarterRoute(request.diligenceSmarterRoute())
+                .diligenceNote(request.diligenceNote())
                 .build();
         return mapper.toResponse(reviewRepository.save(entity));
+    }
+
+    /**
+     * FR-16: the diligence checklist is answered as a whole or skipped as a
+     * whole — a half-answered checklist would silently read as "not met" on
+     * the unanswered questions.
+     */
+    private void validateDiligenceChecklist(ReviewRequest request) {
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(request.diligenceClearVision());
+        answers.add(request.diligenceWorkedPlan());
+        answers.add(request.diligenceUsedLeverage());
+        answers.add(request.diligencePriorityFirst());
+        answers.add(request.diligenceSmarterRoute());
+        long answered = answers.stream().filter(java.util.Objects::nonNull).count();
+        if (answered != 0 && answered != answers.size()) {
+            throw new BusinessRuleException("Answer every diligence question, or skip the whole checklist.");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -532,6 +587,7 @@ public class VisionMappingService {
     }
 
     public ReviewResponse updateReview(Long id, ReviewRequest request) {
+        validateDiligenceChecklist(request);
         Review entity = review(id);
         entity.setReviewType(request.reviewType());
         entity.setReviewDate(request.reviewDate());
@@ -543,6 +599,12 @@ public class VisionMappingService {
         entity.setBlockedTasks(request.blockedTasks());
         entity.setLessonsLearned(request.lessonsLearned());
         entity.setNextActions(request.nextActions());
+        entity.setDiligenceClearVision(request.diligenceClearVision());
+        entity.setDiligenceWorkedPlan(request.diligenceWorkedPlan());
+        entity.setDiligenceUsedLeverage(request.diligenceUsedLeverage());
+        entity.setDiligencePriorityFirst(request.diligencePriorityFirst());
+        entity.setDiligenceSmarterRoute(request.diligenceSmarterRoute());
+        entity.setDiligenceNote(request.diligenceNote());
         return mapper.toResponse(entity);
     }
 
@@ -551,8 +613,11 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<ObstacleResponse> listObstacles() {
-        return obstacleRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+    public List<ObstacleResponse> listObstacles(boolean includeArchived) {
+        List<Obstacle> entities = includeArchived
+                ? obstacleRepository.findByUser_Id(userId())
+                : obstacleRepository.findByUser_IdAndArchivedFalse(userId());
+        return entities.stream().map(mapper::toResponse).toList();
     }
 
     public ObstacleResponse createObstacle(ObstacleRequest request) {
@@ -657,6 +722,7 @@ public class VisionMappingService {
                 .map(Goal::getProgressPercent)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(BigDecimal.valueOf(goals.size()), 2, RoundingMode.HALF_UP);
+        long moonshotGoals = goals.stream().filter(Goal::isMoonshot).count();
         Map<String, Long> goalsByStatus = goals.stream()
                 .collect(Collectors.groupingBy(goal -> goal.getStatus().name(), Collectors.counting()));
         Map<String, Long> dreamsByArea = dreams.stream()
@@ -673,6 +739,18 @@ public class VisionMappingService {
         Map<String, Long> reviewCadence = reviews.stream()
                 .filter(review -> review.getReviewType() == ReviewType.DAILY || review.getReviewType() == ReviewType.WEEKLY)
                 .collect(Collectors.groupingBy(review -> review.getReviewDate().toString(), Collectors.counting()));
+        // FR-16.4: weeks in the heatmap window whose weekly review carries an
+        // answered diligence checklist (all-or-none, so one non-null answer
+        // means the whole checklist was answered).
+        WeekFields weekFields = WeekFields.ISO;
+        long weeksWithDiligence = reviews.stream()
+                .filter(review -> review.getReviewType() == ReviewType.WEEKLY)
+                .filter(review -> review.getDiligenceClearVision() != null)
+                .filter(review -> !review.getReviewDate().isBefore(today.minusDays(12L * 7 - 1)))
+                .map(review -> review.getReviewDate().get(weekFields.weekBasedYear()) * 100
+                        + review.getReviewDate().get(weekFields.weekOfWeekBasedYear()))
+                .distinct()
+                .count();
         List<DashboardSummaryResponse.AreaProgress> visionAreaProgress = areas.stream()
                 .filter(area -> area.getStatus() != LifecycleStatus.ARCHIVED)
                 .map(area -> {
@@ -715,7 +793,9 @@ public class VisionMappingService {
                 reviewCadence,
                 buildProgressTrend(progressLogs, today),
                 visionAreaProgress,
-                priorityTasks
+                priorityTasks,
+                weeksWithDiligence,
+                moonshotGoals
         );
     }
 
@@ -794,6 +874,7 @@ public class VisionMappingService {
         entity.setProblem(request.problem());
         entity.setRequest(request.request());
         entity.setBenefitToPartner(request.benefitToPartner());
+        entity.setWordPicture(request.wordPicture());
         entity.setExpectedOutcome(request.expectedOutcome());
         entity.setMessageBody(request.messageBody());
         entity.setStatus(request.status());
@@ -886,6 +967,146 @@ public class VisionMappingService {
         for (TaskItem task : taskItemRepository.findByStep_IdAndUser_Id(stepId, userId)) {
             task.setArchived(true);
         }
+    }
+
+    // --- Archive impact (what a cascade would newly archive) -----------------
+
+    @Transactional(readOnly = true)
+    public ArchiveImpactResponse visionAreaArchiveImpact(Long id) {
+        long dreams = 0;
+        long goals = 0;
+        long steps = 0;
+        long tasks = 0;
+        for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(visionArea(id).getId(), userId())) {
+            if (!dream.isArchived()) {
+                dreams++;
+            }
+            ArchiveImpactResponse below = dreamArchiveImpactOf(dream.getId());
+            goals += below.goals();
+            steps += below.steps();
+            tasks += below.tasks();
+        }
+        return new ArchiveImpactResponse(dreams, goals, steps, tasks);
+    }
+
+    @Transactional(readOnly = true)
+    public ArchiveImpactResponse dreamArchiveImpact(Long id) {
+        return dreamArchiveImpactOf(dream(id).getId());
+    }
+
+    @Transactional(readOnly = true)
+    public ArchiveImpactResponse goalArchiveImpact(Long id) {
+        return goalArchiveImpactOf(goal(id).getId());
+    }
+
+    @Transactional(readOnly = true)
+    public ArchiveImpactResponse stepArchiveImpact(Long id) {
+        return stepArchiveImpactOf(step(id).getId());
+    }
+
+    private ArchiveImpactResponse dreamArchiveImpactOf(Long dreamId) {
+        long goals = 0;
+        long steps = 0;
+        long tasks = 0;
+        for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dreamId, userId())) {
+            if (!goal.isArchived()) {
+                goals++;
+            }
+            ArchiveImpactResponse below = goalArchiveImpactOf(goal.getId());
+            steps += below.steps();
+            tasks += below.tasks();
+        }
+        return new ArchiveImpactResponse(0, goals, steps, tasks);
+    }
+
+    private ArchiveImpactResponse goalArchiveImpactOf(Long goalId) {
+        long steps = 0;
+        long tasks = 0;
+        for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goalId, userId())) {
+            if (!step.isArchived()) {
+                steps++;
+            }
+            tasks += stepArchiveImpactOf(step.getId()).tasks();
+        }
+        return new ArchiveImpactResponse(0, 0, steps, tasks);
+    }
+
+    private ArchiveImpactResponse stepArchiveImpactOf(Long stepId) {
+        long tasks = taskItemRepository.findByStep_IdAndUser_Id(stepId, userId()).stream()
+                .filter(task -> !task.isArchived())
+                .count();
+        return new ArchiveImpactResponse(0, 0, 0, tasks);
+    }
+
+    // --- Restore (un-archive, pulling archived parents back with it) ---------
+
+    public void restoreVisionArea(Long id) {
+        unarchiveVisionArea(visionArea(id));
+    }
+
+    public void restoreDream(Long id) {
+        unarchiveDreamChain(dream(id));
+    }
+
+    public void restoreGoal(Long id) {
+        unarchiveGoalChain(goal(id));
+    }
+
+    public void restoreStep(Long id) {
+        VisionStep entity = step(id);
+        unarchiveGoalChain(entity.getGoal());
+        entity.setArchived(false);
+        recalculateGoal(entity.getGoal());
+    }
+
+    public void restoreTask(Long id) {
+        TaskItem entity = task(id);
+        unarchiveGoalChain(entity.getStep().getGoal());
+        entity.getStep().setArchived(false);
+        entity.setArchived(false);
+        recalculateStep(entity.getStep());
+    }
+
+    public void restorePartner(Long id) {
+        partner(id).setArchived(false);
+    }
+
+    public void restoreCommunicationMessage(Long id) {
+        communicationMessage(id).setArchived(false);
+    }
+
+    public void restoreReview(Long id) {
+        review(id).setArchived(false);
+    }
+
+    public void restoreObstacle(Long id) {
+        obstacle(id).setArchived(false);
+    }
+
+    private void unarchiveVisionArea(VisionArea area) {
+        if (area.isArchived()) {
+            area.setArchived(false);
+            // ARCHIVED was set by the archive cascade; the original status is
+            // unknown, so come back as Paused rather than silently Active.
+            if (area.getStatus() == LifecycleStatus.ARCHIVED) {
+                area.setStatus(LifecycleStatus.PAUSED);
+            }
+        }
+    }
+
+    private void unarchiveDreamChain(Dream dream) {
+        unarchiveVisionArea(dream.getVisionArea());
+        if (dream.isArchived()) {
+            dream.setArchived(false);
+            if (dream.getStatus() == DreamStatus.ARCHIVED) {
+                dream.setStatus(DreamStatus.PAUSED);
+            }
+        }
+    }
+
+    private void unarchiveGoalChain(Goal goal) {
+        unarchiveDreamChain(goal.getDream());
+        goal.setArchived(false);
     }
 
     private <T> BigDecimal average(List<T> values, Function<T, BigDecimal> progressGetter) {

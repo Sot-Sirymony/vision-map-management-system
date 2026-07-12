@@ -360,6 +360,9 @@ export function DashboardPage() {
                 ))}
                 <Typography variant="caption" color="text.secondary">More</Typography>
               </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', pt: 1 }}>
+                {summary?.weeksWithDiligence ?? 0} of the last 12 weeks include a diligence checkup.
+              </Typography>
             </Box>
           )}
         </CardContent>

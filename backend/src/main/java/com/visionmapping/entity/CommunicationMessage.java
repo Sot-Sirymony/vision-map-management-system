@@ -73,6 +73,9 @@ public class CommunicationMessage extends BaseAuditableEntity {
     @Column(name = "benefit_to_partner", length = 2000)
     private String benefitToPartner;
 
+    @Column(name = "word_picture", length = 2000)
+    private String wordPicture;
+
     @Column(name = "expected_outcome", length = 2000)
     private String expectedOutcome;
 

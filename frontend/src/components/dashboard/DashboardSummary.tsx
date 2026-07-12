@@ -1,4 +1,4 @@
-import { Ban, CalendarClock, CalendarDays, CheckCircle2, CheckSquare, Compass, Flag, Sparkles, TrendingUp } from 'lucide-react';
+import { Ban, CalendarClock, CalendarDays, CheckCircle2, CheckSquare, Compass, Flag, Rocket, Sparkles, TrendingUp } from 'lucide-react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { DashboardCard } from './DashboardCard';
@@ -79,6 +79,14 @@ export function DashboardSummary({ summary }: DashboardSummaryProps) {
           tone={(summary?.averageProgress ?? 0) >= 50 ? 'positive' : 'neutral'}
         />
       </TileGroup>
+      {(summary?.moonshotGoals ?? 0) > 0 && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#6b21a8', mt: -0.5 }}>
+          <Rocket size={14} />
+          <Typography variant="caption" sx={{ fontWeight: 600 }}>
+            {summary?.moonshotGoals} of your goals {summary?.moonshotGoals === 1 ? 'is a moonshot' : 'are moonshots'}.
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 }

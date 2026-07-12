@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,8 +31,10 @@ public class CommunicationMessageController {
     private final VisionMappingService service;
 
     @GetMapping
-    public Page<CommunicationMessageResponse> list(@PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        return service.listCommunicationMessages(pageable);
+    public Page<CommunicationMessageResponse> list(
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(defaultValue = "false") boolean includeArchived) {
+        return service.listCommunicationMessages(pageable, includeArchived);
     }
 
     @PostMapping
@@ -59,5 +62,11 @@ public class CommunicationMessageController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.archiveCommunicationMessage(id);
+    }
+
+    @PostMapping("/{id}/restore")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void restore(@PathVariable Long id) {
+        service.restoreCommunicationMessage(id);
     }
 }

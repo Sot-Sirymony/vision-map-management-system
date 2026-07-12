@@ -23,6 +23,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
       title,
       priority: 'MEDIUM',
       status: 'NOT_STARTED',
+      moonshot: false,
     });
     await onDataChange();
   }

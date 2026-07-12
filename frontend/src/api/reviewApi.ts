@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient';
 import type { Review, ReviewRequest } from '../types/vision';
 
-export function listReviews(token: string) {
-  return apiClient<Review[]>('/reviews', { token });
+export function listReviews(token: string, includeArchived = false) {
+  return apiClient<Review[]>(`/reviews?includeArchived=${includeArchived}`, { token });
 }
 
 export function createReview(token: string, request: ReviewRequest) {
@@ -24,6 +24,13 @@ export function updateReview(token: string, id: number, request: ReviewRequest) 
 export function archiveReview(token: string, id: number) {
   return apiClient<void>(`/reviews/${id}`, {
     method: 'DELETE',
+    token,
+  });
+}
+
+export function restoreReview(token: string, id: number) {
+  return apiClient<void>(`/reviews/${id}/restore`, {
+    method: 'POST',
     token,
   });
 }

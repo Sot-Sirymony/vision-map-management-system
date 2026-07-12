@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { archiveVisionArea, createVisionArea, listVisionAreas, updateVisionArea } from '../api/visionAreaApi';
+import { archiveVisionArea, createVisionArea, getVisionAreaArchiveImpact, listVisionAreas, restoreVisionArea, updateVisionArea } from '../api/visionAreaApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import FormControl from '@mui/material/FormControl';
@@ -18,6 +18,7 @@ import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +35,7 @@ export function VisionAreasPage() {
     create: createVisionArea,
     update: updateVisionArea,
     archive: archiveVisionArea,
+    restore: restoreVisionArea,
   });
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -69,6 +71,14 @@ export function VisionAreasPage() {
     setDescription('');
     setPriority('HIGH');
     setStatus('ACTIVE');
+  }
+
+  async function archiveImpactMessage(area: VisionArea) {
+    if (!token) {
+      return 'Archive this vision area?';
+    }
+    const impact = await getVisionAreaArchiveImpact(token, area.id);
+    return `Archiving "${area.name}" also archives ${impact.dreams} dream(s), ${impact.goals} goal(s), ${impact.steps} step(s), and ${impact.tasks} task(s). Everything can be restored later with "Show archived".`;
   }
 
   const formFields = (
@@ -120,6 +130,9 @@ export function VisionAreasPage() {
       </CrudModalForm>
       {crud.loading && <Loading />}
       {crud.error && <ErrorMessage message={crud.error} />}
+      <Card className="filter-bar flex-row">
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
+      </Card>
       <Card>
         <CardContent>
         {crud.items.length === 0 ? (
@@ -138,13 +151,20 @@ export function VisionAreasPage() {
             </TableHead>
             <TableBody>
               {crud.items.map((area) => (
-                <TableRow key={area.id}>
+                <TableRow key={area.id} className={area.archived ? 'row-archived' : ''}>
                   <TableCell>{area.code}</TableCell>
                   <TableCell sx={{ fontWeight: 500 }}>{area.name}</TableCell>
                   <TableCell><PriorityBadge priority={area.priority} /></TableCell>
                   <TableCell><StatusBadge status={area.status} /></TableCell>
                   <TableCell className="row-actions">
-                    <RowActionsMenu onEdit={() => startEdit(area)} onArchive={() => void crud.archive(area.id)} label="Vision area actions" />
+                    <RowActionsMenu
+                      onEdit={() => startEdit(area)}
+                      onArchive={() => void crud.archive(area.id)}
+                      onRestore={() => void crud.restore(area.id)}
+                      archived={area.archived}
+                      confirmArchive={() => archiveImpactMessage(area)}
+                      label="Vision area actions"
+                    />
                   </TableCell>
                 </TableRow>
               ))}

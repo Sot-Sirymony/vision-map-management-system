@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient';
 import type { Page, Partner, PartnerRequest } from '../types/vision';
 
-export function listPartners(token: string, page = 0, size = 20) {
-  return apiClient<Page<Partner>>(`/partners?page=${page}&size=${size}`, { token });
+export function listPartners(token: string, page = 0, size = 20, includeArchived = false) {
+  return apiClient<Page<Partner>>(`/partners?page=${page}&size=${size}&includeArchived=${includeArchived}`, { token });
 }
 
 export function createPartner(token: string, request: PartnerRequest) {
@@ -24,6 +24,13 @@ export function updatePartner(token: string, id: number, request: PartnerRequest
 export function archivePartner(token: string, id: number) {
   return apiClient<void>(`/partners/${id}`, {
     method: 'DELETE',
+    token,
+  });
+}
+
+export function restorePartner(token: string, id: number) {
+  return apiClient<void>(`/partners/${id}/restore`, {
+    method: 'POST',
     token,
   });
 }

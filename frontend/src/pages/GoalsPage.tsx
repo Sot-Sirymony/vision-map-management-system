@@ -1,12 +1,15 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { Rocket } from 'lucide-react';
 import { listDreams } from '../api/dreamApi';
-import { archiveGoal, createGoal, listGoals, updateGoal, updateGoalStatus } from '../api/goalApi';
+import { archiveGoal, createGoal, getGoalArchiveImpact, listGoals, restoreGoal, updateGoal, updateGoalStatus } from '../api/goalApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import { EmptyState } from '../components/common/EmptyState';
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
+import Tooltip from '@mui/material/Tooltip';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Table from '@mui/material/Table';
@@ -23,6 +26,7 @@ import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +54,7 @@ export function GoalsPage() {
     create: createGoal,
     update: updateGoal,
     archive: archiveGoal,
+    restore: restoreGoal,
   });
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
@@ -60,6 +65,8 @@ export function GoalsPage() {
   const [priority, setPriority] = useState<Priority>('HIGH');
   const [targetDate, setTargetDate] = useState('');
   const [status, setStatus] = useState<WorkStatus>('NOT_STARTED');
+  const [moonshot, setMoonshot] = useState(false);
+  const [moonshotVision, setMoonshotVision] = useState('');
   const [filterVisionAreaId, setFilterVisionAreaId] = useState('');
   const [filterDreamId, setFilterDreamId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -96,11 +103,15 @@ export function GoalsPage() {
       priority,
       targetDate: targetDate || undefined,
       status,
+      moonshot,
+      moonshotVision: moonshot ? moonshotVision : undefined,
     });
     if (success) {
       setTitle('');
       setDescription('');
       setSuccessCriteria('');
+      setMoonshot(false);
+      setMoonshotVision('');
     }
     return success;
   }
@@ -114,6 +125,8 @@ export function GoalsPage() {
     setPriority(goal.priority);
     setTargetDate(goal.targetDate ?? '');
     setStatus(goal.status);
+    setMoonshot(goal.moonshot);
+    setMoonshotVision(goal.moonshotVision ?? '');
   }
 
   function cancelEdit() {
@@ -124,6 +137,16 @@ export function GoalsPage() {
     setPriority('HIGH');
     setTargetDate('');
     setStatus('NOT_STARTED');
+    setMoonshot(false);
+    setMoonshotVision('');
+  }
+
+  async function archiveImpactMessage(goal: Goal) {
+    if (!token) {
+      return 'Archive this goal?';
+    }
+    const impact = await getGoalArchiveImpact(token, goal.id);
+    return `Archiving "${goal.title}" also archives ${impact.steps} step(s) and ${impact.tasks} task(s). Everything can be restored later with "Show archived".`;
   }
 
   const filteredGoals = crud.items.filter((goal) => {
@@ -230,6 +253,22 @@ export function GoalsPage() {
         <Textarea value={successCriteria} onChange={(event) => setSuccessCriteria(event.target.value)} />
       </label>
       <label className="field-full">
+        <span className="inline-meta">
+          <Checkbox checked={moonshot} onChange={(event) => setMoonshot(event.target.checked)} />
+          Moonshot goal
+        </span>
+      </label>
+      {moonshot && (
+        <label className="field-full">
+          Moonshot vision
+          <Textarea value={moonshotVision} onChange={(event) => setMoonshotVision(event.target.value)} />
+          <span className="field-hint">
+            If resources were no limit, what would the ideal result look like? Aim beyond what feels achievable — this
+            is aspirational only and never changes the goal's progress or completion.
+          </span>
+        </label>
+      )}
+      <label className="field-full">
         Description
         <Textarea value={description} onChange={(event) => setDescription(event.target.value)} />
       </label>
@@ -300,6 +339,7 @@ export function GoalsPage() {
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
         </label>
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
       {selectedIds.size > 0 && (
         <Card className="bulk-actions-bar flex-row">
@@ -340,17 +380,35 @@ export function GoalsPage() {
             </TableHead>
             <TableBody>
               {filteredGoals.map((goal) => (
-                <TableRow key={goal.id} className={isOverdue(goal.targetDate, goal.status) ? 'row-overdue' : ''}>
+                <TableRow key={goal.id} className={goal.archived ? 'row-archived' : isOverdue(goal.targetDate, goal.status) ? 'row-overdue' : ''}>
                   <TableCell>
                     <Checkbox checked={selectedIds.has(goal.id)} onChange={() => toggleSelected(goal.id)} aria-label={`Select ${goal.title}`} />
                   </TableCell>
                   <TableCell>{goal.code}</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>{goal.title}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>
+                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                      {goal.moonshot && (
+                        <Tooltip title={goal.moonshotVision || 'Moonshot goal'} arrow>
+                          <Box component="span" sx={{ display: 'inline-flex', color: '#7c3aed' }} aria-label="Moonshot goal">
+                            <Rocket size={15} />
+                          </Box>
+                        </Tooltip>
+                      )}
+                      {goal.title}
+                    </Box>
+                  </TableCell>
                   <TableCell><PriorityBadge priority={goal.priority} /></TableCell>
                   <TableCell><StatusBadge status={goal.status} /></TableCell>
                   <TableCell><ProgressBar value={Number(goal.progressPercent)} /></TableCell>
                   <TableCell className="row-actions">
-                    <RowActionsMenu onEdit={() => startEdit(goal)} onArchive={() => void crud.archive(goal.id)} label="Goal actions" />
+                    <RowActionsMenu
+                      onEdit={() => startEdit(goal)}
+                      onArchive={() => void crud.archive(goal.id)}
+                      onRestore={() => void crud.restore(goal.id)}
+                      archived={goal.archived}
+                      confirmArchive={() => archiveImpactMessage(goal)}
+                      label="Goal actions"
+                    />
                   </TableCell>
                 </TableRow>
               ))}

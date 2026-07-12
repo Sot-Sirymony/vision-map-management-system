@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
-import { archivePartner, createPartner, listPartners, updatePartner } from '../api/partnerApi';
+import { archivePartner, createPartner, listPartners, restorePartner, updatePartner } from '../api/partnerApi';
 import { listSteps } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
 import { listVisionAreas } from '../api/visionAreaApi';
@@ -23,6 +23,7 @@ import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -38,14 +39,15 @@ export function PartnersPage() {
   const crud = useCrudEntity<Partner, PartnerRequest>({
     token,
     entityLabel: 'partners',
-    list: async (currentToken) => {
-      const result = await listPartners(currentToken, page, 20);
+    list: async (currentToken, includeArchived) => {
+      const result = await listPartners(currentToken, page, 20, includeArchived);
       setTotalPages(result.totalPages);
       return result.content;
     },
     create: createPartner,
     update: updatePartner,
     archive: archivePartner,
+    restore: restorePartner,
   });
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
@@ -253,6 +255,9 @@ export function PartnersPage() {
       </CrudModalForm>
       {crud.loading && <Loading />}
       {crud.error && <ErrorMessage message={crud.error} />}
+      <Card className="filter-bar flex-row">
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
+      </Card>
       <Card>
         <CardContent>
         {crud.items.length === 0 ? (
@@ -271,13 +276,19 @@ export function PartnersPage() {
             </TableHead>
             <TableBody>
               {crud.items.map((partner) => (
-                <TableRow key={partner.id}>
+                <TableRow key={partner.id} className={partner.archived ? 'row-archived' : ''}>
                   <TableCell>{partner.code}</TableCell>
                   <TableCell sx={{ fontWeight: 500 }}>{partner.name}</TableCell>
                   <TableCell>{partnerSupportTypeLabels[partner.supportType]}</TableCell>
                   <TableCell><StatusBadge status={partner.status} /></TableCell>
                   <TableCell className="row-actions">
-                    <RowActionsMenu onEdit={() => startEdit(partner)} onArchive={() => void crud.archive(partner.id)} label="Partner actions" />
+                    <RowActionsMenu
+                      onEdit={() => startEdit(partner)}
+                      onArchive={() => void crud.archive(partner.id)}
+                      onRestore={() => void crud.restore(partner.id)}
+                      archived={partner.archived}
+                      label="Partner actions"
+                    />
                   </TableCell>
                 </TableRow>
               ))}

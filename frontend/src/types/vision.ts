@@ -66,6 +66,8 @@ export type Goal = {
   targetDate?: string;
   status: WorkStatus;
   progressPercent: number;
+  moonshot: boolean;
+  moonshotVision?: string;
   archived: boolean;
 };
 
@@ -77,6 +79,8 @@ export type GoalRequest = {
   priority: Priority;
   targetDate?: string;
   status: WorkStatus;
+  moonshot: boolean;
+  moonshotVision?: string;
 };
 
 export type VisionStep = {
@@ -190,6 +194,7 @@ export type CommunicationMessage = {
   problem?: string;
   request?: string;
   benefitToPartner?: string;
+  wordPicture?: string;
   expectedOutcome?: string;
   messageBody?: string;
   status: CommunicationStatus;
@@ -211,6 +216,12 @@ export type Review = {
   blockedTasks?: string;
   lessonsLearned?: string;
   nextActions?: string;
+  diligenceClearVision?: boolean | null;
+  diligenceWorkedPlan?: boolean | null;
+  diligenceUsedLeverage?: boolean | null;
+  diligencePriorityFirst?: boolean | null;
+  diligenceSmarterRoute?: boolean | null;
+  diligenceNote?: string;
   archived: boolean;
 };
 
@@ -261,6 +272,13 @@ export type Page<T> = {
   last: boolean;
 };
 
+export type ArchiveImpact = {
+  dreams: number;
+  goals: number;
+  steps: number;
+  tasks: number;
+};
+
 export type DashboardTrendPoint = {
   weekEnd: string;
   progress: number;
@@ -291,4 +309,6 @@ export type DashboardSummary = {
   progressTrend: DashboardTrendPoint[];
   visionAreaProgress: DashboardAreaProgress[];
   priorityTasks: TaskItem[];
+  weeksWithDiligence: number;
+  moonshotGoals: number;
 };

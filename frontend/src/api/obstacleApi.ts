@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient';
 import type { Obstacle, ObstacleRequest } from '../types/vision';
 
-export function listObstacles(token: string) {
-  return apiClient<Obstacle[]>('/obstacles', { token });
+export function listObstacles(token: string, includeArchived = false) {
+  return apiClient<Obstacle[]>(`/obstacles?includeArchived=${includeArchived}`, { token });
 }
 
 export function createObstacle(token: string, request: ObstacleRequest) {
@@ -24,6 +24,13 @@ export function updateObstacle(token: string, id: number, request: ObstacleReque
 export function archiveObstacle(token: string, id: number) {
   return apiClient<void>(`/obstacles/${id}`, {
     method: 'DELETE',
+    token,
+  });
+}
+
+export function restoreObstacle(token: string, id: number) {
+  return apiClient<void>(`/obstacles/${id}/restore`, {
+    method: 'POST',
     token,
   });
 }

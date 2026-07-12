@@ -15,6 +15,12 @@ public record ReviewRequest(
         @Size(max = 3000) String delayedTasks,
         @Size(max = 3000) String blockedTasks,
         @Size(max = 3000) String lessonsLearned,
-        @Size(max = 3000) String nextActions
+        @Size(max = 3000) String nextActions,
+        Boolean diligenceClearVision,
+        Boolean diligenceWorkedPlan,
+        Boolean diligenceUsedLeverage,
+        Boolean diligencePriorityFirst,
+        Boolean diligenceSmarterRoute,
+        @Size(max = 2000) String diligenceNote
 ) {
 }

@@ -71,6 +71,13 @@ public class Goal extends BaseAuditableEntity {
     @Column(name = "manual_progress_override", nullable = false)
     private boolean manualProgressOverride;
 
+    // FR-14: aspirational metadata only — never touches progress/completion.
+    @Column(nullable = false)
+    private boolean moonshot;
+
+    @Column(name = "moonshot_vision", length = 3000)
+    private String moonshotVision;
+
     @Column(nullable = false)
     private boolean archived;
 }

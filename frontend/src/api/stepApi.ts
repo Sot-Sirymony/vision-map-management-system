@@ -1,8 +1,9 @@
 import { apiClient } from './apiClient';
+import type { ArchiveImpact } from '../types/vision';
 import type { VisionStep, VisionStepRequest } from '../types/vision';
 
-export function listSteps(token: string) {
-  return apiClient<VisionStep[]>('/steps', { token });
+export function listSteps(token: string, includeArchived = false) {
+  return apiClient<VisionStep[]>(`/steps?includeArchived=${includeArchived}`, { token });
 }
 
 export function createStep(token: string, request: VisionStepRequest) {
@@ -26,4 +27,15 @@ export function archiveStep(token: string, id: number) {
     method: 'DELETE',
     token,
   });
+}
+
+export function restoreStep(token: string, id: number) {
+  return apiClient<void>(`/steps/${id}/restore`, {
+    method: 'POST',
+    token,
+  });
+}
+
+export function getStepArchiveImpact(token: string, id: number) {
+  return apiClient<ArchiveImpact>(`/steps/${id}/archive-impact`, { token });
 }

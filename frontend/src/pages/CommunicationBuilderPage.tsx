@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { archiveCommunicationMessage, createCommunicationMessage, listCommunicationMessages, updateCommunicationMessage } from '../api/communicationApi';
+import { archiveCommunicationMessage, createCommunicationMessage, listCommunicationMessages, restoreCommunicationMessage, updateCommunicationMessage } from '../api/communicationApi';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listPartners } from '../api/partnerApi';
@@ -22,6 +22,7 @@ import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -37,14 +38,15 @@ export function CommunicationBuilderPage() {
   const crud = useCrudEntity<CommunicationMessage, CommunicationMessageRequest>({
     token,
     entityLabel: 'communication messages',
-    list: async (currentToken) => {
-      const result = await listCommunicationMessages(currentToken, page, 20);
+    list: async (currentToken, includeArchived) => {
+      const result = await listCommunicationMessages(currentToken, page, 20, includeArchived);
       setTotalPages(result.totalPages);
       return result.content;
     },
     create: createCommunicationMessage,
     update: updateCommunicationMessage,
     archive: archiveCommunicationMessage,
+    restore: restoreCommunicationMessage,
   });
   const [partners, setPartners] = useState<Partner[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
@@ -57,7 +59,11 @@ export function CommunicationBuilderPage() {
   const [audience, setAudience] = useState('');
   const [purpose, setPurpose] = useState('');
   const [subject, setSubject] = useState('');
+  const [hook, setHook] = useState('');
+  const [problem, setProblem] = useState('');
   const [request, setRequest] = useState('');
+  const [benefitToPartner, setBenefitToPartner] = useState('');
+  const [wordPicture, setWordPicture] = useState('');
   const [expectedOutcome, setExpectedOutcome] = useState('');
   const [messageBody, setMessageBody] = useState('');
   const [status, setStatus] = useState<CommunicationStatus>('DRAFT');
@@ -89,7 +95,11 @@ export function CommunicationBuilderPage() {
       audience,
       purpose,
       subject,
+      hook,
+      problem,
       request,
+      benefitToPartner,
+      wordPicture,
       expectedOutcome,
       messageBody,
       status,
@@ -98,7 +108,11 @@ export function CommunicationBuilderPage() {
     if (success) {
       setSubject('');
       setPurpose('');
+      setHook('');
+      setProblem('');
       setRequest('');
+      setBenefitToPartner('');
+      setWordPicture('');
       setExpectedOutcome('');
       setMessageBody('');
     }
@@ -114,7 +128,11 @@ export function CommunicationBuilderPage() {
     setAudience(message.audience ?? '');
     setPurpose(message.purpose ?? '');
     setSubject(message.subject ?? '');
+    setHook(message.hook ?? '');
+    setProblem(message.problem ?? '');
     setRequest(message.request ?? '');
+    setBenefitToPartner(message.benefitToPartner ?? '');
+    setWordPicture(message.wordPicture ?? '');
     setExpectedOutcome(message.expectedOutcome ?? '');
     setMessageBody(message.messageBody ?? '');
     setStatus(message.status);
@@ -130,7 +148,11 @@ export function CommunicationBuilderPage() {
     setAudience('');
     setPurpose('');
     setSubject('');
+    setHook('');
+    setProblem('');
     setRequest('');
+    setBenefitToPartner('');
+    setWordPicture('');
     setExpectedOutcome('');
     setMessageBody('');
     setStatus('DRAFT');
@@ -202,8 +224,33 @@ export function CommunicationBuilderPage() {
         <Textarea value={purpose} onChange={(event) => setPurpose(event.target.value)} />
       </label>
       <label className="field-full">
+        Hook
+        <Input value={hook} onChange={(event) => setHook(event.target.value)} placeholder="An opening line that earns attention" />
+        <span className="field-hint">
+          Open with something specific to them, not a generic greeting. Try one of: a genuine question about their
+          work; a shared connection or moment ("We met at..."); or a concrete result you admire ("Your talk on X
+          changed how I...").
+        </span>
+      </label>
+      <label className="field-full">
+        Problem
+        <Textarea value={problem} onChange={(event) => setProblem(event.target.value)} />
+      </label>
+      <label className="field-full">
+        Word Picture
+        <Textarea value={wordPicture} onChange={(event) => setWordPicture(event.target.value)} />
+        <span className="field-hint">
+          Optional. A short, relatable scene that makes the ask concrete. Instead of "I need mentorship," paint it:
+          "I have the pieces but keep taking wrong turns - like driving a new city without a map."
+        </span>
+      </label>
+      <label className="field-full">
         Request
         <Textarea value={request} onChange={(event) => setRequest(event.target.value)} />
+      </label>
+      <label className="field-full">
+        Benefit to Partner
+        <Textarea value={benefitToPartner} onChange={(event) => setBenefitToPartner(event.target.value)} />
       </label>
       <label className="field-full">
         Expected Outcome
@@ -216,18 +263,51 @@ export function CommunicationBuilderPage() {
     </>
   );
 
+  // FR-17.3: compose in a fixed persuasive order — Hook, Problem (with the
+  // word picture folded in), Request, Benefit, Expected Outcome — including
+  // only the parts the user actually filled, in respectful language. The
+  // draft stays fully editable afterward.
   function handleGenerateMessage() {
     const partner = partners.find((item) => item.id === Number(partnerId));
-    const recipient = audience || partner?.name || 'Partner';
-    setMessageBody(`Dear ${recipient},
+    const recipient = audience || partner?.name || 'there';
+    const paragraphs: string[] = [];
 
-I am working on ${purpose || 'an important vision mapping goal'}. I would appreciate your support with ${request || 'reviewing the next action and giving practical guidance'}.
+    if (hook.trim()) {
+      paragraphs.push(hook.trim());
+    }
 
-Your guidance would help ${expectedOutcome || 'move this work forward with more clarity'}. I believe this work can also create useful learning and shared value.
+    const contextSentences: string[] = [];
+    if (purpose.trim()) {
+      contextSentences.push(`I am working on ${purpose.trim()}.`);
+    }
+    if (problem.trim()) {
+      contextSentences.push(`Right now, ${lowerFirst(problem.trim())}`);
+    }
+    if (wordPicture.trim()) {
+      contextSentences.push(`To put it plainly: ${lowerFirst(wordPicture.trim())}`);
+    }
+    if (contextSentences.length > 0) {
+      paragraphs.push(contextSentences.join(' '));
+    }
 
-Would you be available for a short conversation about this?
+    if (request.trim()) {
+      paragraphs.push(`I would be grateful for your help with ${lowerFirst(request.trim())}`);
+    }
 
-Best regards`);
+    const closingSentences: string[] = [];
+    if (expectedOutcome.trim()) {
+      closingSentences.push(`Your support would help ${lowerFirst(expectedOutcome.trim())}`);
+    }
+    if (benefitToPartner.trim()) {
+      closingSentences.push(`I also hope this could be worthwhile for you: ${lowerFirst(benefitToPartner.trim())}`);
+    }
+    if (closingSentences.length > 0) {
+      paragraphs.push(closingSentences.join(' '));
+    }
+
+    paragraphs.push('Would you be open to a short conversation about this? No pressure either way, and thank you for considering it.');
+
+    setMessageBody(`Dear ${recipient},\n\n${paragraphs.join('\n\n')}\n\nBest regards`);
   }
 
   return (
@@ -245,6 +325,9 @@ Best regards`);
       </CrudModalForm>
       {crud.loading && <Loading />}
       {crud.error && <ErrorMessage message={crud.error} />}
+      <Card className="filter-bar flex-row">
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
+      </Card>
       <Card>
         <CardContent>
         {crud.items.length === 0 ? (
@@ -263,13 +346,19 @@ Best regards`);
             </TableHead>
             <TableBody>
               {crud.items.map((message) => (
-                <TableRow key={message.id}>
+                <TableRow key={message.id} className={message.archived ? 'row-archived' : ''}>
                   <TableCell sx={{ fontWeight: 500 }}>{message.subject || '-'}</TableCell>
                   <TableCell>{message.audience || '-'}</TableCell>
                   <TableCell><StatusBadge status={message.status} /></TableCell>
                   <TableCell>{message.followUpDate || '-'}</TableCell>
                   <TableCell className="row-actions">
-                    <RowActionsMenu onEdit={() => startEdit(message)} onArchive={() => void crud.archive(message.id)} label="Message actions" />
+                    <RowActionsMenu
+                      onEdit={() => startEdit(message)}
+                      onArchive={() => void crud.archive(message.id)}
+                      onRestore={() => void crud.restore(message.id)}
+                      archived={message.archived}
+                      label="Message actions"
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -292,4 +381,14 @@ Best regards`);
 
 function optionalNumber(value: string) {
   return value ? Number(value) : undefined;
+}
+
+// Lowercases the first letter so a user's field (often written as its own
+// sentence) reads naturally mid-sentence in the generated body. Leaves the
+// standalone pronoun "I" capitalized, since lowering it to "i" reads wrong.
+function lowerFirst(value: string) {
+  if (/^I(\s|'|$)/.test(value)) {
+    return value;
+  }
+  return value.charAt(0).toLowerCase() + value.slice(1);
 }

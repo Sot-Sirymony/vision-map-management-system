@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listSteps } from '../api/stepApi';
-import { archiveTask, createTask, listTasks, updateTask, updateTaskStatus } from '../api/taskApi';
+import { archiveTask, createTask, listTasks, restoreTask, updateTask, updateTaskStatus } from '../api/taskApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Checkbox from '@mui/material/Checkbox';
@@ -26,6 +26,7 @@ import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +51,7 @@ export function TasksBoardPage() {
     create: createTask,
     update: updateTask,
     archive: archiveTask,
+    restore: restoreTask,
   });
   const [steps, setSteps] = useState<VisionStep[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -372,6 +374,7 @@ export function TasksBoardPage() {
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
         </label>
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
       {filterStepId && (
         <Card className="filter-banner flex-row">
@@ -418,7 +421,7 @@ export function TasksBoardPage() {
                   </TableHead>
                   <TableBody>
                     {visibleTasks.map((task) => (
-                      <TableRow key={task.id} className={isOverdue(task.dueDate, task.status) ? 'row-overdue' : ''}>
+                      <TableRow key={task.id} className={task.archived ? 'row-archived' : isOverdue(task.dueDate, task.status) ? 'row-overdue' : ''}>
                         <TableCell sx={{ fontWeight: 500 }}>{task.title}</TableCell>
                         <TableCell>{task.owner}</TableCell>
                         <TableCell>{task.dueDate}</TableCell>
@@ -426,7 +429,13 @@ export function TasksBoardPage() {
                         <TableCell><StatusBadge status={task.status} /></TableCell>
                         <TableCell sx={{ width: 160 }}><ProgressBar value={Number(task.progressPercent)} /></TableCell>
                         <TableCell className="row-actions">
-                          <RowActionsMenu onEdit={() => startEdit(task)} onArchive={() => void crud.archive(task.id)} label="Task actions" />
+                          <RowActionsMenu
+                            onEdit={() => startEdit(task)}
+                            onArchive={() => void crud.archive(task.id)}
+                            onRestore={() => void crud.restore(task.id)}
+                            archived={task.archived}
+                            label="Task actions"
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -458,9 +467,9 @@ export function TasksBoardPage() {
               <div className="stack-list">
                 {columnTasks.map((task) => (
                   <article
-                    className={`list-card${draggedTaskId === task.id ? ' list-card--dragging' : ''}${taskHighlightClass(task)}`}
+                    className={`list-card${draggedTaskId === task.id ? ' list-card--dragging' : ''}${task.archived ? ' list-card--archived' : taskHighlightClass(task)}`}
                     key={task.id}
-                    draggable
+                    draggable={!task.archived}
                     onDragStart={(event) => handleDragStart(event, task.id)}
                     onDragEnd={handleDragEnd}
                   >
@@ -473,12 +482,20 @@ export function TasksBoardPage() {
                     <ProgressBar value={Number(task.progressPercent)} />
                     {task.blockerReason && <p>{task.blockerReason}</p>}
                     <div className="row-actions">
-                      <FormControl size="small">
-                        <Select value={task.status} onChange={(event) => void handleMove(task.id, event.target.value as WorkStatus)}>
-                          {columns.map((targetStatus) => <MenuItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</MenuItem>)}
-                        </Select>
-                      </FormControl>
-                      <RowActionsMenu onEdit={() => startEdit(task)} onArchive={() => void crud.archive(task.id)} label="Task actions" />
+                      {!task.archived && (
+                        <FormControl size="small">
+                          <Select value={task.status} onChange={(event) => void handleMove(task.id, event.target.value as WorkStatus)}>
+                            {columns.map((targetStatus) => <MenuItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</MenuItem>)}
+                          </Select>
+                        </FormControl>
+                      )}
+                      <RowActionsMenu
+                        onEdit={() => startEdit(task)}
+                        onArchive={() => void crud.archive(task.id)}
+                        onRestore={() => void crud.restore(task.id)}
+                        archived={task.archived}
+                        label="Task actions"
+                      />
                     </div>
                   </article>
                 ))}

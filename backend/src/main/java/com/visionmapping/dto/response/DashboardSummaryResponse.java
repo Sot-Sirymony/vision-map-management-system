@@ -30,7 +30,9 @@ public record DashboardSummaryResponse(
         Map<String, Long> reviewCadence,
         List<TrendPoint> progressTrend,
         List<AreaProgress> visionAreaProgress,
-        List<TaskItemResponse> priorityTasks
+        List<TaskItemResponse> priorityTasks,
+        long weeksWithDiligence,
+        long moonshotGoals
 ) {
 
     /** Weekly sample of the running average task progress. */

@@ -219,6 +219,97 @@ class VisionMappingServiceTest {
         assertThat(summary.activeGoals()).isEqualTo(2);
     }
 
+    // --- Restore pulls archived parents back with the child -----------------
+
+    @Test
+    void restoringTaskRestoresArchivedParentChain() {
+        VisionArea area = visionArea(1L);
+        area.setArchived(true);
+        area.setStatus(LifecycleStatus.ARCHIVED);
+        Dream dream = dream(1L, area);
+        dream.setArchived(true);
+        dream.setStatus(DreamStatus.ARCHIVED);
+        Goal goal = goal(10L, dream, WorkStatus.NOT_STARTED, BigDecimal.ZERO, false);
+        goal.setArchived(true);
+        VisionStep step = step(20L, goal, WorkStatus.NOT_STARTED, BigDecimal.ZERO, false, false);
+        step.setArchived(true);
+        TaskItem task = task(30L, step, WorkStatus.NOT_STARTED, BigDecimal.ZERO);
+        task.setArchived(true);
+        when(taskItemRepository.findById(30L)).thenReturn(Optional.of(task));
+        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of(task));
+        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(step));
+
+        service.restoreTask(30L);
+
+        assertThat(task.isArchived()).isFalse();
+        assertThat(step.isArchived()).isFalse();
+        assertThat(goal.isArchived()).isFalse();
+        assertThat(dream.isArchived()).isFalse();
+        assertThat(area.isArchived()).isFalse();
+        // The pre-archive status is unknown, so restored parents come back Paused.
+        assertThat(dream.getStatus()).isEqualTo(DreamStatus.PAUSED);
+        assertThat(area.getStatus()).isEqualTo(LifecycleStatus.PAUSED);
+    }
+
+    // --- Archive impact counts only what a cascade would newly archive ------
+
+    @Test
+    void archiveImpactCountsOnlyUnarchivedDescendants() {
+        VisionArea area = visionArea(1L);
+        Dream dream = dream(1L, area);
+        Goal goal = goal(10L, dream, WorkStatus.NOT_STARTED, BigDecimal.ZERO, false);
+        VisionStep activeStep = step(20L, goal, WorkStatus.NOT_STARTED, BigDecimal.ZERO, false, false);
+        VisionStep archivedStep = step(21L, goal, WorkStatus.NOT_STARTED, BigDecimal.ZERO, false, false);
+        archivedStep.setArchived(true);
+        TaskItem activeTask = task(30L, activeStep, WorkStatus.NOT_STARTED, BigDecimal.ZERO);
+        TaskItem archivedTask = task(31L, activeStep, WorkStatus.NOT_STARTED, BigDecimal.ZERO);
+        archivedTask.setArchived(true);
+        when(visionAreaRepository.findById(1L)).thenReturn(Optional.of(area));
+        when(dreamRepository.findByVisionArea_IdAndUser_Id(1L, 1L)).thenReturn(List.of(dream));
+        when(goalRepository.findByDream_IdAndUser_Id(1L, 1L)).thenReturn(List.of(goal));
+        when(visionStepRepository.findByGoal_IdAndUser_Id(10L, 1L)).thenReturn(List.of(activeStep, archivedStep));
+        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(activeTask, archivedTask));
+        when(taskItemRepository.findByStep_IdAndUser_Id(21L, 1L)).thenReturn(List.of());
+
+        var impact = service.visionAreaArchiveImpact(1L);
+
+        assertThat(impact.dreams()).isEqualTo(1);
+        assertThat(impact.goals()).isEqualTo(1);
+        assertThat(impact.steps()).isEqualTo(1);
+        assertThat(impact.tasks()).isEqualTo(1);
+    }
+
+    // --- Diligence checklist is all-or-none ---------------------------------
+
+    @Test
+    void partialDiligenceChecklistIsRejected() {
+        com.visionmapping.dto.request.ReviewRequest request = new com.visionmapping.dto.request.ReviewRequest(
+                com.visionmapping.entity.enums.ReviewType.WEEKLY, LocalDate.now(), null, null,
+                "Summary", null, null, null, null, null,
+                true, true, null, null, null, null);
+
+        assertThatThrownBy(() -> service.createReview(request))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("Answer every diligence question, or skip the whole checklist.");
+    }
+
+    @Test
+    void fullOrSkippedDiligenceChecklistIsAccepted() {
+        when(reviewRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        com.visionmapping.dto.request.ReviewRequest full = new com.visionmapping.dto.request.ReviewRequest(
+                com.visionmapping.entity.enums.ReviewType.WEEKLY, LocalDate.now(), null, null,
+                "Summary", null, null, null, null, null,
+                true, false, true, true, false, "Tempo weeks slipped");
+        com.visionmapping.dto.request.ReviewRequest skipped = new com.visionmapping.dto.request.ReviewRequest(
+                com.visionmapping.entity.enums.ReviewType.DAILY, LocalDate.now(), null, null,
+                "Summary", null, null, null, null, null,
+                null, null, null, null, null, null);
+
+        assertThat(service.createReview(full).diligenceWorkedPlan()).isFalse();
+        assertThat(service.createReview(skipped).diligenceClearVision()).isNull();
+    }
+
     // --- Blocked task requires a reason ------------------------------------
 
     @Test

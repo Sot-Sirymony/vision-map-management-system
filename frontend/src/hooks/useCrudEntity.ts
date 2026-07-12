@@ -4,18 +4,21 @@ import { useToast } from '../context/ToastContext';
 type UseCrudEntityConfig<T, TRequest> = {
   token: string | null;
   entityLabel: string;
-  list: (token: string) => Promise<T[]>;
+  list: (token: string, includeArchived: boolean) => Promise<T[]>;
   create: (token: string, request: TRequest) => Promise<T>;
   update: (token: string, id: number, request: TRequest) => Promise<T>;
   archive: (token: string, id: number) => Promise<void>;
+  restore?: (token: string, id: number) => Promise<void>;
   saveMessage?: string;
   archiveMessage?: string;
+  restoreMessage?: string;
 };
 
 /**
- * Owns the load/save/archive/edit state machine shared by every CRUD page:
- * list state, loading/saving/error flags, which record (if any) is being
- * edited, and the create-vs-update branching on submit.
+ * Owns the load/save/archive/restore/edit state machine shared by every CRUD
+ * page: list state, loading/saving/error flags, which record (if any) is
+ * being edited, the create-vs-update branching on submit, and the
+ * show-archived toggle (the list function receives it as `includeArchived`).
  *
  * Does not fetch on its own — call `reload()` from the page's own effect
  * (alongside any reference-data fetches the page needs for its dropdowns),
@@ -24,27 +27,37 @@ type UseCrudEntityConfig<T, TRequest> = {
  * page, since that genuinely differs per entity.
  */
 export function useCrudEntity<T extends { id: number }, TRequest>(config: UseCrudEntityConfig<T, TRequest>) {
-  const { token, entityLabel, list, create, update, archive, saveMessage = 'Saved.', archiveMessage = 'Archived.' } = config;
+  const {
+    token, entityLabel, list, create, update, archive, restore,
+    saveMessage = 'Saved.', archiveMessage = 'Archived.', restoreMessage = 'Restored.',
+  } = config;
   const { showToast } = useToast();
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
-  async function reload() {
+  async function reload(includeArchived = showArchived) {
     if (!token) {
       return;
     }
     setLoading(true);
     try {
-      setItems(await list(token));
+      setItems(await list(token, includeArchived));
       setError('');
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : `Unable to load ${entityLabel}.`);
     } finally {
       setLoading(false);
     }
+  }
+
+  function toggleShowArchived() {
+    const next = !showArchived;
+    setShowArchived(next);
+    void reload(next);
   }
 
   async function save(request: TRequest) {
@@ -83,6 +96,19 @@ export function useCrudEntity<T extends { id: number }, TRequest>(config: UseCru
     }
   }
 
+  async function restoreItem(id: number) {
+    if (!token || !restore) {
+      return;
+    }
+    try {
+      await restore(token, id);
+      await reload();
+      showToast(restoreMessage);
+    } catch (restoreError) {
+      setError(restoreError instanceof Error ? restoreError.message : `Unable to restore ${entityLabel}.`);
+    }
+  }
+
   function startEdit(id: number) {
     setEditingId(id);
   }
@@ -98,9 +124,12 @@ export function useCrudEntity<T extends { id: number }, TRequest>(config: UseCru
     error,
     setError,
     editingId,
+    showArchived,
+    toggleShowArchived,
     reload,
     save,
     archive: remove,
+    restore: restoreItem,
     startEdit,
     cancelEdit,
   };

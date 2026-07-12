@@ -69,6 +69,26 @@ public class Review extends BaseAuditableEntity {
     @Column(name = "next_actions", length = 3000)
     private String nextActions;
 
+    // Diligence checklist (FR-16): all five answers null = checklist skipped;
+    // all five non-null = answered. Mixed states are rejected by the service.
+    @Column(name = "diligence_clear_vision")
+    private Boolean diligenceClearVision;
+
+    @Column(name = "diligence_worked_plan")
+    private Boolean diligenceWorkedPlan;
+
+    @Column(name = "diligence_used_leverage")
+    private Boolean diligenceUsedLeverage;
+
+    @Column(name = "diligence_priority_first")
+    private Boolean diligencePriorityFirst;
+
+    @Column(name = "diligence_smarter_route")
+    private Boolean diligenceSmarterRoute;
+
+    @Column(name = "diligence_note", length = 2000)
+    private String diligenceNote;
+
     @Column(nullable = false)
     private boolean archived;
 }

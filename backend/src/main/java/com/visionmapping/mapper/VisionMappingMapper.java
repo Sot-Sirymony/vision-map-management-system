@@ -40,7 +40,8 @@ public class VisionMappingMapper {
     public GoalResponse toResponse(Goal entity) {
         return new GoalResponse(entity.getId(), entity.getCode(), entity.getDream().getId(), entity.getTitle(),
                 entity.getDescription(), entity.getSuccessCriteria(), entity.getPriority(), entity.getTargetDate(),
-                entity.getStatus(), entity.getProgressPercent(), entity.isManualProgressOverride(), entity.isArchived(),
+                entity.getStatus(), entity.getProgressPercent(), entity.isManualProgressOverride(),
+                entity.isMoonshot(), entity.getMoonshotVision(), entity.isArchived(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
@@ -71,7 +72,7 @@ public class VisionMappingMapper {
         return new CommunicationMessageResponse(entity.getId(), id(entity.getPartner()), id(entity.getRelatedDream()),
                 id(entity.getRelatedGoal()), id(entity.getRelatedTask()), entity.getAudience(), entity.getPurpose(),
                 entity.getSubject(), entity.getHook(), entity.getProblem(), entity.getRequest(),
-                entity.getBenefitToPartner(), entity.getExpectedOutcome(), entity.getMessageBody(), entity.getStatus(),
+                entity.getBenefitToPartner(), entity.getWordPicture(), entity.getExpectedOutcome(), entity.getMessageBody(), entity.getStatus(),
                 entity.getFollowUpDate(), entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
@@ -79,7 +80,9 @@ public class VisionMappingMapper {
         return new ReviewResponse(entity.getId(), entity.getReviewType(), entity.getReviewDate(),
                 id(entity.getRelatedVisionArea()), id(entity.getRelatedDream()), entity.getSummary(),
                 entity.getCompletedTasks(), entity.getDelayedTasks(), entity.getBlockedTasks(), entity.getLessonsLearned(),
-                entity.getNextActions(), entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getNextActions(), entity.getDiligenceClearVision(), entity.getDiligenceWorkedPlan(),
+                entity.getDiligenceUsedLeverage(), entity.getDiligencePriorityFirst(), entity.getDiligenceSmarterRoute(),
+                entity.getDiligenceNote(), entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public ObstacleResponse toResponse(Obstacle entity) {

@@ -17,6 +17,7 @@ public record CommunicationMessageResponse(
         String problem,
         String request,
         String benefitToPartner,
+        String wordPicture,
         String expectedOutcome,
         String messageBody,
         CommunicationStatus status,

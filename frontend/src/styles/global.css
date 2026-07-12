@@ -156,6 +156,19 @@ a {
   color: #1d4ed8;
 }
 
+.data-table tr.row-archived td {
+  color: #8a8886;
+}
+
+.data-table tr.row-archived {
+  background: #fafafa;
+}
+
+.list-card--archived {
+  opacity: 0.65;
+  background: #fafafa;
+}
+
 .data-table tr.row-overdue {
   background: #fdf3f3;
 }
@@ -238,6 +251,32 @@ a {
   font-size: 0.8rem;
   font-weight: 500;
   color: #0d7d70;
+}
+
+.diligence-checklist {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e1e1e1;
+  border-radius: 4px;
+  background: #f5f5f5;
+}
+
+.diligence-checklist p {
+  margin: 0;
+  color: #616161;
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.diligence-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #242424;
 }
 
 .toast-stack {

@@ -1,8 +1,9 @@
 import { apiClient } from './apiClient';
+import type { ArchiveImpact } from '../types/vision';
 import type { Goal, GoalRequest } from '../types/vision';
 
-export function listGoals(token: string) {
-  return apiClient<Goal[]>('/goals', { token });
+export function listGoals(token: string, includeArchived = false) {
+  return apiClient<Goal[]>(`/goals?includeArchived=${includeArchived}`, { token });
 }
 
 export function createGoal(token: string, request: GoalRequest) {
@@ -34,4 +35,15 @@ export function updateGoalStatus(token: string, id: number, status: string) {
     token,
     body: JSON.stringify({ status, manualOverride: true }),
   });
+}
+
+export function restoreGoal(token: string, id: number) {
+  return apiClient<void>(`/goals/${id}/restore`, {
+    method: 'POST',
+    token,
+  });
+}
+
+export function getGoalArchiveImpact(token: string, id: number) {
+  return apiClient<ArchiveImpact>(`/goals/${id}/archive-impact`, { token });
 }

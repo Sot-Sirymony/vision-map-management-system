@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { listDreams } from '../api/dreamApi';
-import { archiveReview, createReview, listReviews, updateReview } from '../api/reviewApi';
+import { archiveReview, createReview, listReviews, restoreReview, updateReview } from '../api/reviewApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -8,6 +8,8 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Table from '@mui/material/Table';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
@@ -19,6 +21,7 @@ import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +29,50 @@ import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { Dream, Review, ReviewRequest, ReviewType, VisionArea } from '../types/vision';
 import { reviewTypeLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
+
+// FR-16.3: guided questions per review type, shown alongside the form.
+const REVIEW_GUIDES: Record<ReviewType, string[]> = {
+  DAILY: [
+    'What moved forward today?',
+    'What is delayed or blocked?',
+    'What is the single next action for tomorrow?',
+  ],
+  WEEKLY: [
+    'Which goals moved this week?',
+    'Which tasks are overdue or blocked?',
+    'Which partner needs a follow-up?',
+    'What are the top 3 priorities for next week?',
+  ],
+  MONTHLY: [
+    'Which dreams still matter?',
+    'Which dreams should be revised up, paused, or removed?',
+    'What new dreams, partners, or resources are missing?',
+  ],
+  QUARTERLY: [
+    'Are these still the right vision areas?',
+    'What worked and what failed this quarter?',
+    'What changes for next quarter?',
+  ],
+};
+
+// FR-16.1: original wording; answered all-or-none (enforced here and server-side).
+const DILIGENCE_QUESTIONS = [
+  { key: 'diligenceClearVision', label: 'My vision for this area is still clear and specific' },
+  { key: 'diligenceWorkedPlan', label: 'I worked from a plan instead of just reacting' },
+  { key: 'diligenceUsedLeverage', label: 'I used tools or partners where they beat solo effort' },
+  { key: 'diligencePriorityFirst', label: 'The highest-priority work got my best hours' },
+  { key: 'diligenceSmarterRoute', label: 'Nothing I am doing the hard way has an obvious smarter route' },
+] as const;
+
+type DiligenceKey = (typeof DILIGENCE_QUESTIONS)[number]['key'];
+
+const EMPTY_DILIGENCE: Record<DiligenceKey, boolean | null> = {
+  diligenceClearVision: null,
+  diligenceWorkedPlan: null,
+  diligenceUsedLeverage: null,
+  diligencePriorityFirst: null,
+  diligenceSmarterRoute: null,
+};
 
 export function ReviewsPage() {
   const { token } = useAuth();
@@ -36,6 +83,7 @@ export function ReviewsPage() {
     create: createReview,
     update: updateReview,
     archive: archiveReview,
+    restore: restoreReview,
   });
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
@@ -48,6 +96,8 @@ export function ReviewsPage() {
   const [blockedTasks, setBlockedTasks] = useState('');
   const [lessonsLearned, setLessonsLearned] = useState('');
   const [nextActions, setNextActions] = useState('');
+  const [diligence, setDiligence] = useState<Record<DiligenceKey, boolean | null>>(EMPTY_DILIGENCE);
+  const [diligenceNote, setDiligenceNote] = useState('');
 
   useEffect(() => {
     if (!token) {
@@ -61,8 +111,17 @@ export function ReviewsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  const checklistApplies = reviewType === 'WEEKLY' || reviewType === 'MONTHLY';
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    const answers = DILIGENCE_QUESTIONS.map((question) => diligence[question.key]);
+    const answeredCount = answers.filter((answer) => answer !== null).length;
+    if (checklistApplies && answeredCount > 0 && answeredCount < answers.length) {
+      crud.setError('Answer every diligence question, or skip the whole checklist.');
+      return false;
+    }
+    const includeChecklist = checklistApplies && answeredCount === answers.length;
     const success = await crud.save({
       reviewType,
       reviewDate,
@@ -73,6 +132,12 @@ export function ReviewsPage() {
       blockedTasks,
       lessonsLearned,
       nextActions,
+      diligenceClearVision: includeChecklist ? diligence.diligenceClearVision : undefined,
+      diligenceWorkedPlan: includeChecklist ? diligence.diligenceWorkedPlan : undefined,
+      diligenceUsedLeverage: includeChecklist ? diligence.diligenceUsedLeverage : undefined,
+      diligencePriorityFirst: includeChecklist ? diligence.diligencePriorityFirst : undefined,
+      diligenceSmarterRoute: includeChecklist ? diligence.diligenceSmarterRoute : undefined,
+      diligenceNote: includeChecklist ? diligenceNote || undefined : undefined,
     });
     if (success) {
       setSummary('');
@@ -80,6 +145,8 @@ export function ReviewsPage() {
       setBlockedTasks('');
       setLessonsLearned('');
       setNextActions('');
+      setDiligence(EMPTY_DILIGENCE);
+      setDiligenceNote('');
     }
     return success;
   }
@@ -95,6 +162,14 @@ export function ReviewsPage() {
     setBlockedTasks(review.blockedTasks ?? '');
     setLessonsLearned(review.lessonsLearned ?? '');
     setNextActions(review.nextActions ?? '');
+    setDiligence({
+      diligenceClearVision: review.diligenceClearVision ?? null,
+      diligenceWorkedPlan: review.diligenceWorkedPlan ?? null,
+      diligenceUsedLeverage: review.diligenceUsedLeverage ?? null,
+      diligencePriorityFirst: review.diligencePriorityFirst ?? null,
+      diligenceSmarterRoute: review.diligenceSmarterRoute ?? null,
+    });
+    setDiligenceNote(review.diligenceNote ?? '');
   }
 
   function cancelEdit() {
@@ -108,6 +183,8 @@ export function ReviewsPage() {
     setBlockedTasks('');
     setLessonsLearned('');
     setNextActions('');
+    setDiligence(EMPTY_DILIGENCE);
+    setDiligenceNote('');
   }
 
   const formFields = (
@@ -144,6 +221,42 @@ export function ReviewsPage() {
           </Select>
         </FormControl>
       </label>
+      <div className="field-full coaching-panel">
+        <strong>{reviewTypeLabels[reviewType]} review questions</strong>
+        <ul>
+          {REVIEW_GUIDES[reviewType].map((question) => (
+            <li key={question}><span aria-hidden="true">-</span> {question}</li>
+          ))}
+        </ul>
+      </div>
+      {checklistApplies && (
+        <div className="field-full diligence-checklist">
+          <strong>Diligence checkup</strong>
+          <p>Answer all five, or leave the whole checkup empty to skip it.</p>
+          {DILIGENCE_QUESTIONS.map((question) => (
+            <div className="diligence-row" key={question.key}>
+              <span>{question.label}</span>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={diligence[question.key] === null ? null : diligence[question.key] ? 'yes' : 'no'}
+                onChange={(_event, value) => setDiligence((current) => ({
+                  ...current,
+                  [question.key]: value === null ? null : value === 'yes',
+                }))}
+                aria-label={question.label}
+              >
+                <ToggleButton value="yes">Yes</ToggleButton>
+                <ToggleButton value="no">No</ToggleButton>
+              </ToggleButtonGroup>
+            </div>
+          ))}
+          <label>
+            Checkup note
+            <Textarea value={diligenceNote} onChange={(event) => setDiligenceNote(event.target.value)} />
+          </label>
+        </div>
+      )}
       <label className="field-full">
         Summary
         <Textarea value={summary} onChange={(event) => setSummary(event.target.value)} />
@@ -181,6 +294,9 @@ export function ReviewsPage() {
       </CrudModalForm>
       {crud.loading && <Loading />}
       {crud.error && <ErrorMessage message={crud.error} />}
+      <Card className="filter-bar flex-row">
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
+      </Card>
       <Card>
         <CardContent>
         {crud.items.length === 0 ? (
@@ -193,19 +309,27 @@ export function ReviewsPage() {
                 <TableCell>Type</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Summary</TableCell>
+                <TableCell>Diligence</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {crud.items.map((review) => (
-                <TableRow key={review.id}>
+                <TableRow key={review.id} className={review.archived ? 'row-archived' : ''}>
                   <TableCell><StatusBadge status={review.reviewType} /></TableCell>
                   <TableCell>{review.reviewDate}</TableCell>
                   <TableCell>{review.summary || '-'}</TableCell>
+                  <TableCell>{review.diligenceClearVision != null ? 'Done' : '-'}</TableCell>
                   <TableCell><StatusBadge status={review.archived ? 'ARCHIVED' : 'ACTIVE'} /></TableCell>
                   <TableCell className="row-actions">
-                    <RowActionsMenu onEdit={() => startEdit(review)} onArchive={() => void crud.archive(review.id)} label="Review actions" />
+                    <RowActionsMenu
+                      onEdit={() => startEdit(review)}
+                      onArchive={() => void crud.archive(review.id)}
+                      onRestore={() => void crud.restore(review.id)}
+                      archived={review.archived}
+                      label="Review actions"
+                    />
                   </TableCell>
                 </TableRow>
               ))}

@@ -14,6 +14,8 @@ public record GoalRequest(
         @Size(max = 3000) String successCriteria,
         @NotNull Priority priority,
         LocalDate targetDate,
-        @NotNull WorkStatus status
+        @NotNull WorkStatus status,
+        boolean moonshot,
+        @Size(max = 3000) String moonshotVision
 ) {
 }

@@ -16,6 +16,12 @@ public record ReviewResponse(
         String blockedTasks,
         String lessonsLearned,
         String nextActions,
+        Boolean diligenceClearVision,
+        Boolean diligenceWorkedPlan,
+        Boolean diligenceUsedLeverage,
+        Boolean diligencePriorityFirst,
+        Boolean diligenceSmarterRoute,
+        String diligenceNote,
         boolean archived,
         Instant createdAt,
         Instant updatedAt

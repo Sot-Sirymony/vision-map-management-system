@@ -18,6 +18,8 @@ public record GoalResponse(
         WorkStatus status,
         BigDecimal progressPercent,
         boolean manualProgressOverride,
+        boolean moonshot,
+        String moonshotVision,
         boolean archived,
         Instant createdAt,
         Instant updatedAt

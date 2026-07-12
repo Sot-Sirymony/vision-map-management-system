@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient';
 import type { TaskItem, TaskItemRequest } from '../types/vision';
 
-export function listTasks(token: string) {
-  return apiClient<TaskItem[]>('/tasks', { token });
+export function listTasks(token: string, includeArchived = false) {
+  return apiClient<TaskItem[]>(`/tasks?includeArchived=${includeArchived}`, { token });
 }
 
 export function createTask(token: string, request: TaskItemRequest) {
@@ -33,5 +33,12 @@ export function updateTaskStatus(token: string, id: number, status: string) {
     method: 'PATCH',
     token,
     body: JSON.stringify({ status, manualOverride: true }),
+  });
+}
+
+export function restoreTask(token: string, id: number) {
+  return apiClient<void>(`/tasks/${id}/restore`, {
+    method: 'POST',
+    token,
   });
 }

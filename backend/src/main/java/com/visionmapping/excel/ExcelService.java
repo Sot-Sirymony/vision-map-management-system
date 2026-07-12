@@ -74,47 +74,47 @@ public class ExcelService {
             ), headerStyle);
 
             writeRows(workbook, "Vision Areas", List.of("ID", "Code", "Name", "Description", "Priority", "Status"),
-                    visionMappingService.listVisionAreas().stream()
+                    visionMappingService.listVisionAreas(false).stream()
                             .map(item -> List.of(item.id(), item.code(), item.name(), value(item.description()), item.priority(), item.status()))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Dreams", List.of("ID", "Code", "Vision Area ID", "Title", "Why Important", "Success Definition", "Type", "Priority", "Target Date", "Status"),
-                    visionMappingService.listDreams().stream()
+                    visionMappingService.listDreams(false).stream()
                             .map(item -> List.of(item.id(), item.code(), item.visionAreaId(), item.title(), value(item.whyImportant()), value(item.successDefinition()), item.dreamType(), item.priority(), value(item.targetDate()), item.status()))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Goals", List.of("ID", "Code", "Dream ID", "Title", "Success Criteria", "Priority", "Target Date", "Status", "Progress"),
-                    visionMappingService.listGoals().stream()
+                    visionMappingService.listGoals(false).stream()
                             .map(item -> List.of(item.id(), item.code(), item.dreamId(), item.title(), value(item.successCriteria()), item.priority(), value(item.targetDate()), item.status(), item.progressPercent()))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Steps", List.of("ID", "Code", "Goal ID", "Title", "Sequence", "Complex", "Priority", "Target Date", "Status", "Progress"),
-                    visionMappingService.listSteps().stream()
+                    visionMappingService.listSteps(false).stream()
                             .map(item -> List.of(item.id(), item.code(), item.goalId(), item.title(), item.sequenceNumber(), item.complex(), item.priority(), value(item.targetDate()), item.status(), item.progressPercent()))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Tasks", List.of("ID", "Code", "Step ID", "Title", "Owner", "Priority", "Start Date", "Due Date", "Status", "Progress", "Blocker", "Next Action"),
-                    visionMappingService.listTasks().stream()
+                    visionMappingService.listTasks(false).stream()
                             .map(item -> List.of(item.id(), item.code(), item.stepId(), item.title(), item.owner(), item.priority(), value(item.startDate()), item.dueDate(), item.status(), item.progressPercent(), value(item.blockerReason()), value(item.nextAction())))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Partners", List.of("ID", "Code", "Name", "Role", "Organization", "Email", "Support Type", "Status", "Notes"),
-                    visionMappingService.listPartners(Pageable.unpaged()).stream()
+                    visionMappingService.listPartners(Pageable.unpaged(), false).stream()
                             .map(item -> List.of(item.id(), item.code(), item.name(), value(item.role()), value(item.organization()), value(item.email()), item.supportType(), item.status(), value(item.notes())))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Communication", List.of("ID", "Partner ID", "Audience", "Purpose", "Subject", "Request", "Message", "Status", "Follow Up"),
-                    visionMappingService.listCommunicationMessages(Pageable.unpaged()).stream()
+                    visionMappingService.listCommunicationMessages(Pageable.unpaged(), false).stream()
                             .map(item -> List.of(item.id(), value(item.partnerId()), value(item.audience()), value(item.purpose()), value(item.subject()), value(item.request()), value(item.messageBody()), item.status(), value(item.followUpDate())))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Reviews", List.of("ID", "Type", "Date", "Vision Area ID", "Dream ID", "Summary", "Next Actions"),
-                    visionMappingService.listReviews().stream()
+                    visionMappingService.listReviews(false).stream()
                             .map(item -> List.of(item.id(), item.reviewType(), item.reviewDate(), value(item.relatedVisionAreaId()), value(item.relatedDreamId()), value(item.summary()), value(item.nextActions())))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Obstacles", List.of("ID", "Dream ID", "Goal ID", "Step ID", "Task ID", "Title", "Type", "Severity", "Status", "Solution"),
-                    visionMappingService.listObstacles().stream()
+                    visionMappingService.listObstacles(false).stream()
                             .map(item -> List.of(item.id(), value(item.relatedDreamId()), value(item.relatedGoalId()), value(item.relatedStepId()), value(item.relatedTaskId()), item.title(), item.obstacleType(), item.severity(), item.status(), value(item.solution())))
                             .toList(), headerStyle);
 

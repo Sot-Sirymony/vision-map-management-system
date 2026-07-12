@@ -17,6 +17,7 @@ public record CommunicationMessageRequest(
         @Size(max = 2000) String problem,
         @Size(max = 2000) String request,
         @Size(max = 2000) String benefitToPartner,
+        @Size(max = 2000) String wordPicture,
         @Size(max = 2000) String expectedOutcome,
         @Size(max = 6000) String messageBody,
         @NotNull CommunicationStatus status,

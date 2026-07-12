@@ -1,3 +1,5 @@
+import { Rocket } from 'lucide-react';
+import Chip from '@mui/material/Chip';
 import { createStep } from '../../api/stepApi';
 import type { Goal, TaskItem, VisionStep } from '../../types/vision';
 import { PriorityBadge } from '../common/PriorityBadge';
@@ -34,6 +36,14 @@ export function GoalNode({ goal, steps, tasks, token, onDataChange }: GoalNodePr
       <div className="vision-tree-row">
         <span className="vision-tree-code">{goal.code}</span>
         <strong>{goal.title}</strong>
+        {goal.moonshot && (
+          <Chip
+            size="small"
+            icon={<Rocket size={13} />}
+            label="Moonshot"
+            sx={{ bgcolor: '#f3edfd', color: '#6b21a8', fontWeight: 700, '& .MuiChip-icon': { color: '#7c3aed' } }}
+          />
+        )}
         <PriorityBadge priority={goal.priority} />
         <StatusBadge status={goal.status} />
       </div>

@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { archiveDream, createDream, listDreams, updateDream } from '../api/dreamApi';
+import { archiveDream, createDream, getDreamArchiveImpact, listDreams, restoreDream, updateDream } from '../api/dreamApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import MuiButton from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -21,6 +21,7 @@ import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
+import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
@@ -37,6 +38,7 @@ export function DreamsPage() {
     create: createDream,
     update: updateDream,
     archive: archiveDream,
+    restore: restoreDream,
   });
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [visionAreaId, setVisionAreaId] = useState('');
@@ -109,6 +111,14 @@ export function DreamsPage() {
     setPriority('HIGH');
     setTargetDate('');
     setStatus('ACTIVE');
+  }
+
+  async function archiveImpactMessage(dream: Dream) {
+    if (!token) {
+      return 'Archive this dream?';
+    }
+    const impact = await getDreamArchiveImpact(token, dream.id);
+    return `Archiving "${dream.title}" also archives ${impact.goals} goal(s), ${impact.steps} step(s), and ${impact.tasks} task(s). Everything can be restored later with "Show archived".`;
   }
 
   const clarityChecks = [
@@ -214,6 +224,9 @@ export function DreamsPage() {
       </CrudModalForm>
       {crud.loading && <Loading />}
       {crud.error && <ErrorMessage message={crud.error} />}
+      <Card className="filter-bar flex-row">
+        <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
+      </Card>
       <Card>
         <CardContent>
         {crud.items.length === 0 ? (
@@ -233,7 +246,7 @@ export function DreamsPage() {
             </TableHead>
             <TableBody>
               {crud.items.map((dream) => (
-                <TableRow key={dream.id}>
+                <TableRow key={dream.id} className={dream.archived ? 'row-archived' : ''}>
                   <TableCell>{dream.code}</TableCell>
                   <TableCell sx={{ fontWeight: 500 }}>{dream.title}</TableCell>
                   <TableCell><PriorityBadge priority={dream.priority} /></TableCell>
@@ -241,7 +254,14 @@ export function DreamsPage() {
                   <TableCell>{dream.targetDate ?? '-'}</TableCell>
                   <TableCell className="row-actions">
                     <MuiButton component={Link} to={`/dreams/${dream.id}`} variant="contained" color="secondary" size="small" disableElevation>View Map</MuiButton>
-                    <RowActionsMenu onEdit={() => startEdit(dream)} onArchive={() => void crud.archive(dream.id)} label="Dream actions" />
+                    <RowActionsMenu
+                      onEdit={() => startEdit(dream)}
+                      onArchive={() => void crud.archive(dream.id)}
+                      onRestore={() => void crud.restore(dream.id)}
+                      archived={dream.archived}
+                      confirmArchive={() => archiveImpactMessage(dream)}
+                      label="Dream actions"
+                    />
                   </TableCell>
                 </TableRow>
               ))}
