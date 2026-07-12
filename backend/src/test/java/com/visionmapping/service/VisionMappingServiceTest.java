@@ -39,6 +39,7 @@ import com.visionmapping.repository.ReviewRepository;
 import com.visionmapping.repository.TaskItemRepository;
 import com.visionmapping.repository.VisionAreaRepository;
 import com.visionmapping.repository.VisionStepRepository;
+import com.visionmapping.service.support.ArchiveCascade;
 import com.visionmapping.service.support.EntityLookup;
 import com.visionmapping.service.support.PermanentDeleteCascade;
 import com.visionmapping.service.support.ProgressCalculator;
@@ -86,7 +87,9 @@ class VisionMappingServiceTest {
         PermanentDeleteCascade permanentDeleteCascade = new PermanentDeleteCascade(lookup, visionAreaRepository,
                 dreamRepository, goalRepository, visionStepRepository, taskItemRepository, partnerRepository,
                 communicationMessageRepository, reviewRepository, obstacleRepository, progressLogRepository);
-        service = new VisionMappingService(lookup, progress, permanentDeleteCascade, new VisionMappingMapper(), visionAreaRepository,
+        ArchiveCascade archiveCascade = new ArchiveCascade(lookup, dreamRepository, goalRepository,
+                visionStepRepository, taskItemRepository);
+        service = new VisionMappingService(lookup, progress, permanentDeleteCascade, archiveCascade, new VisionMappingMapper(), visionAreaRepository,
                 dreamRepository, goalRepository, visionStepRepository, taskItemRepository, partnerRepository,
                 communicationMessageRepository, reviewRepository, obstacleRepository, progressLogRepository,
                 Clock.systemDefaultZone());

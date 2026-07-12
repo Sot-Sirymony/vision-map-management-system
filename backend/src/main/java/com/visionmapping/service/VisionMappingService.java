@@ -52,6 +52,7 @@ import com.visionmapping.repository.ReviewRepository;
 import com.visionmapping.repository.TaskItemRepository;
 import com.visionmapping.repository.VisionAreaRepository;
 import com.visionmapping.repository.VisionStepRepository;
+import com.visionmapping.service.support.ArchiveCascade;
 import com.visionmapping.service.support.EntityLookup;
 import com.visionmapping.service.support.PermanentDeleteCascade;
 import com.visionmapping.service.support.ProgressCalculator;
@@ -83,6 +84,7 @@ public class VisionMappingService {
     private final EntityLookup lookup;
     private final ProgressCalculator progress;
     private final PermanentDeleteCascade permanentDeleteCascade;
+    private final ArchiveCascade archiveCascade;
     private final VisionMappingMapper mapper;
     private final VisionAreaRepository visionAreaRepository;
     private final DreamRepository dreamRepository;
@@ -141,7 +143,7 @@ public class VisionMappingService {
         VisionArea entity = lookup.visionArea(id);
         entity.setStatus(LifecycleStatus.ARCHIVED);
         entity.setArchived(true);
-        cascadeArchiveDreams(entity.getId());
+        archiveCascade.archiveDreamsUnder(entity.getId());
     }
 
     @Transactional(readOnly = true)
@@ -200,7 +202,7 @@ public class VisionMappingService {
         Dream entity = lookup.dream(id);
         entity.setStatus(DreamStatus.ARCHIVED);
         entity.setArchived(true);
-        cascadeArchiveGoals(entity.getId());
+        archiveCascade.archiveGoalsUnder(entity.getId());
     }
 
     @Transactional(readOnly = true)
@@ -265,7 +267,7 @@ public class VisionMappingService {
     public void archiveGoal(Long id) {
         Goal entity = lookup.goal(id);
         entity.setArchived(true);
-        cascadeArchiveSteps(entity.getId());
+        archiveCascade.archiveStepsUnder(entity.getId());
     }
 
     @Transactional(readOnly = true)
@@ -334,7 +336,7 @@ public class VisionMappingService {
     public void archiveStep(Long id) {
         VisionStep entity = lookup.step(id);
         entity.setArchived(true);
-        cascadeArchiveTasks(entity.getId());
+        archiveCascade.archiveTasksUnder(entity.getId());
         progress.recalculateGoal(entity.getGoal());
     }
 
@@ -916,131 +918,52 @@ public class VisionMappingService {
         }
     }
 
-    private void cascadeArchiveDreams(Long visionAreaId) {
-        Long userId = lookup.userId();
-        for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(visionAreaId, userId)) {
-            dream.setStatus(DreamStatus.ARCHIVED);
-            dream.setArchived(true);
-            cascadeArchiveGoals(dream.getId());
-        }
-    }
-
-    private void cascadeArchiveGoals(Long dreamId) {
-        Long userId = lookup.userId();
-        for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dreamId, userId)) {
-            goal.setArchived(true);
-            cascadeArchiveSteps(goal.getId());
-        }
-    }
-
-    private void cascadeArchiveSteps(Long goalId) {
-        Long userId = lookup.userId();
-        for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goalId, userId)) {
-            step.setArchived(true);
-            cascadeArchiveTasks(step.getId());
-        }
-    }
-
-    private void cascadeArchiveTasks(Long stepId) {
-        Long userId = lookup.userId();
-        for (TaskItem task : taskItemRepository.findByStep_IdAndUser_Id(stepId, userId)) {
-            task.setArchived(true);
-        }
-    }
-
     // --- Archive impact (what a cascade would newly archive) -----------------
 
     @Transactional(readOnly = true)
     public ArchiveImpactResponse visionAreaArchiveImpact(Long id) {
-        long dreams = 0;
-        long goals = 0;
-        long steps = 0;
-        long tasks = 0;
-        for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(lookup.visionArea(id).getId(), lookup.userId())) {
-            if (!dream.isArchived()) {
-                dreams++;
-            }
-            ArchiveImpactResponse below = dreamArchiveImpactOf(dream.getId());
-            goals += below.goals();
-            steps += below.steps();
-            tasks += below.tasks();
-        }
-        return new ArchiveImpactResponse(dreams, goals, steps, tasks);
+        return archiveCascade.impactOfVisionArea(lookup.visionArea(id));
     }
 
     @Transactional(readOnly = true)
     public ArchiveImpactResponse dreamArchiveImpact(Long id) {
-        return dreamArchiveImpactOf(lookup.dream(id).getId());
+        return archiveCascade.impactOfDream(lookup.dream(id));
     }
 
     @Transactional(readOnly = true)
     public ArchiveImpactResponse goalArchiveImpact(Long id) {
-        return goalArchiveImpactOf(lookup.goal(id).getId());
+        return archiveCascade.impactOfGoal(lookup.goal(id));
     }
 
     @Transactional(readOnly = true)
     public ArchiveImpactResponse stepArchiveImpact(Long id) {
-        return stepArchiveImpactOf(lookup.step(id).getId());
-    }
-
-    private ArchiveImpactResponse dreamArchiveImpactOf(Long dreamId) {
-        long goals = 0;
-        long steps = 0;
-        long tasks = 0;
-        for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dreamId, lookup.userId())) {
-            if (!goal.isArchived()) {
-                goals++;
-            }
-            ArchiveImpactResponse below = goalArchiveImpactOf(goal.getId());
-            steps += below.steps();
-            tasks += below.tasks();
-        }
-        return new ArchiveImpactResponse(0, goals, steps, tasks);
-    }
-
-    private ArchiveImpactResponse goalArchiveImpactOf(Long goalId) {
-        long steps = 0;
-        long tasks = 0;
-        for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goalId, lookup.userId())) {
-            if (!step.isArchived()) {
-                steps++;
-            }
-            tasks += stepArchiveImpactOf(step.getId()).tasks();
-        }
-        return new ArchiveImpactResponse(0, 0, steps, tasks);
-    }
-
-    private ArchiveImpactResponse stepArchiveImpactOf(Long stepId) {
-        long tasks = taskItemRepository.findByStep_IdAndUser_Id(stepId, lookup.userId()).stream()
-                .filter(task -> !task.isArchived())
-                .count();
-        return new ArchiveImpactResponse(0, 0, 0, tasks);
+        return archiveCascade.impactOfStep(lookup.step(id));
     }
 
     // --- Restore (un-archive, pulling archived parents back with it) ---------
 
     public void restoreVisionArea(Long id) {
-        unarchiveVisionArea(lookup.visionArea(id));
+        archiveCascade.unarchiveVisionArea(lookup.visionArea(id));
     }
 
     public void restoreDream(Long id) {
-        unarchiveDreamChain(lookup.dream(id));
+        archiveCascade.unarchiveDreamChain(lookup.dream(id));
     }
 
     public void restoreGoal(Long id) {
-        unarchiveGoalChain(lookup.goal(id));
+        archiveCascade.unarchiveGoalChain(lookup.goal(id));
     }
 
     public void restoreStep(Long id) {
         VisionStep entity = lookup.step(id);
-        unarchiveGoalChain(entity.getGoal());
+        archiveCascade.unarchiveGoalChain(entity.getGoal());
         entity.setArchived(false);
         progress.recalculateGoal(entity.getGoal());
     }
 
     public void restoreTask(Long id) {
         TaskItem entity = lookup.task(id);
-        unarchiveGoalChain(entity.getStep().getGoal());
+        archiveCascade.unarchiveGoalChain(entity.getStep().getGoal());
         entity.getStep().setArchived(false);
         entity.setArchived(false);
         progress.recalculateStep(entity.getStep());
@@ -1142,32 +1065,6 @@ public class VisionMappingService {
 
     /** The database ids in a subtree, grouped by level, for fast link-membership checks. */
     /** Every hierarchy record a single permanent-delete will remove, gathered before the delete runs. */
-    private void unarchiveVisionArea(VisionArea area) {
-        if (area.isArchived()) {
-            area.setArchived(false);
-            // ARCHIVED was set by the archive cascade; the original status is
-            // unknown, so come back as Paused rather than silently Active.
-            if (area.getStatus() == LifecycleStatus.ARCHIVED) {
-                area.setStatus(LifecycleStatus.PAUSED);
-            }
-        }
-    }
-
-    private void unarchiveDreamChain(Dream dream) {
-        unarchiveVisionArea(dream.getVisionArea());
-        if (dream.isArchived()) {
-            dream.setArchived(false);
-            if (dream.getStatus() == DreamStatus.ARCHIVED) {
-                dream.setStatus(DreamStatus.PAUSED);
-            }
-        }
-    }
-
-    private void unarchiveGoalChain(Goal goal) {
-        unarchiveDreamChain(goal.getDream());
-        goal.setArchived(false);
-    }
-
 
     private String nextCode(String prefix, int currentCount) {
         return "%s-%03d".formatted(prefix, currentCount + 1);
