@@ -4,14 +4,12 @@ import com.visionmapping.dto.request.DreamRequest;
 import com.visionmapping.dto.request.GoalRequest;
 import com.visionmapping.dto.request.TaskItemRequest;
 import com.visionmapping.dto.request.VisionAreaRequest;
-import com.visionmapping.dto.request.VisionStepRequest;
 import com.visionmapping.dto.response.ArchiveImpactResponse;
 import com.visionmapping.dto.response.DashboardSummaryResponse;
 import com.visionmapping.dto.response.DreamResponse;
 import com.visionmapping.dto.response.GoalResponse;
 import com.visionmapping.dto.response.TaskItemResponse;
 import com.visionmapping.dto.response.VisionAreaResponse;
-import com.visionmapping.dto.response.VisionStepResponse;
 import com.visionmapping.entity.AppUser;
 import com.visionmapping.entity.Dream;
 import com.visionmapping.entity.Goal;
@@ -256,76 +254,6 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<VisionStepResponse> listSteps(boolean includeArchived) {
-        List<VisionStep> entities = includeArchived
-                ? visionStepRepository.findByUser_Id(lookup.userId())
-                : visionStepRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
-    }
-
-    public VisionStepResponse createStep(VisionStepRequest request) {
-        AppUser user = lookup.currentUser();
-        Goal goal = lookup.goal(request.goalId());
-        VisionStep entity = VisionStep.builder()
-                .code(nextCode("S", visionStepRepository.findByUser_Id(user.getId()).size()))
-                .user(user)
-                .goal(goal)
-                .title(request.title())
-                .description(request.description())
-                .sequenceNumber(request.sequenceNumber())
-                .complex(request.complex())
-                .priority(request.priority())
-                .targetDate(request.targetDate())
-                .status(request.status())
-                .progressPercent(ZERO)
-                .manualProgressOverride(false)
-                .build();
-        VisionStep saved = visionStepRepository.save(entity);
-        progress.recalculateGoal(goal);
-        return mapper.toResponse(saved);
-    }
-
-    @Transactional(readOnly = true)
-    public VisionStepResponse getStep(Long id) {
-        return mapper.toResponse(lookup.step(id));
-    }
-
-    public VisionStepResponse updateStep(Long id, VisionStepRequest request) {
-        VisionStep entity = lookup.step(id);
-        Goal oldGoal = entity.getGoal();
-        entity.setGoal(lookup.goal(request.goalId()));
-        entity.setTitle(request.title());
-        entity.setDescription(request.description());
-        entity.setSequenceNumber(request.sequenceNumber());
-        entity.setComplex(request.complex());
-        entity.setPriority(request.priority());
-        entity.setTargetDate(request.targetDate());
-        entity.setStatus(request.status());
-        validateComplexStep(entity);
-        progress.recalculateGoal(oldGoal);
-        progress.recalculateGoal(entity.getGoal());
-        return mapper.toResponse(entity);
-    }
-
-    public VisionStepResponse updateStepStatus(Long id, String status, boolean manualOverride) {
-        VisionStep entity = lookup.step(id);
-        entity.setStatus(parse(WorkStatus.class, status));
-        validateComplexStep(entity);
-        if (manualOverride) {
-            entity.setManualProgressOverride(true);
-        }
-        progress.recalculateGoal(entity.getGoal());
-        return mapper.toResponse(entity);
-    }
-
-    public void archiveStep(Long id) {
-        VisionStep entity = lookup.step(id);
-        entity.setArchived(true);
-        archiveCascade.archiveTasksUnder(entity.getId());
-        progress.recalculateGoal(entity.getGoal());
-    }
-
-    @Transactional(readOnly = true)
     public DashboardSummaryResponse buildDashboardSummary() {
         Long userId = lookup.userId();
         List<VisionArea> areas = visionAreaRepository.findByUser_IdAndArchivedFalse(userId);
@@ -484,13 +412,6 @@ public class VisionMappingService {
                 .toList();
     }
 
-    private void validateComplexStep(VisionStep step) {
-        if (step.isComplex() && step.getStatus() == WorkStatus.COMPLETED
-                && taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(step.getId(), step.getUser().getId()).isEmpty()) {
-            throw new BusinessRuleException("A complex step must have at least one task before it can be completed.");
-        }
-    }
-
     private void validateGoalCompletion(Goal goal, boolean manualOverride) {
         if (goal.getStatus() != WorkStatus.COMPLETED || manualOverride) {
             return;
@@ -519,11 +440,6 @@ public class VisionMappingService {
         return archiveCascade.impactOfGoal(lookup.goal(id));
     }
 
-    @Transactional(readOnly = true)
-    public ArchiveImpactResponse stepArchiveImpact(Long id) {
-        return archiveCascade.impactOfStep(lookup.step(id));
-    }
-
     // --- Restore (un-archive, pulling archived parents back with it) ---------
 
     public void restoreVisionArea(Long id) {
@@ -536,13 +452,6 @@ public class VisionMappingService {
 
     public void restoreGoal(Long id) {
         archiveCascade.unarchiveGoalChain(lookup.goal(id));
-    }
-
-    public void restoreStep(Long id) {
-        VisionStep entity = lookup.step(id);
-        archiveCascade.unarchiveGoalChain(entity.getGoal());
-        entity.setArchived(false);
-        progress.recalculateGoal(entity.getGoal());
     }
 
     // --- Permanent delete (irreversible; only for already-archived records) --
@@ -563,12 +472,6 @@ public class VisionMappingService {
         Goal goal = lookup.goal(id);
         requireArchived(goal.isArchived(), "Goal");
         permanentDeleteCascade.deleteGoal(goal);
-    }
-
-    public void permanentlyDeleteStep(Long id) {
-        VisionStep step = lookup.step(id);
-        requireArchived(step.isArchived(), "Step");
-        permanentDeleteCascade.deleteStep(step);
     }
 
     /**

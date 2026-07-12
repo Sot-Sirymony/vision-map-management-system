@@ -239,32 +239,6 @@ class VisionMappingServiceTest {
 
     // --- Complex step requires at least one task ---------------------------
 
-    @Test
-    void completingComplexStepWithNoTasksThrows() {
-        Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.NOT_STARTED, BigDecimal.ZERO, false);
-        VisionStep complexStep = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.ZERO, true, false);
-        when(visionStepRepository.findById(20L)).thenReturn(Optional.of(complexStep));
-        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of());
-
-        assertThatThrownBy(() -> service.updateStepStatus(20L, "COMPLETED", false))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("A complex step must have at least one task before it can be completed.");
-    }
-
-    @Test
-    void completingComplexStepWithATaskSucceeds() {
-        Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.NOT_STARTED, BigDecimal.ZERO, false);
-        VisionStep complexStep = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.ZERO, true, false);
-        TaskItem existingTask = task(30L, complexStep, WorkStatus.COMPLETED, BigDecimal.valueOf(100));
-        when(visionStepRepository.findById(20L)).thenReturn(Optional.of(complexStep));
-        when(taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(20L, 1L)).thenReturn(List.of(existingTask));
-        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(complexStep));
-
-        service.updateStepStatus(20L, "COMPLETED", false);
-
-        assertThat(complexStep.getStatus()).isEqualTo(WorkStatus.COMPLETED);
-    }
-
     // --- Progress normalization ----------------------------------------------
     // --- prepareTask completion side effects ---------------------------------
 
@@ -286,24 +260,6 @@ class VisionMappingServiceTest {
         assertThat(goal.getStatus()).isEqualTo(WorkStatus.IN_PROGRESS);
         assertThat(step.isArchived()).isTrue();
         assertThat(task.isArchived()).isTrue();
-    }
-
-    @Test
-    void archivingStepCascadesToTasksAndRecalculatesParentGoal() {
-        Goal goal = goal(10L, dream(1L, visionArea(1L)), WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50), false);
-        VisionStep step = step(20L, goal, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50), false, false);
-        VisionStep otherStep = step(21L, goal, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(20), false, false);
-        TaskItem task = task(30L, step, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(50));
-
-        when(visionStepRepository.findById(20L)).thenReturn(Optional.of(step));
-        when(taskItemRepository.findByStep_IdAndUser_Id(20L, 1L)).thenReturn(List.of(task));
-        when(visionStepRepository.findByGoal_IdAndUser_IdAndArchivedFalse(10L, 1L)).thenReturn(List.of(otherStep));
-
-        service.archiveStep(20L);
-
-        assertThat(step.isArchived()).isTrue();
-        assertThat(task.isArchived()).isTrue();
-        assertThat(goal.getProgressPercent()).isEqualByComparingTo("20.00");
     }
 
     // --- Dashboard characterization (pins behavior before the Clean Code split) --

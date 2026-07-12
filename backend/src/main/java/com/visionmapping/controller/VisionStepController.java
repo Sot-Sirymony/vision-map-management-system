@@ -4,7 +4,7 @@ import com.visionmapping.dto.request.StatusUpdateRequest;
 import com.visionmapping.dto.request.VisionStepRequest;
 import com.visionmapping.dto.response.ArchiveImpactResponse;
 import com.visionmapping.dto.response.VisionStepResponse;
-import com.visionmapping.service.VisionMappingService;
+import com.visionmapping.service.VisionStepService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class VisionStepController {
 
-    private final VisionMappingService service;
+    private final VisionStepService service;
 
     @GetMapping
     public List<VisionStepResponse> list(@RequestParam(defaultValue = "false") boolean includeArchived) {
