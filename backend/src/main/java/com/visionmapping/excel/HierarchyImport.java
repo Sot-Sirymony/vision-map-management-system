@@ -16,6 +16,7 @@ import com.visionmapping.entity.enums.DreamType;
 import com.visionmapping.entity.enums.LifecycleStatus;
 import com.visionmapping.entity.enums.Priority;
 import com.visionmapping.entity.enums.WorkStatus;
+import com.visionmapping.service.TaskItemService;
 import com.visionmapping.service.VisionMappingService;
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ class HierarchyImport {
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
     private final VisionMappingService service;
+    private final TaskItemService taskService;
     private final Map<Long, Long> newVisionAreaIds = new HashMap<>();
     private final Map<Long, Long> newDreamIds = new HashMap<>();
     private final Map<Long, Long> newGoalIds = new HashMap<>();
@@ -49,8 +51,9 @@ class HierarchyImport {
     private int created;
     private int skipped;
 
-    HierarchyImport(VisionMappingService service) {
+    HierarchyImport(VisionMappingService service, TaskItemService taskService) {
         this.service = service;
+        this.taskService = taskService;
     }
 
     ExcelImportSummaryResponse run(Workbook workbook, List<String> errors) {
@@ -154,7 +157,7 @@ class HierarchyImport {
                     null,
                     blockerReason,
                     reader.textOrNull(11));
-            service.createTask(request);
+            taskService.createTask(request);
         });
     }
 

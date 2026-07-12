@@ -326,101 +326,6 @@ public class VisionMappingService {
     }
 
     @Transactional(readOnly = true)
-    public List<TaskItemResponse> listTasks(boolean includeArchived) {
-        List<TaskItem> entities = includeArchived
-                ? taskItemRepository.findByUser_Id(lookup.userId())
-                : taskItemRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
-    }
-
-    public TaskItemResponse createTask(TaskItemRequest request) {
-        AppUser user = lookup.currentUser();
-        VisionStep step = lookup.step(request.stepId());
-        TaskItem entity = TaskItem.builder()
-                .code(nextCode("T", taskItemRepository.findByUser_Id(user.getId()).size()))
-                .user(user)
-                .step(step)
-                .title(request.title())
-                .description(request.description())
-                .owner(request.owner())
-                .priority(request.priority())
-                .startDate(request.startDate())
-                .dueDate(request.dueDate())
-                .status(request.status())
-                .progressPercent(progress.normalizeProgress(request.progressPercent()))
-                .estimatedHours(request.estimatedHours())
-                .actualHours(request.actualHours())
-                .blockerReason(request.blockerReason())
-                .nextAction(request.nextAction())
-                .build();
-        prepareTask(entity);
-        TaskItem saved = taskItemRepository.save(entity);
-        progress.recalculateStep(step);
-        return mapper.toResponse(saved);
-    }
-
-    @Transactional(readOnly = true)
-    public TaskItemResponse getTask(Long id) {
-        return mapper.toResponse(lookup.task(id));
-    }
-
-    public TaskItemResponse updateTask(Long id, TaskItemRequest request) {
-        TaskItem entity = lookup.task(id);
-        BigDecimal progressBefore = entity.getProgressPercent();
-        VisionStep oldStep = entity.getStep();
-        entity.setStep(lookup.step(request.stepId()));
-        entity.setTitle(request.title());
-        entity.setDescription(request.description());
-        entity.setOwner(request.owner());
-        entity.setPriority(request.priority());
-        entity.setStartDate(request.startDate());
-        entity.setDueDate(request.dueDate());
-        entity.setStatus(request.status());
-        entity.setProgressPercent(progress.normalizeProgress(request.progressPercent()));
-        entity.setEstimatedHours(request.estimatedHours());
-        entity.setActualHours(request.actualHours());
-        entity.setBlockerReason(request.blockerReason());
-        entity.setNextAction(request.nextAction());
-        prepareTask(entity);
-        progress.recalculateStep(oldStep);
-        progress.recalculateStep(entity.getStep());
-        logProgressChange(entity, progressBefore);
-        return mapper.toResponse(entity);
-    }
-
-    public TaskItemResponse updateTaskStatus(Long id, String status) {
-        TaskItem entity = lookup.task(id);
-        BigDecimal progressBefore = entity.getProgressPercent();
-        entity.setStatus(parse(WorkStatus.class, status));
-        prepareTask(entity);
-        progress.recalculateStep(entity.getStep());
-        logProgressChange(entity, progressBefore);
-        return mapper.toResponse(entity);
-    }
-
-    public void archiveTask(Long id) {
-        TaskItem entity = lookup.task(id);
-        entity.setArchived(true);
-        progress.recalculateStep(entity.getStep());
-    }
-
-    private void logProgressChange(TaskItem entity, BigDecimal progressBefore) {
-        BigDecimal progressAfter = entity.getProgressPercent();
-        if (progressBefore.compareTo(progressAfter) == 0) {
-            return;
-        }
-        ProgressLog entry = ProgressLog.builder()
-                .user(entity.getUser())
-                .relatedTask(entity)
-                .progressPercentBefore(progressBefore)
-                .progressPercentAfter(progressAfter)
-                .loggedAt(Instant.now(clock))
-                .archived(false)
-                .build();
-        progressLogRepository.save(entry);
-    }
-
-    @Transactional(readOnly = true)
     public DashboardSummaryResponse buildDashboardSummary() {
         Long userId = lookup.userId();
         List<VisionArea> areas = visionAreaRepository.findByUser_IdAndArchivedFalse(userId);
@@ -579,20 +484,6 @@ public class VisionMappingService {
                 .toList();
     }
 
-    private void prepareTask(TaskItem entity) {
-        if (entity.getStatus() == WorkStatus.BLOCKED && isBlank(entity.getBlockerReason())) {
-            throw new BusinessRuleException("Blocked tasks must include a blocker reason.");
-        }
-        if (entity.getStatus() == WorkStatus.COMPLETED) {
-            entity.setProgressPercent(ONE_HUNDRED);
-            if (entity.getCompletedAt() == null) {
-                entity.setCompletedAt(Instant.now(clock));
-            }
-        } else {
-            entity.setCompletedAt(null);
-        }
-    }
-
     private void validateComplexStep(VisionStep step) {
         if (step.isComplex() && step.getStatus() == WorkStatus.COMPLETED
                 && taskItemRepository.findByStep_IdAndUser_IdAndArchivedFalse(step.getId(), step.getUser().getId()).isEmpty()) {
@@ -654,14 +545,6 @@ public class VisionMappingService {
         progress.recalculateGoal(entity.getGoal());
     }
 
-    public void restoreTask(Long id) {
-        TaskItem entity = lookup.task(id);
-        archiveCascade.unarchiveGoalChain(entity.getStep().getGoal());
-        entity.getStep().setArchived(false);
-        entity.setArchived(false);
-        progress.recalculateStep(entity.getStep());
-    }
-
     // --- Permanent delete (irreversible; only for already-archived records) --
 
     public void permanentlyDeleteVisionArea(Long id) {
@@ -686,12 +569,6 @@ public class VisionMappingService {
         VisionStep step = lookup.step(id);
         requireArchived(step.isArchived(), "Step");
         permanentDeleteCascade.deleteStep(step);
-    }
-
-    public void permanentlyDeleteTask(Long id) {
-        TaskItem task = lookup.task(id);
-        requireArchived(task.isArchived(), "Task");
-        permanentDeleteCascade.deleteTask(task);
     }
 
     /**

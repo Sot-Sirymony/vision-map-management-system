@@ -3,7 +3,7 @@ package com.visionmapping.controller;
 import com.visionmapping.dto.request.StatusUpdateRequest;
 import com.visionmapping.dto.request.TaskItemRequest;
 import com.visionmapping.dto.response.TaskItemResponse;
-import com.visionmapping.service.VisionMappingService;
+import com.visionmapping.service.TaskItemService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TaskItemController {
 
-    private final VisionMappingService service;
+    private final TaskItemService service;
 
     @GetMapping
     public List<TaskItemResponse> list(@RequestParam(defaultValue = "false") boolean includeArchived) {
