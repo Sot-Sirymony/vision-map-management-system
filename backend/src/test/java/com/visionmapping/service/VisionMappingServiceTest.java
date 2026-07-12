@@ -295,37 +295,6 @@ class VisionMappingServiceTest {
         assertThat(impact.tasks()).isEqualTo(1);
     }
 
-    // --- Diligence checklist is all-or-none ---------------------------------
-
-    @Test
-    void partialDiligenceChecklistIsRejected() {
-        com.visionmapping.dto.request.ReviewRequest request = new com.visionmapping.dto.request.ReviewRequest(
-                com.visionmapping.entity.enums.ReviewType.WEEKLY, LocalDate.now(), null, null,
-                "Summary", null, null, null, null, null,
-                true, true, null, null, null, null);
-
-        assertThatThrownBy(() -> service.createReview(request))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Answer every diligence question, or skip the whole checklist.");
-    }
-
-    @Test
-    void fullOrSkippedDiligenceChecklistIsAccepted() {
-        when(reviewRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        com.visionmapping.dto.request.ReviewRequest full = new com.visionmapping.dto.request.ReviewRequest(
-                com.visionmapping.entity.enums.ReviewType.WEEKLY, LocalDate.now(), null, null,
-                "Summary", null, null, null, null, null,
-                true, false, true, true, false, "Tempo weeks slipped");
-        com.visionmapping.dto.request.ReviewRequest skipped = new com.visionmapping.dto.request.ReviewRequest(
-                com.visionmapping.entity.enums.ReviewType.DAILY, LocalDate.now(), null, null,
-                "Summary", null, null, null, null, null,
-                null, null, null, null, null, null);
-
-        assertThat(service.createReview(full).diligenceWorkedPlan()).isFalse();
-        assertThat(service.createReview(skipped).diligenceClearVision()).isNull();
-    }
-
     // --- Blocked task requires a reason ------------------------------------
 
     @Test

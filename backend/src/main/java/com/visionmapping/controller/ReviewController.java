@@ -2,7 +2,7 @@ package com.visionmapping.controller;
 
 import com.visionmapping.dto.request.ReviewRequest;
 import com.visionmapping.dto.response.ReviewResponse;
-import com.visionmapping.service.VisionMappingService;
+import com.visionmapping.service.ReviewService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ReviewController {
 
-    private final VisionMappingService service;
+    private final ReviewService service;
 
     @GetMapping
     public List<ReviewResponse> list(@RequestParam(defaultValue = "false") boolean includeArchived) {
