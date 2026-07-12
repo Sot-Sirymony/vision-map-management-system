@@ -2,7 +2,7 @@ package com.visionmapping.controller;
 
 import com.visionmapping.dto.request.ProgressLogRequest;
 import com.visionmapping.dto.response.ProgressLogResponse;
-import com.visionmapping.service.VisionMappingService;
+import com.visionmapping.service.ProgressLogService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProgressLogController {
 
-    private final VisionMappingService service;
+    private final ProgressLogService service;
 
     @GetMapping
     public List<ProgressLogResponse> list() {

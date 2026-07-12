@@ -5,7 +5,6 @@ import com.visionmapping.dto.request.DreamRequest;
 import com.visionmapping.dto.request.GoalRequest;
 import com.visionmapping.dto.request.ObstacleRequest;
 import com.visionmapping.dto.request.PartnerRequest;
-import com.visionmapping.dto.request.ProgressLogRequest;
 import com.visionmapping.dto.request.ReviewRequest;
 import com.visionmapping.dto.request.TaskItemRequest;
 import com.visionmapping.dto.request.VisionAreaRequest;
@@ -17,7 +16,6 @@ import com.visionmapping.dto.response.DreamResponse;
 import com.visionmapping.dto.response.GoalResponse;
 import com.visionmapping.dto.response.ObstacleResponse;
 import com.visionmapping.dto.response.PartnerResponse;
-import com.visionmapping.dto.response.ProgressLogResponse;
 import com.visionmapping.dto.response.ReviewResponse;
 import com.visionmapping.dto.response.TaskItemResponse;
 import com.visionmapping.dto.response.VisionAreaResponse;
@@ -672,40 +670,6 @@ public class VisionMappingService {
 
     public void archiveObstacle(Long id) {
         lookup.obstacle(id).setArchived(true);
-    }
-
-    @Transactional(readOnly = true)
-    public List<ProgressLogResponse> listProgressLogs() {
-        return progressLogRepository.findByUser_IdAndArchivedFalse(lookup.userId()).stream().map(mapper::toResponse).toList();
-    }
-
-    public ProgressLogResponse createProgressLog(ProgressLogRequest request) {
-        AppUser user = lookup.currentUser();
-        TaskItem task = lookup.task(request.relatedTaskId());
-        ProgressLog entity = ProgressLog.builder()
-                .user(user)
-                .relatedTask(task)
-                .progressPercentBefore(progress.normalizeProgress(request.progressPercentBefore()))
-                .progressPercentAfter(progress.normalizeProgress(request.progressPercentAfter()))
-                .note(request.note())
-                .loggedAt(Instant.now(clock))
-                .build();
-        task.setProgressPercent(entity.getProgressPercentAfter());
-        if (ONE_HUNDRED.compareTo(entity.getProgressPercentAfter()) == 0) {
-            task.setStatus(WorkStatus.COMPLETED);
-            task.setCompletedAt(Instant.now(clock));
-        }
-        progress.recalculateStep(task.getStep());
-        return mapper.toResponse(progressLogRepository.save(entity));
-    }
-
-    @Transactional(readOnly = true)
-    public ProgressLogResponse getProgressLog(Long id) {
-        return mapper.toResponse(lookup.progressLog(id));
-    }
-
-    public void archiveProgressLog(Long id) {
-        lookup.progressLog(id).setArchived(true);
     }
 
     @Transactional(readOnly = true)
