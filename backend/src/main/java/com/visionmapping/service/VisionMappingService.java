@@ -41,8 +41,8 @@ import com.visionmapping.entity.enums.PartnerStatus;
 import com.visionmapping.entity.enums.ReviewType;
 import com.visionmapping.entity.enums.WorkStatus;
 import com.visionmapping.exception.BusinessRuleException;
-import com.visionmapping.exception.ResourceNotFoundException;
 import com.visionmapping.mapper.VisionMappingMapper;
+import com.visionmapping.service.support.EntityLookup;
 import com.visionmapping.repository.CommunicationMessageRepository;
 import com.visionmapping.repository.DreamRepository;
 import com.visionmapping.repository.GoalRepository;
@@ -53,7 +53,6 @@ import com.visionmapping.repository.ReviewRepository;
 import com.visionmapping.repository.TaskItemRepository;
 import com.visionmapping.repository.VisionAreaRepository;
 import com.visionmapping.repository.VisionStepRepository;
-import com.visionmapping.util.UserScope;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -81,7 +80,7 @@ public class VisionMappingService {
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_UP);
 
-    private final UserScope userScope;
+    private final EntityLookup lookup;
     private final VisionMappingMapper mapper;
     private final VisionAreaRepository visionAreaRepository;
     private final DreamRepository dreamRepository;
@@ -98,13 +97,13 @@ public class VisionMappingService {
     @Transactional(readOnly = true)
     public List<VisionAreaResponse> listVisionAreas(boolean includeArchived) {
         List<VisionArea> entities = includeArchived
-                ? visionAreaRepository.findByUser_Id(userId())
-                : visionAreaRepository.findByUser_IdAndArchivedFalse(userId());
+                ? visionAreaRepository.findByUser_Id(lookup.userId())
+                : visionAreaRepository.findByUser_IdAndArchivedFalse(lookup.userId());
         return entities.stream().map(mapper::toResponse).toList();
     }
 
     public VisionAreaResponse createVisionArea(VisionAreaRequest request) {
-        AppUser user = userScope.currentUser();
+        AppUser user = lookup.currentUser();
         VisionArea entity = VisionArea.builder()
                 .code(nextCode("VA", visionAreaRepository.findByUser_Id(user.getId()).size()))
                 .user(user)
@@ -118,11 +117,11 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public VisionAreaResponse getVisionArea(Long id) {
-        return mapper.toResponse(visionArea(id));
+        return mapper.toResponse(lookup.visionArea(id));
     }
 
     public VisionAreaResponse updateVisionArea(Long id, VisionAreaRequest request) {
-        VisionArea entity = visionArea(id);
+        VisionArea entity = lookup.visionArea(id);
         entity.setName(request.name());
         entity.setDescription(request.description());
         entity.setPriority(request.priority());
@@ -131,13 +130,13 @@ public class VisionMappingService {
     }
 
     public VisionAreaResponse updateVisionAreaStatus(Long id, String status) {
-        VisionArea entity = visionArea(id);
+        VisionArea entity = lookup.visionArea(id);
         entity.setStatus(parse(LifecycleStatus.class, status));
         return mapper.toResponse(entity);
     }
 
     public void archiveVisionArea(Long id) {
-        VisionArea entity = visionArea(id);
+        VisionArea entity = lookup.visionArea(id);
         entity.setStatus(LifecycleStatus.ARCHIVED);
         entity.setArchived(true);
         cascadeArchiveDreams(entity.getId());
@@ -146,14 +145,14 @@ public class VisionMappingService {
     @Transactional(readOnly = true)
     public List<DreamResponse> listDreams(boolean includeArchived) {
         List<Dream> entities = includeArchived
-                ? dreamRepository.findByUser_Id(userId())
-                : dreamRepository.findByUser_IdAndArchivedFalse(userId());
+                ? dreamRepository.findByUser_Id(lookup.userId())
+                : dreamRepository.findByUser_IdAndArchivedFalse(lookup.userId());
         return entities.stream().map(mapper::toResponse).toList();
     }
 
     public DreamResponse createDream(DreamRequest request) {
-        AppUser user = userScope.currentUser();
-        VisionArea visionArea = visionArea(request.visionAreaId());
+        AppUser user = lookup.currentUser();
+        VisionArea visionArea = lookup.visionArea(request.visionAreaId());
         Dream entity = Dream.builder()
                 .code(nextCode("D", dreamRepository.findByUser_Id(user.getId()).size()))
                 .user(user)
@@ -172,12 +171,12 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public DreamResponse getDream(Long id) {
-        return mapper.toResponse(dream(id));
+        return mapper.toResponse(lookup.dream(id));
     }
 
     public DreamResponse updateDream(Long id, DreamRequest request) {
-        Dream entity = dream(id);
-        entity.setVisionArea(visionArea(request.visionAreaId()));
+        Dream entity = lookup.dream(id);
+        entity.setVisionArea(lookup.visionArea(request.visionAreaId()));
         entity.setTitle(request.title());
         entity.setDescription(request.description());
         entity.setWhyImportant(request.whyImportant());
@@ -190,13 +189,13 @@ public class VisionMappingService {
     }
 
     public DreamResponse updateDreamStatus(Long id, String status) {
-        Dream entity = dream(id);
+        Dream entity = lookup.dream(id);
         entity.setStatus(parse(DreamStatus.class, status));
         return mapper.toResponse(entity);
     }
 
     public void archiveDream(Long id) {
-        Dream entity = dream(id);
+        Dream entity = lookup.dream(id);
         entity.setStatus(DreamStatus.ARCHIVED);
         entity.setArchived(true);
         cascadeArchiveGoals(entity.getId());
@@ -205,14 +204,14 @@ public class VisionMappingService {
     @Transactional(readOnly = true)
     public List<GoalResponse> listGoals(boolean includeArchived) {
         List<Goal> entities = includeArchived
-                ? goalRepository.findByUser_Id(userId())
-                : goalRepository.findByUser_IdAndArchivedFalse(userId());
+                ? goalRepository.findByUser_Id(lookup.userId())
+                : goalRepository.findByUser_IdAndArchivedFalse(lookup.userId());
         return entities.stream().map(mapper::toResponse).toList();
     }
 
     public GoalResponse createGoal(GoalRequest request) {
-        AppUser user = userScope.currentUser();
-        Dream dream = dream(request.dreamId());
+        AppUser user = lookup.currentUser();
+        Dream dream = lookup.dream(request.dreamId());
         Goal entity = Goal.builder()
                 .code(nextCode("G", goalRepository.findByUser_Id(user.getId()).size()))
                 .user(user)
@@ -233,12 +232,12 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public GoalResponse getGoal(Long id) {
-        return mapper.toResponse(goal(id));
+        return mapper.toResponse(lookup.goal(id));
     }
 
     public GoalResponse updateGoal(Long id, GoalRequest request) {
-        Goal entity = goal(id);
-        entity.setDream(dream(request.dreamId()));
+        Goal entity = lookup.goal(id);
+        entity.setDream(lookup.dream(request.dreamId()));
         entity.setTitle(request.title());
         entity.setDescription(request.description());
         entity.setSuccessCriteria(request.successCriteria());
@@ -252,7 +251,7 @@ public class VisionMappingService {
     }
 
     public GoalResponse updateGoalStatus(Long id, String status, boolean manualOverride) {
-        Goal entity = goal(id);
+        Goal entity = lookup.goal(id);
         entity.setStatus(parse(WorkStatus.class, status));
         validateGoalCompletion(entity, manualOverride);
         if (manualOverride) {
@@ -262,7 +261,7 @@ public class VisionMappingService {
     }
 
     public void archiveGoal(Long id) {
-        Goal entity = goal(id);
+        Goal entity = lookup.goal(id);
         entity.setArchived(true);
         cascadeArchiveSteps(entity.getId());
     }
@@ -270,14 +269,14 @@ public class VisionMappingService {
     @Transactional(readOnly = true)
     public List<VisionStepResponse> listSteps(boolean includeArchived) {
         List<VisionStep> entities = includeArchived
-                ? visionStepRepository.findByUser_Id(userId())
-                : visionStepRepository.findByUser_IdAndArchivedFalse(userId());
+                ? visionStepRepository.findByUser_Id(lookup.userId())
+                : visionStepRepository.findByUser_IdAndArchivedFalse(lookup.userId());
         return entities.stream().map(mapper::toResponse).toList();
     }
 
     public VisionStepResponse createStep(VisionStepRequest request) {
-        AppUser user = userScope.currentUser();
-        Goal goal = goal(request.goalId());
+        AppUser user = lookup.currentUser();
+        Goal goal = lookup.goal(request.goalId());
         VisionStep entity = VisionStep.builder()
                 .code(nextCode("S", visionStepRepository.findByUser_Id(user.getId()).size()))
                 .user(user)
@@ -299,13 +298,13 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public VisionStepResponse getStep(Long id) {
-        return mapper.toResponse(step(id));
+        return mapper.toResponse(lookup.step(id));
     }
 
     public VisionStepResponse updateStep(Long id, VisionStepRequest request) {
-        VisionStep entity = step(id);
+        VisionStep entity = lookup.step(id);
         Goal oldGoal = entity.getGoal();
-        entity.setGoal(goal(request.goalId()));
+        entity.setGoal(lookup.goal(request.goalId()));
         entity.setTitle(request.title());
         entity.setDescription(request.description());
         entity.setSequenceNumber(request.sequenceNumber());
@@ -320,7 +319,7 @@ public class VisionMappingService {
     }
 
     public VisionStepResponse updateStepStatus(Long id, String status, boolean manualOverride) {
-        VisionStep entity = step(id);
+        VisionStep entity = lookup.step(id);
         entity.setStatus(parse(WorkStatus.class, status));
         validateComplexStep(entity);
         if (manualOverride) {
@@ -331,7 +330,7 @@ public class VisionMappingService {
     }
 
     public void archiveStep(Long id) {
-        VisionStep entity = step(id);
+        VisionStep entity = lookup.step(id);
         entity.setArchived(true);
         cascadeArchiveTasks(entity.getId());
         recalculateGoal(entity.getGoal());
@@ -340,14 +339,14 @@ public class VisionMappingService {
     @Transactional(readOnly = true)
     public List<TaskItemResponse> listTasks(boolean includeArchived) {
         List<TaskItem> entities = includeArchived
-                ? taskItemRepository.findByUser_Id(userId())
-                : taskItemRepository.findByUser_IdAndArchivedFalse(userId());
+                ? taskItemRepository.findByUser_Id(lookup.userId())
+                : taskItemRepository.findByUser_IdAndArchivedFalse(lookup.userId());
         return entities.stream().map(mapper::toResponse).toList();
     }
 
     public TaskItemResponse createTask(TaskItemRequest request) {
-        AppUser user = userScope.currentUser();
-        VisionStep step = step(request.stepId());
+        AppUser user = lookup.currentUser();
+        VisionStep step = lookup.step(request.stepId());
         TaskItem entity = TaskItem.builder()
                 .code(nextCode("T", taskItemRepository.findByUser_Id(user.getId()).size()))
                 .user(user)
@@ -373,14 +372,14 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public TaskItemResponse getTask(Long id) {
-        return mapper.toResponse(task(id));
+        return mapper.toResponse(lookup.task(id));
     }
 
     public TaskItemResponse updateTask(Long id, TaskItemRequest request) {
-        TaskItem entity = task(id);
+        TaskItem entity = lookup.task(id);
         BigDecimal progressBefore = entity.getProgressPercent();
         VisionStep oldStep = entity.getStep();
-        entity.setStep(step(request.stepId()));
+        entity.setStep(lookup.step(request.stepId()));
         entity.setTitle(request.title());
         entity.setDescription(request.description());
         entity.setOwner(request.owner());
@@ -401,7 +400,7 @@ public class VisionMappingService {
     }
 
     public TaskItemResponse updateTaskStatus(Long id, String status) {
-        TaskItem entity = task(id);
+        TaskItem entity = lookup.task(id);
         BigDecimal progressBefore = entity.getProgressPercent();
         entity.setStatus(parse(WorkStatus.class, status));
         prepareTask(entity);
@@ -411,7 +410,7 @@ public class VisionMappingService {
     }
 
     public void archiveTask(Long id) {
-        TaskItem entity = task(id);
+        TaskItem entity = lookup.task(id);
         entity.setArchived(true);
         recalculateStep(entity.getStep());
     }
@@ -435,13 +434,13 @@ public class VisionMappingService {
     @Transactional(readOnly = true)
     public Page<PartnerResponse> listPartners(Pageable pageable, boolean includeArchived) {
         Page<Partner> entities = includeArchived
-                ? partnerRepository.findByUser_Id(userId(), pageable)
-                : partnerRepository.findByUser_IdAndArchivedFalse(userId(), pageable);
+                ? partnerRepository.findByUser_Id(lookup.userId(), pageable)
+                : partnerRepository.findByUser_IdAndArchivedFalse(lookup.userId(), pageable);
         return entities.map(mapper::toResponse);
     }
 
     public PartnerResponse createPartner(PartnerRequest request) {
-        AppUser user = userScope.currentUser();
+        AppUser user = lookup.currentUser();
         Partner entity = Partner.builder()
                 .code(nextCode("P", partnerRepository.findByUser_Id(user.getId()).size()))
                 .user(user)
@@ -452,11 +451,11 @@ public class VisionMappingService {
                 .phone(request.phone())
                 .strength(request.strength())
                 .supportType(request.supportType())
-                .relatedVisionArea(optionalVisionArea(request.relatedVisionAreaId()))
-                .relatedDream(optionalDream(request.relatedDreamId()))
-                .relatedGoal(optionalGoal(request.relatedGoalId()))
-                .relatedStep(optionalStep(request.relatedStepId()))
-                .relatedTask(optionalTask(request.relatedTaskId()))
+                .relatedVisionArea(lookup.optionalVisionArea(request.relatedVisionAreaId()))
+                .relatedDream(lookup.optionalDream(request.relatedDreamId()))
+                .relatedGoal(lookup.optionalGoal(request.relatedGoalId()))
+                .relatedStep(lookup.optionalStep(request.relatedStepId()))
+                .relatedTask(lookup.optionalTask(request.relatedTaskId()))
                 .status(request.status())
                 .notes(request.notes())
                 .build();
@@ -465,11 +464,11 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public PartnerResponse getPartner(Long id) {
-        return mapper.toResponse(partner(id));
+        return mapper.toResponse(lookup.partner(id));
     }
 
     public PartnerResponse updatePartner(Long id, PartnerRequest request) {
-        Partner entity = partner(id);
+        Partner entity = lookup.partner(id);
         entity.setName(request.name());
         entity.setRole(request.role());
         entity.setOrganization(request.organization());
@@ -477,78 +476,78 @@ public class VisionMappingService {
         entity.setPhone(request.phone());
         entity.setStrength(request.strength());
         entity.setSupportType(request.supportType());
-        entity.setRelatedVisionArea(optionalVisionArea(request.relatedVisionAreaId()));
-        entity.setRelatedDream(optionalDream(request.relatedDreamId()));
-        entity.setRelatedGoal(optionalGoal(request.relatedGoalId()));
-        entity.setRelatedStep(optionalStep(request.relatedStepId()));
-        entity.setRelatedTask(optionalTask(request.relatedTaskId()));
+        entity.setRelatedVisionArea(lookup.optionalVisionArea(request.relatedVisionAreaId()));
+        entity.setRelatedDream(lookup.optionalDream(request.relatedDreamId()));
+        entity.setRelatedGoal(lookup.optionalGoal(request.relatedGoalId()));
+        entity.setRelatedStep(lookup.optionalStep(request.relatedStepId()));
+        entity.setRelatedTask(lookup.optionalTask(request.relatedTaskId()));
         entity.setStatus(request.status());
         entity.setNotes(request.notes());
         return mapper.toResponse(entity);
     }
 
     public PartnerResponse updatePartnerStatus(Long id, String status) {
-        Partner entity = partner(id);
+        Partner entity = lookup.partner(id);
         entity.setStatus(parse(PartnerStatus.class, status));
         return mapper.toResponse(entity);
     }
 
     public void archivePartner(Long id) {
-        partner(id).setArchived(true);
+        lookup.partner(id).setArchived(true);
     }
 
     @Transactional(readOnly = true)
     public Page<CommunicationMessageResponse> listCommunicationMessages(Pageable pageable, boolean includeArchived) {
         Page<CommunicationMessage> entities = includeArchived
-                ? communicationMessageRepository.findByUser_Id(userId(), pageable)
-                : communicationMessageRepository.findByUser_IdAndArchivedFalse(userId(), pageable);
+                ? communicationMessageRepository.findByUser_Id(lookup.userId(), pageable)
+                : communicationMessageRepository.findByUser_IdAndArchivedFalse(lookup.userId(), pageable);
         return entities.map(mapper::toResponse);
     }
 
     public CommunicationMessageResponse createCommunicationMessage(CommunicationMessageRequest request) {
         CommunicationMessage entity = new CommunicationMessage();
-        entity.setUser(userScope.currentUser());
+        entity.setUser(lookup.currentUser());
         applyCommunicationRequest(entity, request);
         return mapper.toResponse(communicationMessageRepository.save(entity));
     }
 
     @Transactional(readOnly = true)
     public CommunicationMessageResponse getCommunicationMessage(Long id) {
-        return mapper.toResponse(communicationMessage(id));
+        return mapper.toResponse(lookup.communicationMessage(id));
     }
 
     public CommunicationMessageResponse updateCommunicationMessage(Long id, CommunicationMessageRequest request) {
-        CommunicationMessage entity = communicationMessage(id);
+        CommunicationMessage entity = lookup.communicationMessage(id);
         applyCommunicationRequest(entity, request);
         return mapper.toResponse(entity);
     }
 
     public CommunicationMessageResponse updateCommunicationStatus(Long id, String status) {
-        CommunicationMessage entity = communicationMessage(id);
+        CommunicationMessage entity = lookup.communicationMessage(id);
         entity.setStatus(parse(CommunicationStatus.class, status));
         return mapper.toResponse(entity);
     }
 
     public void archiveCommunicationMessage(Long id) {
-        communicationMessage(id).setArchived(true);
+        lookup.communicationMessage(id).setArchived(true);
     }
 
     @Transactional(readOnly = true)
     public List<ReviewResponse> listReviews(boolean includeArchived) {
         List<Review> entities = includeArchived
-                ? reviewRepository.findByUser_Id(userId())
-                : reviewRepository.findByUser_IdAndArchivedFalse(userId());
+                ? reviewRepository.findByUser_Id(lookup.userId())
+                : reviewRepository.findByUser_IdAndArchivedFalse(lookup.userId());
         return entities.stream().map(mapper::toResponse).toList();
     }
 
     public ReviewResponse createReview(ReviewRequest request) {
         validateDiligenceChecklist(request);
         Review entity = Review.builder()
-                .user(userScope.currentUser())
+                .user(lookup.currentUser())
                 .reviewType(request.reviewType())
                 .reviewDate(request.reviewDate())
-                .relatedVisionArea(optionalVisionArea(request.relatedVisionAreaId()))
-                .relatedDream(optionalDream(request.relatedDreamId()))
+                .relatedVisionArea(lookup.optionalVisionArea(request.relatedVisionAreaId()))
+                .relatedDream(lookup.optionalDream(request.relatedDreamId()))
                 .summary(request.summary())
                 .completedTasks(request.completedTasks())
                 .delayedTasks(request.delayedTasks())
@@ -585,16 +584,16 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public ReviewResponse getReview(Long id) {
-        return mapper.toResponse(review(id));
+        return mapper.toResponse(lookup.review(id));
     }
 
     public ReviewResponse updateReview(Long id, ReviewRequest request) {
         validateDiligenceChecklist(request);
-        Review entity = review(id);
+        Review entity = lookup.review(id);
         entity.setReviewType(request.reviewType());
         entity.setReviewDate(request.reviewDate());
-        entity.setRelatedVisionArea(optionalVisionArea(request.relatedVisionAreaId()));
-        entity.setRelatedDream(optionalDream(request.relatedDreamId()));
+        entity.setRelatedVisionArea(lookup.optionalVisionArea(request.relatedVisionAreaId()));
+        entity.setRelatedDream(lookup.optionalDream(request.relatedDreamId()));
         entity.setSummary(request.summary());
         entity.setCompletedTasks(request.completedTasks());
         entity.setDelayedTasks(request.delayedTasks());
@@ -611,30 +610,30 @@ public class VisionMappingService {
     }
 
     public void archiveReview(Long id) {
-        review(id).setArchived(true);
+        lookup.review(id).setArchived(true);
     }
 
     @Transactional(readOnly = true)
     public List<ObstacleResponse> listObstacles(boolean includeArchived) {
         List<Obstacle> entities = includeArchived
-                ? obstacleRepository.findByUser_Id(userId())
-                : obstacleRepository.findByUser_IdAndArchivedFalse(userId());
+                ? obstacleRepository.findByUser_Id(lookup.userId())
+                : obstacleRepository.findByUser_IdAndArchivedFalse(lookup.userId());
         return entities.stream().map(mapper::toResponse).toList();
     }
 
     public ObstacleResponse createObstacle(ObstacleRequest request) {
         Obstacle entity = Obstacle.builder()
-                .user(userScope.currentUser())
-                .relatedDream(optionalDream(request.relatedDreamId()))
-                .relatedGoal(optionalGoal(request.relatedGoalId()))
-                .relatedStep(optionalStep(request.relatedStepId()))
-                .relatedTask(optionalTask(request.relatedTaskId()))
+                .user(lookup.currentUser())
+                .relatedDream(lookup.optionalDream(request.relatedDreamId()))
+                .relatedGoal(lookup.optionalGoal(request.relatedGoalId()))
+                .relatedStep(lookup.optionalStep(request.relatedStepId()))
+                .relatedTask(lookup.optionalTask(request.relatedTaskId()))
                 .title(request.title())
                 .description(request.description())
                 .obstacleType(request.obstacleType())
                 .severity(request.severity())
                 .solution(request.solution())
-                .requiredPartner(optionalPartner(request.requiredPartnerId()))
+                .requiredPartner(lookup.optionalPartner(request.requiredPartnerId()))
                 .status(request.status())
                 .build();
         return mapper.toResponse(obstacleRepository.save(entity));
@@ -642,43 +641,43 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public ObstacleResponse getObstacle(Long id) {
-        return mapper.toResponse(obstacle(id));
+        return mapper.toResponse(lookup.obstacle(id));
     }
 
     public ObstacleResponse updateObstacle(Long id, ObstacleRequest request) {
-        Obstacle entity = obstacle(id);
-        entity.setRelatedDream(optionalDream(request.relatedDreamId()));
-        entity.setRelatedGoal(optionalGoal(request.relatedGoalId()));
-        entity.setRelatedStep(optionalStep(request.relatedStepId()));
-        entity.setRelatedTask(optionalTask(request.relatedTaskId()));
+        Obstacle entity = lookup.obstacle(id);
+        entity.setRelatedDream(lookup.optionalDream(request.relatedDreamId()));
+        entity.setRelatedGoal(lookup.optionalGoal(request.relatedGoalId()));
+        entity.setRelatedStep(lookup.optionalStep(request.relatedStepId()));
+        entity.setRelatedTask(lookup.optionalTask(request.relatedTaskId()));
         entity.setTitle(request.title());
         entity.setDescription(request.description());
         entity.setObstacleType(request.obstacleType());
         entity.setSeverity(request.severity());
         entity.setSolution(request.solution());
-        entity.setRequiredPartner(optionalPartner(request.requiredPartnerId()));
+        entity.setRequiredPartner(lookup.optionalPartner(request.requiredPartnerId()));
         entity.setStatus(request.status());
         return mapper.toResponse(entity);
     }
 
     public ObstacleResponse updateObstacleStatus(Long id, String status) {
-        Obstacle entity = obstacle(id);
+        Obstacle entity = lookup.obstacle(id);
         entity.setStatus(parse(ObstacleStatus.class, status));
         return mapper.toResponse(entity);
     }
 
     public void archiveObstacle(Long id) {
-        obstacle(id).setArchived(true);
+        lookup.obstacle(id).setArchived(true);
     }
 
     @Transactional(readOnly = true)
     public List<ProgressLogResponse> listProgressLogs() {
-        return progressLogRepository.findByUser_IdAndArchivedFalse(userId()).stream().map(mapper::toResponse).toList();
+        return progressLogRepository.findByUser_IdAndArchivedFalse(lookup.userId()).stream().map(mapper::toResponse).toList();
     }
 
     public ProgressLogResponse createProgressLog(ProgressLogRequest request) {
-        AppUser user = userScope.currentUser();
-        TaskItem task = task(request.relatedTaskId());
+        AppUser user = lookup.currentUser();
+        TaskItem task = lookup.task(request.relatedTaskId());
         ProgressLog entity = ProgressLog.builder()
                 .user(user)
                 .relatedTask(task)
@@ -698,16 +697,16 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public ProgressLogResponse getProgressLog(Long id) {
-        return mapper.toResponse(progressLog(id));
+        return mapper.toResponse(lookup.progressLog(id));
     }
 
     public void archiveProgressLog(Long id) {
-        progressLog(id).setArchived(true);
+        lookup.progressLog(id).setArchived(true);
     }
 
     @Transactional(readOnly = true)
     public DashboardSummaryResponse buildDashboardSummary() {
-        Long userId = userId();
+        Long userId = lookup.userId();
         List<VisionArea> areas = visionAreaRepository.findByUser_IdAndArchivedFalse(userId);
         List<Dream> dreams = dreamRepository.findByUser_IdAndArchivedFalse(userId);
         List<Goal> goals = goalRepository.findByUser_IdAndArchivedFalse(userId);
@@ -865,10 +864,10 @@ public class VisionMappingService {
     }
 
     private void applyCommunicationRequest(CommunicationMessage entity, CommunicationMessageRequest request) {
-        entity.setPartner(optionalPartner(request.partnerId()));
-        entity.setRelatedDream(optionalDream(request.relatedDreamId()));
-        entity.setRelatedGoal(optionalGoal(request.relatedGoalId()));
-        entity.setRelatedTask(optionalTask(request.relatedTaskId()));
+        entity.setPartner(lookup.optionalPartner(request.partnerId()));
+        entity.setRelatedDream(lookup.optionalDream(request.relatedDreamId()));
+        entity.setRelatedGoal(lookup.optionalGoal(request.relatedGoalId()));
+        entity.setRelatedTask(lookup.optionalTask(request.relatedTaskId()));
         entity.setAudience(request.audience());
         entity.setPurpose(request.purpose());
         entity.setSubject(request.subject());
@@ -940,7 +939,7 @@ public class VisionMappingService {
     }
 
     private void cascadeArchiveDreams(Long visionAreaId) {
-        Long userId = userId();
+        Long userId = lookup.userId();
         for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(visionAreaId, userId)) {
             dream.setStatus(DreamStatus.ARCHIVED);
             dream.setArchived(true);
@@ -949,7 +948,7 @@ public class VisionMappingService {
     }
 
     private void cascadeArchiveGoals(Long dreamId) {
-        Long userId = userId();
+        Long userId = lookup.userId();
         for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dreamId, userId)) {
             goal.setArchived(true);
             cascadeArchiveSteps(goal.getId());
@@ -957,7 +956,7 @@ public class VisionMappingService {
     }
 
     private void cascadeArchiveSteps(Long goalId) {
-        Long userId = userId();
+        Long userId = lookup.userId();
         for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goalId, userId)) {
             step.setArchived(true);
             cascadeArchiveTasks(step.getId());
@@ -965,7 +964,7 @@ public class VisionMappingService {
     }
 
     private void cascadeArchiveTasks(Long stepId) {
-        Long userId = userId();
+        Long userId = lookup.userId();
         for (TaskItem task : taskItemRepository.findByStep_IdAndUser_Id(stepId, userId)) {
             task.setArchived(true);
         }
@@ -979,7 +978,7 @@ public class VisionMappingService {
         long goals = 0;
         long steps = 0;
         long tasks = 0;
-        for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(visionArea(id).getId(), userId())) {
+        for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(lookup.visionArea(id).getId(), lookup.userId())) {
             if (!dream.isArchived()) {
                 dreams++;
             }
@@ -993,24 +992,24 @@ public class VisionMappingService {
 
     @Transactional(readOnly = true)
     public ArchiveImpactResponse dreamArchiveImpact(Long id) {
-        return dreamArchiveImpactOf(dream(id).getId());
+        return dreamArchiveImpactOf(lookup.dream(id).getId());
     }
 
     @Transactional(readOnly = true)
     public ArchiveImpactResponse goalArchiveImpact(Long id) {
-        return goalArchiveImpactOf(goal(id).getId());
+        return goalArchiveImpactOf(lookup.goal(id).getId());
     }
 
     @Transactional(readOnly = true)
     public ArchiveImpactResponse stepArchiveImpact(Long id) {
-        return stepArchiveImpactOf(step(id).getId());
+        return stepArchiveImpactOf(lookup.step(id).getId());
     }
 
     private ArchiveImpactResponse dreamArchiveImpactOf(Long dreamId) {
         long goals = 0;
         long steps = 0;
         long tasks = 0;
-        for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dreamId, userId())) {
+        for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dreamId, lookup.userId())) {
             if (!goal.isArchived()) {
                 goals++;
             }
@@ -1024,7 +1023,7 @@ public class VisionMappingService {
     private ArchiveImpactResponse goalArchiveImpactOf(Long goalId) {
         long steps = 0;
         long tasks = 0;
-        for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goalId, userId())) {
+        for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goalId, lookup.userId())) {
             if (!step.isArchived()) {
                 steps++;
             }
@@ -1034,7 +1033,7 @@ public class VisionMappingService {
     }
 
     private ArchiveImpactResponse stepArchiveImpactOf(Long stepId) {
-        long tasks = taskItemRepository.findByStep_IdAndUser_Id(stepId, userId()).stream()
+        long tasks = taskItemRepository.findByStep_IdAndUser_Id(stepId, lookup.userId()).stream()
                 .filter(task -> !task.isArchived())
                 .count();
         return new ArchiveImpactResponse(0, 0, 0, tasks);
@@ -1043,26 +1042,26 @@ public class VisionMappingService {
     // --- Restore (un-archive, pulling archived parents back with it) ---------
 
     public void restoreVisionArea(Long id) {
-        unarchiveVisionArea(visionArea(id));
+        unarchiveVisionArea(lookup.visionArea(id));
     }
 
     public void restoreDream(Long id) {
-        unarchiveDreamChain(dream(id));
+        unarchiveDreamChain(lookup.dream(id));
     }
 
     public void restoreGoal(Long id) {
-        unarchiveGoalChain(goal(id));
+        unarchiveGoalChain(lookup.goal(id));
     }
 
     public void restoreStep(Long id) {
-        VisionStep entity = step(id);
+        VisionStep entity = lookup.step(id);
         unarchiveGoalChain(entity.getGoal());
         entity.setArchived(false);
         recalculateGoal(entity.getGoal());
     }
 
     public void restoreTask(Long id) {
-        TaskItem entity = task(id);
+        TaskItem entity = lookup.task(id);
         unarchiveGoalChain(entity.getStep().getGoal());
         entity.getStep().setArchived(false);
         entity.setArchived(false);
@@ -1070,36 +1069,36 @@ public class VisionMappingService {
     }
 
     public void restorePartner(Long id) {
-        partner(id).setArchived(false);
+        lookup.partner(id).setArchived(false);
     }
 
     public void restoreCommunicationMessage(Long id) {
-        communicationMessage(id).setArchived(false);
+        lookup.communicationMessage(id).setArchived(false);
     }
 
     public void restoreReview(Long id) {
-        review(id).setArchived(false);
+        lookup.review(id).setArchived(false);
     }
 
     public void restoreObstacle(Long id) {
-        obstacle(id).setArchived(false);
+        lookup.obstacle(id).setArchived(false);
     }
 
     // --- Permanent delete (irreversible; only for already-archived records) --
 
     public void permanentlyDeleteVisionArea(Long id) {
-        VisionArea area = visionArea(id);
+        VisionArea area = lookup.visionArea(id);
         requireArchived(area.isArchived(), "Vision area");
         Subtree subtree = new Subtree();
         subtree.visionAreas.add(area);
-        for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(area.getId(), userId())) {
+        for (Dream dream : dreamRepository.findByVisionArea_IdAndUser_Id(area.getId(), lookup.userId())) {
             collectDreamSubtree(dream, subtree);
         }
         unlinkAndDelete(subtree);
     }
 
     public void permanentlyDeleteDream(Long id) {
-        Dream dream = dream(id);
+        Dream dream = lookup.dream(id);
         requireArchived(dream.isArchived(), "Dream");
         Subtree subtree = new Subtree();
         collectDreamSubtree(dream, subtree);
@@ -1107,7 +1106,7 @@ public class VisionMappingService {
     }
 
     public void permanentlyDeleteGoal(Long id) {
-        Goal goal = goal(id);
+        Goal goal = lookup.goal(id);
         requireArchived(goal.isArchived(), "Goal");
         Subtree subtree = new Subtree();
         collectGoalSubtree(goal, subtree);
@@ -1115,7 +1114,7 @@ public class VisionMappingService {
     }
 
     public void permanentlyDeleteStep(Long id) {
-        VisionStep step = step(id);
+        VisionStep step = lookup.step(id);
         requireArchived(step.isArchived(), "Step");
         Subtree subtree = new Subtree();
         collectStepSubtree(step, subtree);
@@ -1123,7 +1122,7 @@ public class VisionMappingService {
     }
 
     public void permanentlyDeleteTask(Long id) {
-        TaskItem task = task(id);
+        TaskItem task = lookup.task(id);
         requireArchived(task.isArchived(), "Task");
         Subtree subtree = new Subtree();
         subtree.tasks.add(task);
@@ -1131,15 +1130,15 @@ public class VisionMappingService {
     }
 
     public void permanentlyDeletePartner(Long id) {
-        Partner partner = partner(id);
+        Partner partner = lookup.partner(id);
         requireArchived(partner.isArchived(), "Partner");
         Set<Long> partnerId = Set.of(partner.getId());
-        for (Obstacle obstacle : obstacleRepository.findByUser_Id(userId())) {
+        for (Obstacle obstacle : obstacleRepository.findByUser_Id(lookup.userId())) {
             if (references(obstacle.getRequiredPartner(), Partner::getId, partnerId)) {
                 obstacle.setRequiredPartner(null);
             }
         }
-        for (CommunicationMessage message : communicationMessageRepository.findByUser_Id(userId())) {
+        for (CommunicationMessage message : communicationMessageRepository.findByUser_Id(lookup.userId())) {
             if (references(message.getPartner(), Partner::getId, partnerId)) {
                 message.setPartner(null);
             }
@@ -1148,40 +1147,40 @@ public class VisionMappingService {
     }
 
     public void permanentlyDeleteCommunicationMessage(Long id) {
-        CommunicationMessage message = communicationMessage(id);
+        CommunicationMessage message = lookup.communicationMessage(id);
         requireArchived(message.isArchived(), "Communication message");
         communicationMessageRepository.delete(message);
     }
 
     public void permanentlyDeleteReview(Long id) {
-        Review review = review(id);
+        Review review = lookup.review(id);
         requireArchived(review.isArchived(), "Review");
         reviewRepository.delete(review);
     }
 
     public void permanentlyDeleteObstacle(Long id) {
-        Obstacle obstacle = obstacle(id);
+        Obstacle obstacle = lookup.obstacle(id);
         requireArchived(obstacle.isArchived(), "Obstacle");
         obstacleRepository.delete(obstacle);
     }
 
     private void collectDreamSubtree(Dream dream, Subtree subtree) {
         subtree.dreams.add(dream);
-        for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dream.getId(), userId())) {
+        for (Goal goal : goalRepository.findByDream_IdAndUser_Id(dream.getId(), lookup.userId())) {
             collectGoalSubtree(goal, subtree);
         }
     }
 
     private void collectGoalSubtree(Goal goal, Subtree subtree) {
         subtree.goals.add(goal);
-        for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goal.getId(), userId())) {
+        for (VisionStep step : visionStepRepository.findByGoal_IdAndUser_Id(goal.getId(), lookup.userId())) {
             collectStepSubtree(step, subtree);
         }
     }
 
     private void collectStepSubtree(VisionStep step, Subtree subtree) {
         subtree.steps.add(step);
-        subtree.tasks.addAll(taskItemRepository.findByStep_IdAndUser_Id(step.getId(), userId()));
+        subtree.tasks.addAll(taskItemRepository.findByStep_IdAndUser_Id(step.getId(), lookup.userId()));
     }
 
     /**
@@ -1191,7 +1190,7 @@ public class VisionMappingService {
      */
     private void unlinkAndDelete(Subtree subtree) {
         DeletedIds deleted = new DeletedIds(subtree);
-        Long userId = userId();
+        Long userId = lookup.userId();
         for (TaskItem task : subtree.tasks) {
             progressLogRepository.deleteAll(progressLogRepository.findByRelatedTask_IdAndUser_Id(task.getId(), userId));
         }
@@ -1351,93 +1350,6 @@ public class VisionMappingService {
         return value.setScale(2, RoundingMode.HALF_UP);
     }
 
-    private VisionArea visionArea(Long id) {
-        return visionAreaRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Vision area not found: " + id));
-    }
-
-    private Dream dream(Long id) {
-        return dreamRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Dream not found: " + id));
-    }
-
-    private Goal goal(Long id) {
-        return goalRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Goal not found: " + id));
-    }
-
-    private VisionStep step(Long id) {
-        return visionStepRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Step not found: " + id));
-    }
-
-    private TaskItem task(Long id) {
-        return taskItemRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + id));
-    }
-
-    private Partner partner(Long id) {
-        return partnerRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Partner not found: " + id));
-    }
-
-    private CommunicationMessage communicationMessage(Long id) {
-        return communicationMessageRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Communication message not found: " + id));
-    }
-
-    private Review review(Long id) {
-        return reviewRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Review not found: " + id));
-    }
-
-    private Obstacle obstacle(Long id) {
-        return obstacleRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Obstacle not found: " + id));
-    }
-
-    private ProgressLog progressLog(Long id) {
-        return progressLogRepository.findById(id)
-                .filter(entity -> entity.getUser().getId().equals(userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Progress log not found: " + id));
-    }
-
-    private VisionArea optionalVisionArea(Long id) {
-        return id == null ? null : visionArea(id);
-    }
-
-    private Dream optionalDream(Long id) {
-        return id == null ? null : dream(id);
-    }
-
-    private Goal optionalGoal(Long id) {
-        return id == null ? null : goal(id);
-    }
-
-    private VisionStep optionalStep(Long id) {
-        return id == null ? null : step(id);
-    }
-
-    private TaskItem optionalTask(Long id) {
-        return id == null ? null : task(id);
-    }
-
-    private Partner optionalPartner(Long id) {
-        return id == null ? null : partner(id);
-    }
-
-    private Long userId() {
-        return userScope.currentUser().getId();
-    }
 
     private String nextCode(String prefix, int currentCount) {
         return "%s-%03d".formatted(prefix, currentCount + 1);
