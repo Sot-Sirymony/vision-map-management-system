@@ -1,6 +1,5 @@
-import FormControl from '@mui/material/FormControl';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 
 export type FilterOption = { value: string; label: string };
 
@@ -26,22 +25,26 @@ type FilterSelectProps = {
   allLabel?: string;
 };
 
-// One dropdown in a filter bar. An empty value always means "no filter", which
-// is what lets every page reset a filter the same way.
+// One dropdown in a filter bar, always type-to-search. An empty value means "no
+// filter", which is what lets every page reset a filter the same way — and here
+// it's produced by clearing the box (the X or Escape). Every filter behaves the
+// same whether it has 3 options or 300.
 export function FilterSelect({ label, value, onChange, options, allLabel = 'All' }: FilterSelectProps) {
+  const selected = options.find((option) => option.value === value) ?? null;
+
   return (
     <label>
       {label}
-      <FormControl fullWidth size="small">
-        <Select displayEmpty value={value} onChange={(event) => onChange(event.target.value)}>
-          <MenuItem value="">{allLabel}</MenuItem>
-          {options.map((option) => (
-            <MenuItem value={option.value} key={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Autocomplete
+        size="small"
+        options={options}
+        value={selected}
+        onChange={(_event, option) => onChange(option?.value ?? '')}
+        getOptionLabel={(option) => option.label}
+        isOptionEqualToValue={(option, current) => option.value === current.value}
+        renderInput={(params) => <TextField {...params} placeholder={allLabel} />}
+        clearOnEscape
+      />
     </label>
   );
 }

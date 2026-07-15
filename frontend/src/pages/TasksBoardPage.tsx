@@ -27,11 +27,12 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
+import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
 import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
 import type { Dream, Goal, ObstacleType, Priority, TaskItem, TaskItemRequest, VisionStep, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
-import { obstacleTypeLabels, workStatusLabels } from '../utils/enumLabels';
+import { obstacleTypeLabels, priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { priorityRank, workStatusRank } from '../utils/sortRank';
 import { PageSection } from './PageSection';
 
@@ -381,43 +382,27 @@ export function TasksBoardPage() {
           Owner
           <Input value={filterOwner} onChange={(event) => setFilterOwner(event.target.value)} placeholder="Any owner" />
         </label>
-        <label>
-          Priority
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterPriority} onChange={(event) => setFilterPriority(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="LOW">Low</MenuItem>
-              <MenuItem value="MEDIUM">Medium</MenuItem>
-              <MenuItem value="HIGH">High</MenuItem>
-              <MenuItem value="CRITICAL">Critical</MenuItem>
-            </Select>
-          </FormControl>
-        </label>
-        <label>
-          Dream
-          <FormControl fullWidth size="small">
-            <Select
-              displayEmpty
-              value={filterDreamId}
-              onChange={(event) => {
-                setFilterDreamId(event.target.value);
-                setFilterGoalId('');
-              }}
-            >
-              <MenuItem value="">All</MenuItem>
-              {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </label>
-        <label>
-          Goal
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterGoalId} onChange={(event) => setFilterGoalId(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              {goalsForFilter.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </label>
+        <FilterSelect
+          label="Priority"
+          value={filterPriority}
+          onChange={setFilterPriority}
+          options={optionsFromLabels(priorityLabels)}
+        />
+        <FilterSelect
+          label="Dream"
+          value={filterDreamId}
+          onChange={(value) => {
+            setFilterDreamId(value);
+            setFilterGoalId('');
+          }}
+          options={optionsFromEntities(dreams, (dream) => dream.title)}
+        />
+        <FilterSelect
+          label="Goal"
+          value={filterGoalId}
+          onChange={setFilterGoalId}
+          options={optionsFromEntities(goalsForFilter, (goal) => goal.title)}
+        />
         <label className="checkbox-field">
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only

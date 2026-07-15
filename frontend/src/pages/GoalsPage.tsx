@@ -28,8 +28,10 @@ import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
+import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
 import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
 import type { Dream, Goal, GoalRequest, Priority, VisionArea, WorkStatus } from '../types/vision';
+import { priorityLabels } from '../utils/enumLabels';
 import { isOverdue } from '../utils/overdue';
 import { matchesSearch } from '../utils/search';
 import { priorityRank, workStatusRank } from '../utils/sortRank';
@@ -336,50 +338,30 @@ export function GoalsPage() {
       {crud.error && <ErrorMessage message={crud.error} />}
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="goals" />
-        <label>
-          Vision Area
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterVisionAreaId} onChange={(event) => setFilterVisionAreaId(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </label>
-        <label>
-          Dream
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterDreamId} onChange={(event) => setFilterDreamId(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </label>
-        <label>
-          Status
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="NOT_STARTED">Not Started</MenuItem>
-              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
-              <MenuItem value="WAITING">Waiting</MenuItem>
-              <MenuItem value="BLOCKED">Blocked</MenuItem>
-              <MenuItem value="PAUSED">Paused</MenuItem>
-              <MenuItem value="COMPLETED">Completed</MenuItem>
-            </Select>
-          </FormControl>
-        </label>
-        <label>
-          Priority
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterPriority} onChange={(event) => setFilterPriority(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="LOW">Low</MenuItem>
-              <MenuItem value="MEDIUM">Medium</MenuItem>
-              <MenuItem value="HIGH">High</MenuItem>
-              <MenuItem value="CRITICAL">Critical</MenuItem>
-            </Select>
-          </FormControl>
-        </label>
+        <FilterSelect
+          label="Vision Area"
+          value={filterVisionAreaId}
+          onChange={setFilterVisionAreaId}
+          options={optionsFromEntities(visionAreas, (area) => area.name)}
+        />
+        <FilterSelect
+          label="Dream"
+          value={filterDreamId}
+          onChange={setFilterDreamId}
+          options={optionsFromEntities(dreams, (dream) => dream.title)}
+        />
+        <FilterSelect
+          label="Status"
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={statusOptions.map((option) => ({ value: option.value, label: option.label }))}
+        />
+        <FilterSelect
+          label="Priority"
+          value={filterPriority}
+          onChange={setFilterPriority}
+          options={optionsFromLabels(priorityLabels)}
+        />
         <label className="checkbox-field">
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only

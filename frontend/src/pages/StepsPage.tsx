@@ -24,8 +24,10 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
+import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
 import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
 import type { Goal, Priority, TaskItem, VisionStep, VisionStepRequest, WorkStatus } from '../types/vision';
+import { priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { isOverdue } from '../utils/overdue';
 import { matchesSearch } from '../utils/search';
 import { priorityRank, workStatusRank } from '../utils/sortRank';
@@ -303,41 +305,24 @@ export function StepsPage() {
       {crud.error && <ErrorMessage message={crud.error} />}
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="steps" />
-        <label>
-          Goal
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterGoalId} onChange={(event) => setFilterGoalId(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </label>
-        <label>
-          Status
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="NOT_STARTED">Not Started</MenuItem>
-              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
-              <MenuItem value="WAITING">Waiting</MenuItem>
-              <MenuItem value="BLOCKED">Blocked</MenuItem>
-              <MenuItem value="PAUSED">Paused</MenuItem>
-              <MenuItem value="COMPLETED">Completed</MenuItem>
-            </Select>
-          </FormControl>
-        </label>
-        <label>
-          Priority
-          <FormControl fullWidth size="small">
-            <Select displayEmpty value={filterPriority} onChange={(event) => setFilterPriority(event.target.value)}>
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="LOW">Low</MenuItem>
-              <MenuItem value="MEDIUM">Medium</MenuItem>
-              <MenuItem value="HIGH">High</MenuItem>
-              <MenuItem value="CRITICAL">Critical</MenuItem>
-            </Select>
-          </FormControl>
-        </label>
+        <FilterSelect
+          label="Goal"
+          value={filterGoalId}
+          onChange={setFilterGoalId}
+          options={optionsFromEntities(goals, (goal) => goal.title)}
+        />
+        <FilterSelect
+          label="Status"
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={optionsFromLabels(workStatusLabels)}
+        />
+        <FilterSelect
+          label="Priority"
+          value={filterPriority}
+          onChange={setFilterPriority}
+          options={optionsFromLabels(priorityLabels)}
+        />
         <label className="checkbox-field">
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
