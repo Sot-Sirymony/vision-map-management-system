@@ -1,8 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { archiveDream, permanentlyDeleteDream, createDream, getDreamArchiveImpact, listDreams, restoreDream, updateDream } from '../api/dreamApi';
 import { listVisionAreas } from '../api/visionAreaApi';
-import MuiButton from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Checkbox from '@mui/material/Checkbox';
@@ -204,19 +203,19 @@ export function DreamsPage() {
       label: 'Action',
       className: 'row-actions',
       render: (dream) => (
-        <>
-          <MuiButton component={Link} to={`/dreams/${dream.id}`} variant="contained" color="secondary" size="small" disableElevation>View Map</MuiButton>
-          <RowActionsMenu
-            onEdit={() => startEdit(dream)}
-            onArchive={() => void crud.archive(dream.id)}
-            onRestore={() => void crud.restore(dream.id)}
-            onDeletePermanently={() => void crud.permanentlyDelete(dream.id)}
-            archived={dream.archived}
-            confirmArchive={() => archiveImpactMessage(dream)}
-            extraActions={[{ label: 'Add goal', onClick: () => navigate(`/goals?create=goal&parent=${dream.id}`) }]}
-            label="Dream actions"
-          />
-        </>
+        <RowActionsMenu
+          onEdit={() => startEdit(dream)}
+          onArchive={() => void crud.archive(dream.id)}
+          onRestore={() => void crud.restore(dream.id)}
+          onDeletePermanently={() => void crud.permanentlyDelete(dream.id)}
+          archived={dream.archived}
+          confirmArchive={() => archiveImpactMessage(dream)}
+          extraActions={[
+            { label: 'View map', onClick: () => navigate(`/dreams/${dream.id}`) },
+            { label: 'Add goal', onClick: () => navigate(`/goals?create=goal&parent=${dream.id}`) },
+          ]}
+          label="Dream actions"
+        />
       ),
     },
   ];
