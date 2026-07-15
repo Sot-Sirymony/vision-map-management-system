@@ -1,43 +1,53 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { Loading } from './components/common/Loading';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
-import { CommunicationBuilderPage } from './pages/CommunicationBuilderPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { DreamDetailPage } from './pages/DreamDetailPage';
-import { DreamsPage } from './pages/DreamsPage';
-import { GoalsPage } from './pages/GoalsPage';
-import { ImportExportPage } from './pages/ImportExportPage';
 import { LoginPage } from './pages/LoginPage';
-import { ObstaclesPage } from './pages/ObstaclesPage';
-import { PartnersPage } from './pages/PartnersPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { ReviewsPage } from './pages/ReviewsPage';
-import { StepsPage } from './pages/StepsPage';
-import { TasksBoardPage } from './pages/TasksBoardPage';
-import { VisionAreasPage } from './pages/VisionAreasPage';
+
+// The authenticated pages are code-split: each becomes its own chunk loaded on
+// navigation, instead of everything shipping in one bundle. This is what keeps
+// Recharts (used only by the dashboard) out of the initial download — the login
+// screen no longer pays to download the charting library. The pages use named
+// exports, so each import maps its name onto the default lazy() expects.
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const VisionAreasPage = lazy(() => import('./pages/VisionAreasPage').then((m) => ({ default: m.VisionAreasPage })));
+const DreamsPage = lazy(() => import('./pages/DreamsPage').then((m) => ({ default: m.DreamsPage })));
+const DreamDetailPage = lazy(() => import('./pages/DreamDetailPage').then((m) => ({ default: m.DreamDetailPage })));
+const GoalsPage = lazy(() => import('./pages/GoalsPage').then((m) => ({ default: m.GoalsPage })));
+const StepsPage = lazy(() => import('./pages/StepsPage').then((m) => ({ default: m.StepsPage })));
+const TasksBoardPage = lazy(() => import('./pages/TasksBoardPage').then((m) => ({ default: m.TasksBoardPage })));
+const PartnersPage = lazy(() => import('./pages/PartnersPage').then((m) => ({ default: m.PartnersPage })));
+const ObstaclesPage = lazy(() => import('./pages/ObstaclesPage').then((m) => ({ default: m.ObstaclesPage })));
+const CommunicationBuilderPage = lazy(() => import('./pages/CommunicationBuilderPage').then((m) => ({ default: m.CommunicationBuilderPage })));
+const ReviewsPage = lazy(() => import('./pages/ReviewsPage').then((m) => ({ default: m.ReviewsPage })));
+const ImportExportPage = lazy(() => import('./pages/ImportExportPage').then((m) => ({ default: m.ImportExportPage })));
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="/vision-areas" element={<VisionAreasPage />} />
-          <Route path="/dreams" element={<DreamsPage />} />
-          <Route path="/dreams/:dreamId" element={<DreamDetailPage />} />
-          <Route path="/goals" element={<GoalsPage />} />
-          <Route path="/steps" element={<StepsPage />} />
-          <Route path="/tasks" element={<TasksBoardPage />} />
-          <Route path="/partners" element={<PartnersPage />} />
-          <Route path="/obstacles" element={<ObstaclesPage />} />
-          <Route path="/communication" element={<CommunicationBuilderPage />} />
-          <Route path="/reviews" element={<ReviewsPage />} />
-          <Route path="/import-export" element={<ImportExportPage />} />
+    <Suspense fallback={<Loading />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="/vision-areas" element={<VisionAreasPage />} />
+            <Route path="/dreams" element={<DreamsPage />} />
+            <Route path="/dreams/:dreamId" element={<DreamDetailPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/steps" element={<StepsPage />} />
+            <Route path="/tasks" element={<TasksBoardPage />} />
+            <Route path="/partners" element={<PartnersPage />} />
+            <Route path="/obstacles" element={<ObstaclesPage />} />
+            <Route path="/communication" element={<CommunicationBuilderPage />} />
+            <Route path="/reviews" element={<ReviewsPage />} />
+            <Route path="/import-export" element={<ImportExportPage />} />
+          </Route>
         </Route>
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
