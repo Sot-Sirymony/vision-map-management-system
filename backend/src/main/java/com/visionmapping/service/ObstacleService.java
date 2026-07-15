@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
@@ -30,10 +31,9 @@ public class ObstacleService {
 
     @Transactional(readOnly = true)
     public List<ObstacleResponse> listObstacles(boolean includeArchived) {
-        List<Obstacle> entities = includeArchived
-                ? obstacleRepository.findByUser_Id(lookup.userId())
-                : obstacleRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
+        return findAllForUser(obstacleRepository, lookup.userId(), includeArchived).stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     public ObstacleResponse createObstacle(ObstacleRequest request) {

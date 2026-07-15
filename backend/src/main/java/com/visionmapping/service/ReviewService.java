@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
 import com.visionmapping.dto.request.ReviewRequest;
@@ -31,10 +32,9 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public List<ReviewResponse> listReviews(boolean includeArchived) {
-        List<Review> entities = includeArchived
-                ? reviewRepository.findByUser_Id(lookup.userId())
-                : reviewRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
+        return findAllForUser(reviewRepository, lookup.userId(), includeArchived).stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     public ReviewResponse createReview(ReviewRequest request) {

@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
@@ -47,10 +48,9 @@ public class VisionStepService {
 
     @Transactional(readOnly = true)
     public List<VisionStepResponse> listSteps(boolean includeArchived) {
-        List<VisionStep> entities = includeArchived
-                ? visionStepRepository.findByUser_Id(lookup.userId())
-                : visionStepRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
+        return findAllForUser(visionStepRepository, lookup.userId(), includeArchived).stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     public VisionStepResponse createStep(VisionStepRequest request) {

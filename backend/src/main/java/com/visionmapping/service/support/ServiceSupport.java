@@ -1,15 +1,25 @@
 package com.visionmapping.service.support;
 
 import com.visionmapping.exception.BusinessRuleException;
+import com.visionmapping.repository.UserScopedRepository;
+import java.util.List;
 
 /**
  * Stateless helpers every entity service shares: generating the next display
- * code, guarding a permanent delete, and parsing a status string into its
- * enum. Static because they hold no state and depend on nothing injectable.
+ * code, listing a user's records, guarding a permanent delete, and parsing a
+ * status string into its enum. Static because they hold no state and depend
+ * on nothing injectable.
  */
 public final class ServiceSupport {
 
     private ServiceSupport() {
+    }
+
+    /** The rows every "list X" endpoint returns: the user's records, hiding archived ones unless asked. */
+    public static <T> List<T> findAllForUser(UserScopedRepository<T> repository, Long userId, boolean includeArchived) {
+        return includeArchived
+                ? repository.findByUser_Id(userId)
+                : repository.findByUser_IdAndArchivedFalse(userId);
     }
 
     public static String nextCode(String prefix, int currentCount) {
@@ -18,6 +28,14 @@ public final class ServiceSupport {
 
     public static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    /** Null (not an empty string) means "no search", which the query treats as "match everything". */
+    public static String likeTerm(String search) {
+        if (search == null || search.isBlank()) {
+            return null;
+        }
+        return "%" + search.trim().toLowerCase() + "%";
     }
 
     public static void requireArchived(boolean archived, String label) {

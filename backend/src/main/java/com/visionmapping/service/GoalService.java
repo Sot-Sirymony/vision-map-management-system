@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
@@ -45,10 +46,9 @@ public class GoalService {
 
     @Transactional(readOnly = true)
     public List<GoalResponse> listGoals(boolean includeArchived) {
-        List<Goal> entities = includeArchived
-                ? goalRepository.findByUser_Id(lookup.userId())
-                : goalRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
+        return findAllForUser(goalRepository, lookup.userId(), includeArchived).stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     public GoalResponse createGoal(GoalRequest request) {

@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
@@ -38,10 +39,9 @@ public class DreamService {
 
     @Transactional(readOnly = true)
     public List<DreamResponse> listDreams(boolean includeArchived) {
-        List<Dream> entities = includeArchived
-                ? dreamRepository.findByUser_Id(lookup.userId())
-                : dreamRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
+        return findAllForUser(dreamRepository, lookup.userId(), includeArchived).stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     public DreamResponse createDream(DreamRequest request) {

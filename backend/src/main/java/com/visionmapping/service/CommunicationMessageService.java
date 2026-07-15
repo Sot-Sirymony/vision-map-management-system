@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.likeTerm;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
@@ -45,14 +46,6 @@ public class CommunicationMessageService {
         return communicationMessageRepository
                 .findFiltered(lookup.userId(), includeArchived, partnerId, status, likeTerm(search), pageable)
                 .map(mapper::toResponse);
-    }
-
-    /** Null (not an empty string) means "no search", which the query treats as "match everything". */
-    private static String likeTerm(String search) {
-        if (search == null || search.isBlank()) {
-            return null;
-        }
-        return "%" + search.trim().toLowerCase() + "%";
     }
 
     public CommunicationMessageResponse createCommunicationMessage(CommunicationMessageRequest request) {

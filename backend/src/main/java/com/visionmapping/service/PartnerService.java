@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.likeTerm;
 import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
@@ -7,8 +8,6 @@ import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 import com.visionmapping.dto.request.PartnerRequest;
 import com.visionmapping.dto.response.PartnerResponse;
 import com.visionmapping.entity.AppUser;
-import com.visionmapping.entity.CommunicationMessage;
-import com.visionmapping.entity.Obstacle;
 import com.visionmapping.entity.Partner;
 import com.visionmapping.entity.enums.PartnerStatus;
 import com.visionmapping.entity.enums.PartnerSupportType;
@@ -55,14 +54,6 @@ public class PartnerService {
         return partnerRepository
                 .findFiltered(lookup.userId(), includeArchived, supportType, status, dreamId, likeTerm(search), pageable)
                 .map(mapper::toResponse);
-    }
-
-    /** Null (not an empty string) means "no search", which the query treats as "match everything". */
-    private static String likeTerm(String search) {
-        if (search == null || search.isBlank()) {
-            return null;
-        }
-        return "%" + search.trim().toLowerCase() + "%";
     }
 
     public PartnerResponse createPartner(PartnerRequest request) {
@@ -129,17 +120,19 @@ public class PartnerService {
     public void permanentlyDeletePartner(Long id) {
         Partner partner = lookup.partner(id);
         requireArchived(partner.isArchived(), "Partner");
-        Long partnerId = partner.getId();
-        for (Obstacle obstacle : obstacleRepository.findByUser_Id(lookup.userId())) {
-            if (obstacle.getRequiredPartner() != null && obstacle.getRequiredPartner().getId().equals(partnerId)) {
-                obstacle.setRequiredPartner(null);
-            }
-        }
-        for (CommunicationMessage message : communicationMessageRepository.findByUser_Id(lookup.userId())) {
-            if (message.getPartner() != null && message.getPartner().getId().equals(partnerId)) {
-                message.setPartner(null);
-            }
-        }
+        unlinkPartnerReferences(partner.getId());
         partnerRepository.delete(partner);
+    }
+
+    /** Obstacles and messages that point at the partner survive the delete; only their link is cleared. */
+    private void unlinkPartnerReferences(Long partnerId) {
+        obstacleRepository.findByUser_Id(lookup.userId()).stream()
+                .filter(obstacle -> obstacle.getRequiredPartner() != null
+                        && partnerId.equals(obstacle.getRequiredPartner().getId()))
+                .forEach(obstacle -> obstacle.setRequiredPartner(null));
+        communicationMessageRepository.findByUser_Id(lookup.userId()).stream()
+                .filter(message -> message.getPartner() != null
+                        && partnerId.equals(message.getPartner().getId()))
+                .forEach(message -> message.setPartner(null));
     }
 }

@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.isBlank;
 import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
@@ -52,10 +53,9 @@ public class TaskItemService {
 
     @Transactional(readOnly = true)
     public List<TaskItemResponse> listTasks(boolean includeArchived) {
-        List<TaskItem> entities = includeArchived
-                ? taskItemRepository.findByUser_Id(lookup.userId())
-                : taskItemRepository.findByUser_IdAndArchivedFalse(lookup.userId());
-        return entities.stream().map(mapper::toResponse).toList();
+        return findAllForUser(taskItemRepository, lookup.userId(), includeArchived).stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     public TaskItemResponse createTask(TaskItemRequest request) {
