@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Rocket } from 'lucide-react';
 import { listDreams } from '../api/dreamApi';
+import { listSteps } from '../api/stepApi';
 import { archiveGoal, permanentlyDeleteGoal, createGoal, getGoalArchiveImpact, listGoals, restoreGoal, updateGoal, updateGoalStatus } from '../api/goalApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import Box from '@mui/material/Box';
@@ -63,6 +64,8 @@ export function GoalsPage() {
   });
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
+  // Count of live steps per goal, for the Steps column.
+  const [stepCounts, setStepCounts] = useState<Map<number, number>>(new Map());
   const [dreamId, setDreamId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -114,6 +117,13 @@ export function GoalsPage() {
       setDreams(dreamData.filter((dream) => dream.status !== 'ARCHIVED'));
       setVisionAreas(areaData);
       setDreamId((current) => current || String(dreamData[0]?.id ?? ''));
+    });
+    void listSteps(token).then((steps) => {
+      const counts = new Map<number, number>();
+      for (const step of steps) {
+        counts.set(step.goalId, (counts.get(step.goalId) ?? 0) + 1);
+      }
+      setStepCounts(counts);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -252,6 +262,12 @@ export function GoalsPage() {
       render: (goal) => <StatusBadge status={goal.status} />,
     },
     {
+      key: 'steps',
+      label: 'Steps',
+      sortValue: (goal) => stepCounts.get(goal.id) ?? 0,
+      render: (goal) => stepCounts.get(goal.id) ?? 0,
+    },
+    {
       key: 'progress',
       label: 'Progress',
       sortValue: (goal) => Number(goal.progressPercent),
@@ -269,7 +285,10 @@ export function GoalsPage() {
           onDeletePermanently={() => void crud.permanentlyDelete(goal.id)}
           archived={goal.archived}
           confirmArchive={() => archiveImpactMessage(goal)}
-          extraActions={[{ label: 'Add step', onClick: () => navigate(`/steps?create=step&parent=${goal.id}`) }]}
+          extraActions={[
+            { label: 'View steps', onClick: () => navigate(`/steps?goalId=${goal.id}`) },
+            { label: 'Add step', onClick: () => navigate(`/steps?create=step&parent=${goal.id}`) },
+          ]}
           label="Goal actions"
         />
       ),

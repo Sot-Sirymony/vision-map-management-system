@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { listDreams } from '../api/dreamApi';
 import { archiveVisionArea, permanentlyDeleteVisionArea, createVisionArea, getVisionAreaArchiveImpact, listVisionAreas, restoreVisionArea, updateVisionArea } from '../api/visionAreaApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -48,10 +49,27 @@ export function VisionAreasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  // Count of live dreams per area, for the Dreams column. Loaded here rather than
+  // added to the vision-area response, which the shared mapper builds in several
+  // places that have no count to hand.
+  const [dreamCounts, setDreamCounts] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
     void crud.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    void listDreams(token).then((dreams) => {
+      const counts = new Map<number, number>();
+      for (const dream of dreams) {
+        counts.set(dream.visionAreaId, (counts.get(dream.visionAreaId) ?? 0) + 1);
+      }
+      setDreamCounts(counts);
+    });
   }, [token]);
 
   async function handleSubmit(event: FormEvent) {
@@ -100,6 +118,26 @@ export function VisionAreasPage() {
 
   const hasFilters = Boolean(searchTerm || filterPriority || filterStatus);
 
+  // Shared by the table's action column and the list view's cards, so both
+  // offer the same row actions.
+  function renderAreaActions(area: VisionArea) {
+    return (
+      <RowActionsMenu
+        onEdit={() => startEdit(area)}
+        onArchive={() => void crud.archive(area.id)}
+        onRestore={() => void crud.restore(area.id)}
+        onDeletePermanently={() => void crud.permanentlyDelete(area.id)}
+        archived={area.archived}
+        confirmArchive={() => archiveImpactMessage(area)}
+        extraActions={[
+          { label: 'View dreams', onClick: () => navigate(`/dreams?visionAreaId=${area.id}`) },
+          { label: 'Add dream', onClick: () => navigate(`/dreams?create=dream&parent=${area.id}`) },
+        ]}
+        label="Vision area actions"
+      />
+    );
+  }
+
   const columns: DataTableColumn<VisionArea>[] = [
     { key: 'code', label: 'Code', sortValue: (area) => area.code, render: (area) => area.code },
     { key: 'name', label: 'Name', sortValue: (area) => area.name, sx: { fontWeight: 500 }, render: (area) => area.name },
@@ -116,21 +154,16 @@ export function VisionAreasPage() {
       render: (area) => <StatusBadge status={area.status} />,
     },
     {
+      key: 'dreams',
+      label: 'Dreams',
+      sortValue: (area) => dreamCounts.get(area.id) ?? 0,
+      render: (area) => dreamCounts.get(area.id) ?? 0,
+    },
+    {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
-      render: (area) => (
-        <RowActionsMenu
-          onEdit={() => startEdit(area)}
-          onArchive={() => void crud.archive(area.id)}
-          onRestore={() => void crud.restore(area.id)}
-          onDeletePermanently={() => void crud.permanentlyDelete(area.id)}
-          archived={area.archived}
-          confirmArchive={() => archiveImpactMessage(area)}
-          extraActions={[{ label: 'Add dream', onClick: () => navigate(`/dreams?create=dream&parent=${area.id}`) }]}
-          label="Vision area actions"
-        />
-      ),
+      render: (area) => renderAreaActions(area),
     },
   ];
 

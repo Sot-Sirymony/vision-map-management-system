@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { archiveDream, permanentlyDeleteDream, createDream, getDreamArchiveImpact, listDreams, restoreDream, updateDream } from '../api/dreamApi';
+import { listGoals } from '../api/goalApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -45,6 +46,8 @@ export function DreamsPage() {
     restore: restoreDream,
   });
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
+  // Count of live goals per dream, for the Goals column.
+  const [goalCounts, setGoalCounts] = useState<Map<number, number>>(new Map());
   const [visionAreaId, setVisionAreaId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -92,6 +95,13 @@ export function DreamsPage() {
     void listVisionAreas(token).then((areaData) => {
       setVisionAreas(areaData.filter((area) => area.status !== 'ARCHIVED'));
       setVisionAreaId((current) => current || String(areaData[0]?.id ?? ''));
+    });
+    void listGoals(token).then((goals) => {
+      const counts = new Map<number, number>();
+      for (const goal of goals) {
+        counts.set(goal.dreamId, (counts.get(goal.dreamId) ?? 0) + 1);
+      }
+      setGoalCounts(counts);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -193,6 +203,12 @@ export function DreamsPage() {
       render: (dream) => <StatusBadge status={dream.status} />,
     },
     {
+      key: 'goals',
+      label: 'Goals',
+      sortValue: (dream) => goalCounts.get(dream.id) ?? 0,
+      render: (dream) => goalCounts.get(dream.id) ?? 0,
+    },
+    {
       key: 'targetDate',
       label: 'Target',
       sortValue: (dream) => dream.targetDate,
@@ -212,6 +228,7 @@ export function DreamsPage() {
           confirmArchive={() => archiveImpactMessage(dream)}
           extraActions={[
             { label: 'View map', onClick: () => navigate(`/dreams/${dream.id}`) },
+            { label: 'View goals', onClick: () => navigate(`/goals?dreamId=${dream.id}`) },
             { label: 'Add goal', onClick: () => navigate(`/goals?create=goal&parent=${dream.id}`) },
           ]}
           label="Dream actions"

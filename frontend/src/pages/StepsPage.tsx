@@ -244,7 +244,10 @@ export function StepsPage() {
           onDeletePermanently={() => void crud.permanentlyDelete(step.id)}
           archived={step.archived}
           confirmArchive={() => archiveImpactMessage(step)}
-          extraActions={[{ label: 'Add task', onClick: () => navigate(`/tasks?create=task&parent=${step.id}`) }]}
+          extraActions={[
+            { label: 'View tasks', onClick: () => navigate(`/tasks?stepId=${step.id}`) },
+            { label: 'Add task', onClick: () => navigate(`/tasks?create=task&parent=${step.id}`) },
+          ]}
           label="Step actions"
         />
       ),
