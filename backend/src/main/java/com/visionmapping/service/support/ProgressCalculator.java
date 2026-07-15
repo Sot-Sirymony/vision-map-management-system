@@ -65,8 +65,11 @@ public class ProgressCalculator {
                 .divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
     }
 
+    /** A task with no due date (possible via Excel import) is never overdue. */
     public boolean isOverdue(TaskItem task, LocalDate today) {
-        return task.getDueDate().isBefore(today) && task.getStatus() != WorkStatus.COMPLETED;
+        return task.getDueDate() != null
+                && task.getDueDate().isBefore(today)
+                && task.getStatus() != WorkStatus.COMPLETED;
     }
 
     public BigDecimal normalizeProgress(BigDecimal value) {

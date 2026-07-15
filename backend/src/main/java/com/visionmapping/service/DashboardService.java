@@ -257,10 +257,12 @@ public class DashboardService {
                 .toList();
     }
 
+    /** Highest priority first; among equal priorities the earliest due date wins, undated tasks last. */
     private List<TaskItemResponse> topPriorityTasks(List<TaskItem> tasks) {
         return tasks.stream()
                 .filter(task -> task.getStatus() != WorkStatus.COMPLETED)
-                .sorted(Comparator.comparingInt((TaskItem task) -> task.getPriority().ordinal()).reversed())
+                .sorted(Comparator.comparingInt((TaskItem task) -> task.getPriority().ordinal()).reversed()
+                        .thenComparing(TaskItem::getDueDate, Comparator.nullsLast(Comparator.naturalOrder())))
                 .limit(TOP_PRIORITY_TASK_LIMIT)
                 .map(mapper::toResponse)
                 .toList();
