@@ -147,6 +147,12 @@ a {
   min-width: 200px;
 }
 
+/* Board/List switch sits on its own row under the filter bar, aligned right. */
+.view-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .bulk-actions-bar {
   display: flex;
   flex-wrap: wrap;
@@ -499,7 +505,8 @@ a {
 
 .kanban {
   display: grid;
-  grid-template-columns: repeat(6, minmax(240px, 1fr));
+  /* Column count comes from the board (entities have 4-6 statuses). */
+  grid-template-columns: repeat(var(--kanban-cols, 6), minmax(240px, 1fr));
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 4px;

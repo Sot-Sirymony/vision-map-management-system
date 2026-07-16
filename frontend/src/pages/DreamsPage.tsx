@@ -21,7 +21,9 @@ import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { SearchBar } from '../components/common/SearchBar';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
 import { Textarea } from '../components/common/Textarea';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
@@ -68,6 +70,7 @@ export function DreamsPage() {
   const [filterOverdueOnly, setFilterOverdueOnly] = useUrlFlag('overdue');
   const [searchParams, setSearchParams] = useSearchParams();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Arrived from a vision area's "Add dream" shortcut: pre-select that area and
   // open the create form, then strip the params so a refresh doesn't reopen it.
@@ -156,6 +159,30 @@ export function DreamsPage() {
     setStatus('ACTIVE');
   }
 
+  // Board drag/dropdown move. There is no status PATCH endpoint for dreams, so
+  // the move sends a full update built from the loaded entity.
+  async function handleMove(dream: Dream, nextStatus: DreamStatus) {
+    if (!token || dream.status === nextStatus) {
+      return;
+    }
+    try {
+      await updateDream(token, dream.id, {
+        visionAreaId: dream.visionAreaId,
+        title: dream.title,
+        description: dream.description,
+        whyImportant: dream.whyImportant,
+        successDefinition: dream.successDefinition,
+        dreamType: dream.dreamType,
+        priority: dream.priority,
+        targetDate: dream.targetDate,
+        status: nextStatus,
+      });
+      await crud.reload();
+    } catch (moveError) {
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update dream status.');
+    }
+  }
+
   async function archiveImpactMessage(dream: Dream) {
     if (!token) {
       return 'Archive this dream?';
@@ -186,6 +213,27 @@ export function DreamsPage() {
   const hasFilters = Boolean(
     searchTerm || filterVisionAreaId || filterDreamType || filterPriority || filterStatus || filterOverdueOnly,
   );
+
+  // Shared by the table's action column and the board's cards, so both offer
+  // the same row actions.
+  function renderDreamActions(dream: Dream) {
+    return (
+      <RowActionsMenu
+        onEdit={() => startEdit(dream)}
+        onArchive={() => void crud.archive(dream.id)}
+        onRestore={() => void crud.restore(dream.id)}
+        onDeletePermanently={() => void crud.permanentlyDelete(dream.id)}
+        archived={dream.archived}
+        confirmArchive={() => archiveImpactMessage(dream)}
+        extraActions={[
+          { label: 'View map', onClick: () => navigate(`/dreams/${dream.id}`) },
+          { label: 'View goals', onClick: () => navigate(`/goals?dreamId=${dream.id}`) },
+          { label: 'Add goal', onClick: () => navigate(`/goals?create=goal&parent=${dream.id}`) },
+        ]}
+        label="Dream actions"
+      />
+    );
+  }
 
   const columns: DataTableColumn<Dream>[] = [
     { key: 'code', label: 'Code', sortValue: (dream) => dream.code, render: (dream) => dream.code },
@@ -218,22 +266,7 @@ export function DreamsPage() {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
-      render: (dream) => (
-        <RowActionsMenu
-          onEdit={() => startEdit(dream)}
-          onArchive={() => void crud.archive(dream.id)}
-          onRestore={() => void crud.restore(dream.id)}
-          onDeletePermanently={() => void crud.permanentlyDelete(dream.id)}
-          archived={dream.archived}
-          confirmArchive={() => archiveImpactMessage(dream)}
-          extraActions={[
-            { label: 'View map', onClick: () => navigate(`/dreams/${dream.id}`) },
-            { label: 'View goals', onClick: () => navigate(`/goals?dreamId=${dream.id}`) },
-            { label: 'Add goal', onClick: () => navigate(`/goals?create=goal&parent=${dream.id}`) },
-          ]}
-          label="Dream actions"
-        />
-      ),
+      render: (dream) => renderDreamActions(dream),
     },
   ];
 
@@ -373,32 +406,57 @@ export function DreamsPage() {
         </label>
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
-      <Card>
-        <CardContent>
-        <DataTable
-          rows={filteredDreams}
-          columns={columns}
-          emptyMessage={hasFilters ? 'No dreams match these filters.' : 'No dreams yet.'}
-          pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamType}|${filterPriority}|${filterStatus}|${filterOverdueOnly}`}
-          rowClassName={(dream) => (dream.archived ? 'row-archived' : '')}
-          selection={{
-            selectedIds,
-            onChange: setSelectedIds,
-            rowLabel: (dream) => dream.title,
-            actions: (
-              <BulkArchiveAction
-                selectedIds={selectedIds}
-                entityLabel="dream(s)"
-                onArchive={async (ids) => {
-                  await crud.archiveMany(ids);
-                  setSelectedIds(new Set());
-                }}
-              />
-            ),
-          }}
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Dream view" />
+      </div>
+      {viewMode === 'list' ? (
+        <Card>
+          <CardContent>
+          <DataTable
+            rows={filteredDreams}
+            columns={columns}
+            emptyMessage={hasFilters ? 'No dreams match these filters.' : 'No dreams yet.'}
+            pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamType}|${filterPriority}|${filterStatus}|${filterOverdueOnly}`}
+            rowClassName={(dream) => (dream.archived ? 'row-archived' : '')}
+            selection={{
+              selectedIds,
+              onChange: setSelectedIds,
+              rowLabel: (dream) => dream.title,
+              actions: (
+                <BulkArchiveAction
+                  selectedIds={selectedIds}
+                  entityLabel="dream(s)"
+                  onArchive={async (ids) => {
+                    await crud.archiveMany(ids);
+                    setSelectedIds(new Set());
+                  }}
+                />
+              ),
+            }}
+          />
+          </CardContent>
+        </Card>
+      ) : (
+        <StatusBoard
+          items={filteredDreams}
+          columns={Object.entries(dreamStatusLabels).map(([value, label]) => ({ value: value as DreamStatus, label }))}
+          statusOf={(dream) => dream.status}
+          entityLabel="dreams"
+          onMove={(dream, nextStatus) => void handleMove(dream, nextStatus)}
+          cardClassName={(dream) => (isOverdue(dream.targetDate, dream.status) ? 'list-card--overdue' : '')}
+          renderCard={(dream) => (
+            <>
+              <strong>{dream.title}</strong>
+              <p>{dream.code} · {goalCounts.get(dream.id) ?? 0} goal(s){dream.targetDate ? ` · Target ${dream.targetDate}` : ''}</p>
+              <div className="inline-meta">
+                <PriorityBadge priority={dream.priority} />
+                <span>{dreamTypeLabels[dream.dreamType]}</span>
+              </div>
+            </>
+          )}
+          cardActions={(dream) => renderDreamActions(dream)}
         />
-        </CardContent>
-      </Card>
+      )}
     </PageSection>
   );
 }

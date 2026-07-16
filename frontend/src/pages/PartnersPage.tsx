@@ -21,7 +21,9 @@ import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { SearchBar } from '../components/common/SearchBar';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
 import { Textarea } from '../components/common/Textarea';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -45,6 +47,7 @@ export function PartnersPage() {
   const [filterSupportType, setFilterSupportType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDreamId, setFilterDreamId] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const crud = useCrudEntity<Partner, PartnerRequest>({
     token,
     entityLabel: 'partners',
@@ -170,6 +173,50 @@ export function PartnersPage() {
     setNotes('');
   }
 
+  // Board drag/dropdown move. There is no status PATCH endpoint for partners,
+  // so the move sends a full update built from the loaded entity.
+  async function handleMove(partner: Partner, nextStatus: PartnerStatus) {
+    if (!token || partner.status === nextStatus) {
+      return;
+    }
+    try {
+      await updatePartner(token, partner.id, {
+        name: partner.name,
+        role: partner.role,
+        organization: partner.organization,
+        email: partner.email,
+        phone: partner.phone,
+        strength: partner.strength,
+        supportType: partner.supportType,
+        relatedVisionAreaId: partner.relatedVisionAreaId,
+        relatedDreamId: partner.relatedDreamId,
+        relatedGoalId: partner.relatedGoalId,
+        relatedStepId: partner.relatedStepId,
+        relatedTaskId: partner.relatedTaskId,
+        status: nextStatus,
+        notes: partner.notes,
+      });
+      await crud.reload();
+    } catch (moveError) {
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update partner status.');
+    }
+  }
+
+  // Shared by the table's action column and the board's cards, so both offer
+  // the same row actions.
+  function renderPartnerActions(partner: Partner) {
+    return (
+      <RowActionsMenu
+        onEdit={() => startEdit(partner)}
+        onArchive={() => void crud.archive(partner.id)}
+        onRestore={() => void crud.restore(partner.id)}
+        onDeletePermanently={() => void crud.permanentlyDelete(partner.id)}
+        archived={partner.archived}
+        label="Partner actions"
+      />
+    );
+  }
+
   // Column keys double as the server's sort fields, so they match Partner's JPA property names.
   const columns: DataTableColumn<Partner>[] = [
     { key: 'code', label: 'Code', sortValue: (partner) => partner.code, render: (partner) => partner.code },
@@ -190,16 +237,7 @@ export function PartnersPage() {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
-      render: (partner) => (
-        <RowActionsMenu
-          onEdit={() => startEdit(partner)}
-          onArchive={() => void crud.archive(partner.id)}
-          onRestore={() => void crud.restore(partner.id)}
-          onDeletePermanently={() => void crud.permanentlyDelete(partner.id)}
-          archived={partner.archived}
-          label="Partner actions"
-        />
-      ),
+      render: (partner) => renderPartnerActions(partner),
     },
   ];
 
@@ -340,6 +378,30 @@ export function PartnersPage() {
         />
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Partner view" />
+      </div>
+      {viewMode === 'board' && (
+        // Partners are server-paged, so the board shows the currently loaded page.
+        <StatusBoard
+          items={crud.items}
+          columns={Object.entries(partnerStatusLabels).map(([value, label]) => ({ value: value as PartnerStatus, label }))}
+          statusOf={(partner) => partner.status}
+          entityLabel="partners"
+          onMove={(partner, nextStatus) => void handleMove(partner, nextStatus)}
+          renderCard={(partner) => (
+            <>
+              <strong>{partner.name}</strong>
+              <p>{partner.code}{partner.role ? ` · ${partner.role}` : ''}{partner.organization ? ` · ${partner.organization}` : ''}</p>
+              <div className="inline-meta">
+                <span>{partnerSupportTypeLabels[partner.supportType]}</span>
+              </div>
+            </>
+          )}
+          cardActions={(partner) => renderPartnerActions(partner)}
+        />
+      )}
+      {viewMode === 'list' && (
       <Card>
         <CardContent>
         <DataTable
@@ -383,6 +445,7 @@ export function PartnersPage() {
         />
         </CardContent>
       </Card>
+      )}
     </PageSection>
   );
 }

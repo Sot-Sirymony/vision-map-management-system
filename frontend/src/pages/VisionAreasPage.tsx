@@ -19,7 +19,9 @@ import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { SearchBar } from '../components/common/SearchBar';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
 import { Textarea } from '../components/common/Textarea';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { LifecycleStatus, Priority, VisionArea, VisionAreaRequest } from '../types/vision';
@@ -49,6 +51,7 @@ export function VisionAreasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   // Count of live dreams per area, for the Dreams column. Loaded here rather than
   // added to the vision-area response, which the shared mapper builds in several
   // places that have no count to hand.
@@ -96,6 +99,25 @@ export function VisionAreasPage() {
     setDescription('');
     setPriority('HIGH');
     setStatus('ACTIVE');
+  }
+
+  // Board drag/dropdown move. There is no status PATCH endpoint for vision
+  // areas, so the move sends a full update built from the loaded entity.
+  async function handleMove(area: VisionArea, nextStatus: LifecycleStatus) {
+    if (!token || area.status === nextStatus) {
+      return;
+    }
+    try {
+      await updateVisionArea(token, area.id, {
+        name: area.name,
+        description: area.description,
+        priority: area.priority,
+        status: nextStatus,
+      });
+      await crud.reload();
+    } catch (moveError) {
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update vision area status.');
+    }
   }
 
   async function archiveImpactMessage(area: VisionArea) {
@@ -232,32 +254,55 @@ export function VisionAreasPage() {
         />
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
-      <Card>
-        <CardContent>
-          <DataTable
-            rows={filteredAreas}
-            columns={columns}
-            emptyMessage={hasFilters ? 'No vision areas match these filters.' : 'No vision areas yet.'}
-            pageResetKey={`${searchTerm}|${filterPriority}|${filterStatus}`}
-            rowClassName={(area) => (area.archived ? 'row-archived' : '')}
-            selection={{
-              selectedIds,
-              onChange: setSelectedIds,
-              rowLabel: (area) => area.name,
-              actions: (
-                <BulkArchiveAction
-                  selectedIds={selectedIds}
-                  entityLabel="vision area(s)"
-                  onArchive={async (ids) => {
-                    await crud.archiveMany(ids);
-                    setSelectedIds(new Set());
-                  }}
-                />
-              ),
-            }}
-          />
-        </CardContent>
-      </Card>
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Vision area view" />
+      </div>
+      {viewMode === 'list' ? (
+        <Card>
+          <CardContent>
+            <DataTable
+              rows={filteredAreas}
+              columns={columns}
+              emptyMessage={hasFilters ? 'No vision areas match these filters.' : 'No vision areas yet.'}
+              pageResetKey={`${searchTerm}|${filterPriority}|${filterStatus}`}
+              rowClassName={(area) => (area.archived ? 'row-archived' : '')}
+              selection={{
+                selectedIds,
+                onChange: setSelectedIds,
+                rowLabel: (area) => area.name,
+                actions: (
+                  <BulkArchiveAction
+                    selectedIds={selectedIds}
+                    entityLabel="vision area(s)"
+                    onArchive={async (ids) => {
+                      await crud.archiveMany(ids);
+                      setSelectedIds(new Set());
+                    }}
+                  />
+                ),
+              }}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        <StatusBoard
+          items={filteredAreas}
+          columns={Object.entries(lifecycleStatusLabels).map(([value, label]) => ({ value: value as LifecycleStatus, label }))}
+          statusOf={(area) => area.status}
+          entityLabel="vision areas"
+          onMove={(area, nextStatus) => void handleMove(area, nextStatus)}
+          renderCard={(area) => (
+            <>
+              <strong>{area.name}</strong>
+              <p>{area.code} · {dreamCounts.get(area.id) ?? 0} dream(s)</p>
+              <div className="inline-meta">
+                <PriorityBadge priority={area.priority} />
+              </div>
+            </>
+          )}
+          cardActions={(area) => renderAreaActions(area)}
+        />
+      )}
     </PageSection>
   );
 }

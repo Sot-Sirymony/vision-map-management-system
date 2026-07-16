@@ -21,7 +21,9 @@ import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { SearchBar } from '../components/common/SearchBar';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
 import { Textarea } from '../components/common/Textarea';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import type { Dream, Goal, Obstacle, ObstacleRequest, ObstacleStatus, ObstacleType, Partner, Severity, TaskItem, VisionStep } from '../types/vision';
@@ -69,6 +71,7 @@ export function ObstaclesPage() {
   const [filterSeverity, setFilterSeverity] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDreamId, setFilterDreamId] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   useEffect(() => {
     if (!token) {
@@ -142,6 +145,47 @@ export function ObstaclesPage() {
 
   const partnerSuggestion = suggestPartnerFor(obstacleType);
 
+  // Board drag/dropdown move. There is no status PATCH endpoint for obstacles,
+  // so the move sends a full update built from the loaded entity.
+  async function handleMove(obstacle: Obstacle, nextStatus: ObstacleStatus) {
+    if (!token || obstacle.status === nextStatus) {
+      return;
+    }
+    try {
+      await updateObstacle(token, obstacle.id, {
+        relatedDreamId: obstacle.relatedDreamId,
+        relatedGoalId: obstacle.relatedGoalId,
+        relatedStepId: obstacle.relatedStepId,
+        relatedTaskId: obstacle.relatedTaskId,
+        title: obstacle.title,
+        description: obstacle.description,
+        obstacleType: obstacle.obstacleType,
+        severity: obstacle.severity,
+        solution: obstacle.solution,
+        requiredPartnerId: obstacle.requiredPartnerId,
+        status: nextStatus,
+      });
+      await crud.reload();
+    } catch (moveError) {
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update obstacle status.');
+    }
+  }
+
+  // Shared by the table's action column and the board's cards, so both offer
+  // the same row actions.
+  function renderObstacleActions(obstacle: Obstacle) {
+    return (
+      <RowActionsMenu
+        onEdit={() => startEdit(obstacle)}
+        onArchive={() => void crud.archive(obstacle.id)}
+        onRestore={() => void crud.restore(obstacle.id)}
+        onDeletePermanently={() => void crud.permanentlyDelete(obstacle.id)}
+        archived={obstacle.archived}
+        label="Obstacle actions"
+      />
+    );
+  }
+
   const filteredObstacles = crud.items.filter((obstacle) => {
     if (filterObstacleType && obstacle.obstacleType !== filterObstacleType) {
       return false;
@@ -204,16 +248,7 @@ export function ObstaclesPage() {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
-      render: (obstacle) => (
-        <RowActionsMenu
-          onEdit={() => startEdit(obstacle)}
-          onArchive={() => void crud.archive(obstacle.id)}
-          onRestore={() => void crud.restore(obstacle.id)}
-          onDeletePermanently={() => void crud.permanentlyDelete(obstacle.id)}
-          archived={obstacle.archived}
-          label="Obstacle actions"
-        />
-      ),
+      render: (obstacle) => renderObstacleActions(obstacle),
     },
   ];
 
@@ -346,6 +381,29 @@ export function ObstaclesPage() {
         />
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Obstacle view" />
+      </div>
+      {viewMode === 'board' && (
+        <StatusBoard
+          items={filteredObstacles}
+          columns={statuses.map((value) => ({ value, label: obstacleStatusLabels[value] }))}
+          statusOf={(obstacle) => obstacle.status}
+          entityLabel="obstacles"
+          onMove={(obstacle, nextStatus) => void handleMove(obstacle, nextStatus)}
+          renderCard={(obstacle) => (
+            <>
+              <strong>{obstacle.title}</strong>
+              <p>{obstacleTypeLabels[obstacle.obstacleType]}{suggestPartnerFor(obstacle.obstacleType) ? ` · Suggested: ${suggestPartnerFor(obstacle.obstacleType)?.label}` : ''}</p>
+              <div className="inline-meta">
+                <StatusBadge status={obstacle.severity} />
+              </div>
+            </>
+          )}
+          cardActions={(obstacle) => renderObstacleActions(obstacle)}
+        />
+      )}
+      {viewMode === 'list' && (
       <Card>
         <CardContent>
         <DataTable
@@ -372,6 +430,7 @@ export function ObstaclesPage() {
         />
         </CardContent>
       </Card>
+      )}
     </PageSection>
   );
 }

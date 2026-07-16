@@ -26,7 +26,9 @@ import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { SearchBar } from '../components/common/SearchBar';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
 import { Textarea } from '../components/common/Textarea';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
@@ -86,6 +88,7 @@ export function GoalsPage() {
   const [bulkStatus, setBulkStatus] = useState<WorkStatus>('IN_PROGRESS');
   const [bulkApplying, setBulkApplying] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
 
@@ -212,6 +215,19 @@ export function GoalsPage() {
     return true;
   });
 
+  // Board drag/dropdown move, using the goal status PATCH endpoint.
+  async function handleMove(goal: Goal, nextStatus: WorkStatus) {
+    if (!token || goal.status === nextStatus) {
+      return;
+    }
+    try {
+      await updateGoalStatus(token, goal.id, nextStatus);
+      await crud.reload();
+    } catch (moveError) {
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update goal status.');
+    }
+  }
+
   async function handleBulkApply() {
     if (!token || selectedIds.size === 0) {
       return;
@@ -227,6 +243,26 @@ export function GoalsPage() {
     } finally {
       setBulkApplying(false);
     }
+  }
+
+  // Shared by the table's action column and the board's cards, so both offer
+  // the same row actions.
+  function renderGoalActions(goal: Goal) {
+    return (
+      <RowActionsMenu
+        onEdit={() => startEdit(goal)}
+        onArchive={() => void crud.archive(goal.id)}
+        onRestore={() => void crud.restore(goal.id)}
+        onDeletePermanently={() => void crud.permanentlyDelete(goal.id)}
+        archived={goal.archived}
+        confirmArchive={() => archiveImpactMessage(goal)}
+        extraActions={[
+          { label: 'View steps', onClick: () => navigate(`/steps?goalId=${goal.id}`) },
+          { label: 'Add step', onClick: () => navigate(`/steps?create=step&parent=${goal.id}`) },
+        ]}
+        label="Goal actions"
+      />
+    );
   }
 
   const columns: DataTableColumn<Goal>[] = [
@@ -277,21 +313,7 @@ export function GoalsPage() {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
-      render: (goal) => (
-        <RowActionsMenu
-          onEdit={() => startEdit(goal)}
-          onArchive={() => void crud.archive(goal.id)}
-          onRestore={() => void crud.restore(goal.id)}
-          onDeletePermanently={() => void crud.permanentlyDelete(goal.id)}
-          archived={goal.archived}
-          confirmArchive={() => archiveImpactMessage(goal)}
-          extraActions={[
-            { label: 'View steps', onClick: () => navigate(`/steps?goalId=${goal.id}`) },
-            { label: 'Add step', onClick: () => navigate(`/steps?create=step&parent=${goal.id}`) },
-          ]}
-          label="Goal actions"
-        />
-      ),
+      render: (goal) => renderGoalActions(goal),
     },
   ];
 
@@ -412,6 +434,41 @@ export function GoalsPage() {
         </label>
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Goal view" />
+      </div>
+      {viewMode === 'board' && (
+        <StatusBoard
+          items={filteredGoals}
+          columns={statusOptions}
+          statusOf={(goal) => goal.status}
+          entityLabel="goals"
+          onMove={(goal, nextStatus) => void handleMove(goal, nextStatus)}
+          cardClassName={(goal) => (isOverdue(goal.targetDate, goal.status) ? 'list-card--overdue' : '')}
+          renderCard={(goal) => (
+            <>
+              <strong>
+                {goal.moonshot && (
+                  <Tooltip title={goal.moonshotVision || 'Moonshot goal'} arrow>
+                    <Box component="span" sx={{ display: 'inline-flex', color: '#7c3aed', mr: 0.75, verticalAlign: 'middle' }} aria-label="Moonshot goal">
+                      <Rocket size={15} />
+                    </Box>
+                  </Tooltip>
+                )}
+                {goal.title}
+              </strong>
+              <p>{goal.code} · {stepCounts.get(goal.id) ?? 0} step(s){goal.targetDate ? ` · Target ${goal.targetDate}` : ''}</p>
+              <div className="inline-meta">
+                <PriorityBadge priority={goal.priority} />
+                <span>{goal.progressPercent}%</span>
+              </div>
+              <ProgressBar value={Number(goal.progressPercent)} />
+            </>
+          )}
+          cardActions={(goal) => renderGoalActions(goal)}
+        />
+      )}
+      {viewMode === 'list' && (
       <Card>
         <CardContent>
           <DataTable
@@ -451,6 +508,7 @@ export function GoalsPage() {
           />
         </CardContent>
       </Card>
+      )}
     </PageSection>
   );
 }

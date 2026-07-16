@@ -1,4 +1,4 @@
-import { DragEvent, FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
@@ -10,12 +10,9 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { BulkArchiveAction } from '../components/common/BulkArchiveAction';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { DataTable, type DataTableColumn } from '../components/common/DataTable';
-import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
@@ -24,6 +21,8 @@ import { ProgressBar } from '../components/common/ProgressBar';
 import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
@@ -69,8 +68,6 @@ export function TasksBoardPage() {
   const [blockerReason, setBlockerReason] = useState('');
   const [blockerCategory, setBlockerCategory] = useState<ObstacleType | ''>('');
   const [nextAction, setNextAction] = useState('');
-  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<WorkStatus | null>(null);
   // In the URL, not component state: the dashboard links straight into a
   // filtered board, and a filtered board stays shareable and bookmarkable.
   const [filterOwner, setFilterOwner] = useUrlFilter('owner');
@@ -89,7 +86,7 @@ export function TasksBoardPage() {
     ? columns.filter((column) => column === filterStatus)
     : columns;
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Arrived from a step's "Add task" shortcut: pre-select that step and open the
@@ -163,37 +160,6 @@ export function TasksBoardPage() {
     } catch (moveError) {
       crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update task status.');
     }
-  }
-
-  function handleDragStart(event: DragEvent<HTMLElement>, taskId: number) {
-    setDraggedTaskId(taskId);
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', String(taskId));
-  }
-
-  function handleDragEnd() {
-    setDraggedTaskId(null);
-    setDragOverColumn(null);
-  }
-
-  function handleColumnDragOver(event: DragEvent<HTMLElement>, column: WorkStatus) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    if (dragOverColumn !== column) {
-      setDragOverColumn(column);
-    }
-  }
-
-  function handleColumnDrop(event: DragEvent<HTMLElement>, column: WorkStatus) {
-    event.preventDefault();
-    const taskId = draggedTaskId ?? Number(event.dataTransfer.getData('text/plain'));
-    setDraggedTaskId(null);
-    setDragOverColumn(null);
-    const task = crud.items.find((item) => item.id === taskId);
-    if (!task || task.status === column) {
-      return;
-    }
-    void handleMove(taskId, column);
   }
 
   function startEdit(task: TaskItem) {
@@ -461,16 +427,9 @@ export function TasksBoardPage() {
           placeholder="Search Here"
           aria-label="Search tasks"
         />
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          size="small"
-          onChange={(_event, value) => { if (value) setViewMode(value); }}
-          aria-label="Task view"
-        >
-          <ToggleButton value="board">Board</ToggleButton>
-          <ToggleButton value="list">List</ToggleButton>
-        </ToggleButtonGroup>
+      </div>
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Task view" />
       </div>
       {viewMode === 'list' ? (
         <Card>
@@ -499,81 +458,48 @@ export function TasksBoardPage() {
           </CardContent>
         </Card>
       ) : (
-      <div className="kanban">
-        {visibleColumns.map((column) => {
-          const columnTasks = visibleTasks.filter((task) => task.status === column);
-          return (
-          <section
-            className={`kanban-column${dragOverColumn === column ? ' kanban-column--over' : ''}`}
-            key={column}
-            onDragOver={(event) => handleColumnDragOver(event, column)}
-            onDragLeave={() => setDragOverColumn((current) => (current === column ? null : current))}
-            onDrop={(event) => handleColumnDrop(event, column)}
-          >
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              {formatLabel(column)}
-              <span className="text-muted-foreground font-normal">{columnTasks.length}</span>
-            </h3>
-            {columnTasks.length === 0 ? (
-              <EmptyState>Drop tasks here</EmptyState>
-            ) : (
-              <div className="stack-list">
-                {columnTasks.map((task) => (
-                  <article
-                    className={`list-card${draggedTaskId === task.id ? ' list-card--dragging' : ''}${task.archived ? ' list-card--archived' : taskHighlightClass(task)}`}
-                    key={task.id}
-                    draggable={!task.archived}
-                    onDragStart={(event) => handleDragStart(event, task.id)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <strong>{task.title}</strong>
-                    <p>{task.owner} · Due {task.dueDate}</p>
-                    <div className="inline-meta">
-                      <PriorityBadge priority={task.priority} />
-                      <span>{task.progressPercent}%</span>
-                    </div>
-                    <ProgressBar value={Number(task.progressPercent)} />
-                    {task.blockerReason && <p>{task.blockerReason}</p>}
-                    <div className="row-actions">
-                      {!task.archived && (
-                        <FormControl size="small">
-                          <Select value={task.status} onChange={(event) => void handleMove(task.id, event.target.value as WorkStatus)}>
-                            {columns.map((targetStatus) => <MenuItem value={targetStatus} key={targetStatus}>{workStatusLabels[targetStatus]}</MenuItem>)}
-                          </Select>
-                        </FormControl>
-                      )}
-                      <RowActionsMenu
-                        onEdit={() => startEdit(task)}
-                        onArchive={() => void crud.archive(task.id)}
-                        onRestore={() => void crud.restore(task.id)}
-                        onDeletePermanently={() => void crud.permanentlyDelete(task.id)}
-                        archived={task.archived}
-                        label="Task actions"
-                      />
-                    </div>
-                  </article>
-                ))}
+        <StatusBoard
+          items={visibleTasks}
+          columns={visibleColumns.map((column) => ({ value: column, label: workStatusLabels[column] }))}
+          moveOptions={columns.map((column) => ({ value: column, label: workStatusLabels[column] }))}
+          statusOf={(task) => task.status}
+          entityLabel="tasks"
+          onMove={(task, nextStatus) => void handleMove(task.id, nextStatus)}
+          cardClassName={taskHighlightClass}
+          renderCard={(task) => (
+            <>
+              <strong>{task.title}</strong>
+              <p>{task.owner} · Due {task.dueDate}</p>
+              <div className="inline-meta">
+                <PriorityBadge priority={task.priority} />
+                <span>{task.progressPercent}%</span>
               </div>
-            )}
-          </section>
-          );
-        })}
-      </div>
+              <ProgressBar value={Number(task.progressPercent)} />
+              {task.blockerReason && <p>{task.blockerReason}</p>}
+            </>
+          )}
+          cardActions={(task) => (
+            <RowActionsMenu
+              onEdit={() => startEdit(task)}
+              onArchive={() => void crud.archive(task.id)}
+              onRestore={() => void crud.restore(task.id)}
+              onDeletePermanently={() => void crud.permanentlyDelete(task.id)}
+              archived={task.archived}
+              label="Task actions"
+            />
+          )}
+        />
       )}
     </PageSection>
   );
 }
 
-function formatLabel(value: string) {
-  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
 function taskHighlightClass(task: TaskItem) {
   if (isOverdue(task.dueDate, task.status)) {
-    return ' list-card--overdue';
+    return 'list-card--overdue';
   }
   if (task.status === 'BLOCKED') {
-    return ' list-card--blocked';
+    return 'list-card--blocked';
   }
   return '';
 }

@@ -21,7 +21,9 @@ import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { SearchBar } from '../components/common/SearchBar';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
 import { Textarea } from '../components/common/Textarea';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -44,6 +46,7 @@ export function CommunicationBuilderPage() {
   const debouncedSearch = useDebouncedValue(searchTerm);
   const [filterPartnerId, setFilterPartnerId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const crud = useCrudEntity<CommunicationMessage, CommunicationMessageRequest>({
     token,
     entityLabel: 'communication messages',
@@ -186,6 +189,52 @@ export function CommunicationBuilderPage() {
     setFollowUpDate('');
   }
 
+  // Board drag/dropdown move. There is no status PATCH endpoint for messages,
+  // so the move sends a full update built from the loaded entity.
+  async function handleMove(message: CommunicationMessage, nextStatus: CommunicationStatus) {
+    if (!token || message.status === nextStatus) {
+      return;
+    }
+    try {
+      await updateCommunicationMessage(token, message.id, {
+        partnerId: message.partnerId,
+        relatedDreamId: message.relatedDreamId,
+        relatedGoalId: message.relatedGoalId,
+        relatedTaskId: message.relatedTaskId,
+        audience: message.audience,
+        purpose: message.purpose,
+        subject: message.subject,
+        hook: message.hook,
+        problem: message.problem,
+        request: message.request,
+        benefitToPartner: message.benefitToPartner,
+        wordPicture: message.wordPicture,
+        expectedOutcome: message.expectedOutcome,
+        messageBody: message.messageBody,
+        status: nextStatus,
+        followUpDate: message.followUpDate,
+      });
+      await crud.reload();
+    } catch (moveError) {
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update message status.');
+    }
+  }
+
+  // Shared by the table's action column and the board's cards, so both offer
+  // the same row actions.
+  function renderMessageActions(message: CommunicationMessage) {
+    return (
+      <RowActionsMenu
+        onEdit={() => startEdit(message)}
+        onArchive={() => void crud.archive(message.id)}
+        onRestore={() => void crud.restore(message.id)}
+        onDeletePermanently={() => void crud.permanentlyDelete(message.id)}
+        archived={message.archived}
+        label="Message actions"
+      />
+    );
+  }
+
   // Column keys double as the server's sort fields, so they match CommunicationMessage's JPA property names.
   const columns: DataTableColumn<CommunicationMessage>[] = [
     {
@@ -217,16 +266,7 @@ export function CommunicationBuilderPage() {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
-      render: (message) => (
-        <RowActionsMenu
-          onEdit={() => startEdit(message)}
-          onArchive={() => void crud.archive(message.id)}
-          onRestore={() => void crud.restore(message.id)}
-          onDeletePermanently={() => void crud.permanentlyDelete(message.id)}
-          archived={message.archived}
-          label="Message actions"
-        />
-      ),
+      render: (message) => renderMessageActions(message),
     },
   ];
 
@@ -419,6 +459,30 @@ export function CommunicationBuilderPage() {
         />
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Message view" />
+      </div>
+      {viewMode === 'board' && (
+        // Messages are server-paged, so the board shows the currently loaded page.
+        <StatusBoard
+          items={crud.items}
+          columns={Object.entries(communicationStatusLabels).map(([value, label]) => ({ value: value as CommunicationStatus, label }))}
+          statusOf={(message) => message.status}
+          entityLabel="messages"
+          onMove={(message, nextStatus) => void handleMove(message, nextStatus)}
+          renderCard={(message) => (
+            <>
+              <strong>{message.subject || '(No subject)'}</strong>
+              <p>
+                {message.audience || 'No audience'}
+                {message.followUpDate ? ` · Follow up ${message.followUpDate}` : ''}
+              </p>
+            </>
+          )}
+          cardActions={(message) => renderMessageActions(message)}
+        />
+      )}
+      {viewMode === 'list' && (
       <Card>
         <CardContent>
         <DataTable
@@ -460,6 +524,7 @@ export function CommunicationBuilderPage() {
         />
         </CardContent>
       </Card>
+      )}
     </PageSection>
   );
 }

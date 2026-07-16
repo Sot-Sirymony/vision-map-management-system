@@ -21,7 +21,9 @@ import { RowActionsMenu } from '../components/common/RowActionsMenu';
 import { SearchBar } from '../components/common/SearchBar';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusBoard } from '../components/common/StatusBoard';
 import { Textarea } from '../components/common/Textarea';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
@@ -68,6 +70,7 @@ export function StepsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Arrived from a goal's "Add step" shortcut: pre-select that goal and open the
   // create form, then strip the params so a refresh doesn't reopen it.
@@ -148,6 +151,29 @@ export function StepsPage() {
     setStatus('NOT_STARTED');
   }
 
+  // Board drag/dropdown move. There is no status PATCH endpoint for steps, so
+  // the move sends a full update built from the loaded entity.
+  async function handleMove(step: VisionStep, nextStatus: WorkStatus) {
+    if (!token || step.status === nextStatus) {
+      return;
+    }
+    try {
+      await updateStep(token, step.id, {
+        goalId: step.goalId,
+        title: step.title,
+        description: step.description,
+        sequenceNumber: step.sequenceNumber,
+        complex: step.complex,
+        priority: step.priority,
+        targetDate: step.targetDate,
+        status: nextStatus,
+      });
+      await crud.reload();
+    } catch (moveError) {
+      crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update step status.');
+    }
+  }
+
   async function archiveImpactMessage(step: VisionStep) {
     if (!token) {
       return 'Archive this step?';
@@ -180,6 +206,26 @@ export function StepsPage() {
 
   function taskCountFor(step: VisionStep) {
     return tasks.filter((task) => task.stepId === step.id).length;
+  }
+
+  // Shared by the table's action column and the board's cards, so both offer
+  // the same row actions.
+  function renderStepActions(step: VisionStep) {
+    return (
+      <RowActionsMenu
+        onEdit={() => startEdit(step)}
+        onArchive={() => void crud.archive(step.id)}
+        onRestore={() => void crud.restore(step.id)}
+        onDeletePermanently={() => void crud.permanentlyDelete(step.id)}
+        archived={step.archived}
+        confirmArchive={() => archiveImpactMessage(step)}
+        extraActions={[
+          { label: 'View tasks', onClick: () => navigate(`/tasks?stepId=${step.id}`) },
+          { label: 'Add task', onClick: () => navigate(`/tasks?create=task&parent=${step.id}`) },
+        ]}
+        label="Step actions"
+      />
+    );
   }
 
   const columns: DataTableColumn<VisionStep>[] = [
@@ -236,21 +282,7 @@ export function StepsPage() {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
-      render: (step) => (
-        <RowActionsMenu
-          onEdit={() => startEdit(step)}
-          onArchive={() => void crud.archive(step.id)}
-          onRestore={() => void crud.restore(step.id)}
-          onDeletePermanently={() => void crud.permanentlyDelete(step.id)}
-          archived={step.archived}
-          confirmArchive={() => archiveImpactMessage(step)}
-          extraActions={[
-            { label: 'View tasks', onClick: () => navigate(`/tasks?stepId=${step.id}`) },
-            { label: 'Add task', onClick: () => navigate(`/tasks?create=task&parent=${step.id}`) },
-          ]}
-          label="Step actions"
-        />
-      ),
+      render: (step) => renderStepActions(step),
     },
   ];
 
@@ -359,6 +391,36 @@ export function StepsPage() {
         </label>
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
+      <div className="view-toggle-row">
+        <ViewToggle value={viewMode} onChange={setViewMode} label="Step view" />
+      </div>
+      {viewMode === 'board' && (
+        <StatusBoard
+          items={filteredSteps}
+          columns={Object.entries(workStatusLabels).map(([value, label]) => ({ value: value as WorkStatus, label }))}
+          statusOf={(step) => step.status}
+          entityLabel="steps"
+          onMove={(step, nextStatus) => void handleMove(step, nextStatus)}
+          cardClassName={(step) => (isOverdue(step.targetDate, step.status) ? 'list-card--overdue' : '')}
+          renderCard={(step) => (
+            <>
+              <strong>{step.title}</strong>
+              <p>{step.code} · Seq {step.sequenceNumber} · {taskCountFor(step)} task(s)</p>
+              <div className="inline-meta">
+                <PriorityBadge priority={step.priority} />
+                {step.complex && <span>Complex</span>}
+                <span>{step.progressPercent}%</span>
+              </div>
+              <ProgressBar value={Number(step.progressPercent)} />
+              {step.complex && taskCountFor(step) === 0 && (
+                <p><Link to={`/tasks?stepId=${step.id}`}>Break this into tasks →</Link></p>
+              )}
+            </>
+          )}
+          cardActions={(step) => renderStepActions(step)}
+        />
+      )}
+      {viewMode === 'list' && (
       <Card>
         <CardContent>
           <DataTable
@@ -386,6 +448,7 @@ export function StepsPage() {
           />
         </CardContent>
       </Card>
+      )}
     </PageSection>
   );
 }
