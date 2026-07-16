@@ -129,6 +129,54 @@ export type PriorityToken = keyof typeof priorityColors;
 export const neutralFallback = NEUTRAL_IDLE;
 
 /**
+ * FR-18.3 — curated accent choices. Each accent ships pre-validated light and
+ * dark values (main/hover/pressed on the brand ramp, plus the tint pair used
+ * for selected-state washes), so contrast never depends on user judgment.
+ * The status/priority palettes above are deliberately NOT part of this map
+ * (BR-14): an accent choice must never change what "Completed" green means.
+ */
+export type AccentId = 'blue' | 'teal' | 'purple' | 'green' | 'orange';
+
+type AccentSet = {
+  main: string;
+  hover: string;
+  pressed: string;
+  contrastText: string;
+  tint: string;
+  tintForeground: string;
+};
+
+export const accentOptions: Record<AccentId, { label: string; light: AccentSet; dark: AccentSet }> = {
+  blue: {
+    label: 'Blue',
+    light: { main: '#0078d4', hover: '#106ebe', pressed: '#005a9e', contrastText: '#ffffff', tint: '#deecf9', tintForeground: '#005a9e' },
+    dark: { main: '#4ba0e1', hover: '#71afe5', pressed: '#2b88d8', contrastText: '#1b1a19', tint: '#0e3a5c', tintForeground: '#9ec9ec' },
+  },
+  teal: {
+    label: 'Teal',
+    light: { main: '#038387', hover: '#159195', pressed: '#026d70', contrastText: '#ffffff', tint: '#d5f0f0', tintForeground: '#026d70' },
+    dark: { main: '#58c2c6', hover: '#7ad4d8', pressed: '#31a8ad', contrastText: '#1b1a19', tint: '#0c3536', tintForeground: '#9be0e2' },
+  },
+  purple: {
+    label: 'Purple',
+    light: { main: '#8764b8', hover: '#9d7fc6', pressed: '#6b4fa0', contrastText: '#ffffff', tint: '#ece5f6', tintForeground: '#5a4180' },
+    dark: { main: '#a68ccc', hover: '#bda7d9', pressed: '#8764b8', contrastText: '#1b1a19', tint: '#2b2140', tintForeground: '#cdbce6' },
+  },
+  green: {
+    label: 'Green',
+    light: { main: '#107c10', hover: '#2d8f2d', pressed: '#0b5a0b', contrastText: '#ffffff', tint: '#dff0df', tintForeground: '#0b5a0b' },
+    dark: { main: '#6bbf6c', hover: '#8ccf8d', pressed: '#4aa74c', contrastText: '#1b1a19', tint: '#16301c', tintForeground: '#a4d7a6' },
+  },
+  orange: {
+    label: 'Orange',
+    light: { main: '#ca5010', hover: '#d86b2b', pressed: '#a3400c', contrastText: '#ffffff', tint: '#f8e3d7', tintForeground: '#8a3a0e' },
+    dark: { main: '#df8e57', hover: '#e8a97e', pressed: '#ca5010', contrastText: '#1b1a19', tint: '#3a2415', tintForeground: '#f0c0a4' },
+  },
+};
+
+export type Density = 'comfortable' | 'compact';
+
+/**
  * Builds the MUI theme for a color mode (O-2 dark mode).
  *
  * Dark values are Fluent's dark-theme tokens, not inverted light ones:
@@ -145,9 +193,9 @@ export const neutralFallback = NEUTRAL_IDLE;
  * either surface, and a "Completed" green that changed between modes would
  * break the one-source-of-truth rule they exist for.
  */
-export function buildTheme(mode: 'light' | 'dark') {
+export function buildTheme(mode: 'light' | 'dark', accent: AccentId = 'blue', density: Density = 'comfortable') {
   const dark = mode === 'dark';
-  const brand = dark ? '#4ba0e1' : '#0078d4';
+  const brand = accentOptions[accent][mode];
   const border = dark ? '#3b3a39' : '#e1e1e1';
 
   return createTheme({
@@ -162,10 +210,10 @@ export function buildTheme(mode: 'light' | 'dark') {
         secondary: dark ? '#a19f9d' : '#616161', // --muted-foreground (Fluent neutralForeground2)
       },
       primary: {
-        main: brand, // --primary (Fluent Communication Blue ramp)
-        dark: dark ? '#2b88d8' : '#005a9e', // pressed
-        light: dark ? '#71afe5' : '#106ebe', // hover
-        contrastText: dark ? '#1b1a19' : '#ffffff', // --primary-foreground
+        main: brand.main, // --primary (the chosen accent's ramp, FR-18.3)
+        dark: brand.pressed,
+        light: brand.hover,
+        contrastText: brand.contrastText, // --primary-foreground
       },
       secondary: {
         main: dark ? '#323130' : '#f5f5f5', // --secondary / --muted (Fluent neutralBackground3)
@@ -178,6 +226,35 @@ export function buildTheme(mode: 'light' | 'dark') {
     },
     shape: {
       borderRadius: 4, // --radius: Fluent's 4px corner radius
+    },
+    // FR-18.4: Compact narrows the spacing base every sx/gap multiplier builds
+    // on; the table/card paddings in global.css follow via [data-density].
+    spacing: density === 'compact' ? 6 : 8,
+    // FR-18.1: no silent MUI defaults — these ARE the default values, stated
+    // explicitly so the theme is the single place they can ever change, and
+    // global.css media queries reference the same numbers (600/900).
+    breakpoints: {
+      values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 },
+    },
+    transitions: {
+      duration: {
+        shortest: 150,
+        shorter: 200,
+        short: 250,
+        standard: 300,
+        complex: 375,
+        enteringScreen: 225,
+        leavingScreen: 195,
+      },
+    },
+    // The toast stack in global.css sits on this same scale (--z-toast: 1400,
+    // the snackbar tier) instead of inventing its own number.
+    zIndex: {
+      appBar: 1100,
+      drawer: 1200,
+      modal: 1300,
+      snackbar: 1400,
+      tooltip: 1500,
     },
     typography: {
       fontFamily: '"Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif',
@@ -235,7 +312,7 @@ export function buildTheme(mode: 'light' | 'dark') {
         styleOverrides: {
           root: {
             '&.Mui-focused': {
-              outline: `2px solid ${brand}`,
+              outline: `2px solid ${brand.main}`,
               outlineOffset: '1px',
             },
           },

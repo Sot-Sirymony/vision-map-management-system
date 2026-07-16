@@ -1,57 +1,140 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { buildTheme } from '../theme';
+import { accentOptions, buildTheme, type AccentId, type Density } from '../theme';
 
-export type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type FontSize = 'small' | 'medium' | 'large';
 
-const STORAGE_KEY = 'vms-theme-mode';
-
-type ThemeModeContextValue = {
+export type ThemeSettings = {
   mode: ThemeMode;
-  toggleMode: () => void;
+  accent: AccentId;
+  density: Density;
+  fontSize: FontSize;
 };
 
-const ThemeModeContext = createContext<ThemeModeContextValue>({ mode: 'light', toggleMode: () => undefined });
+const STORAGE_KEY = 'vms-theme-settings';
+// Pre-FR-18 key that held only 'light' | 'dark'; migrated on first load.
+const LEGACY_MODE_KEY = 'vms-theme-mode';
 
-function initialMode(): ThemeMode {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') {
-    return stored;
+const DEFAULT_SETTINGS: ThemeSettings = {
+  mode: 'system',
+  accent: 'blue',
+  density: 'comfortable',
+  fontSize: 'medium',
+};
+
+type ThemeSettingsContextValue = {
+  settings: ThemeSettings;
+  /** The mode actually in effect — 'system' resolved against the OS preference. */
+  resolvedMode: 'light' | 'dark';
+  update: (changes: Partial<ThemeSettings>) => void;
+};
+
+const ThemeSettingsContext = createContext<ThemeSettingsContextValue>({
+  settings: DEFAULT_SETTINGS,
+  resolvedMode: 'light',
+  update: () => undefined,
+});
+
+function initialSettings(): ThemeSettings {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as Partial<ThemeSettings>;
+      return {
+        mode: parsed.mode === 'light' || parsed.mode === 'dark' || parsed.mode === 'system' ? parsed.mode : DEFAULT_SETTINGS.mode,
+        accent: parsed.accent && parsed.accent in accentOptions ? parsed.accent : DEFAULT_SETTINGS.accent,
+        density: parsed.density === 'compact' ? 'compact' : 'comfortable',
+        fontSize: parsed.fontSize === 'small' || parsed.fontSize === 'large' ? parsed.fontSize : 'medium',
+      };
+    }
+    const legacyMode = localStorage.getItem(LEGACY_MODE_KEY);
+    if (legacyMode === 'light' || legacyMode === 'dark') {
+      return { ...DEFAULT_SETTINGS, mode: legacyMode };
+    }
+  } catch {
+    // Corrupted storage — fall through to defaults.
   }
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return DEFAULT_SETTINGS;
+}
+
+function systemPrefersDark(): boolean {
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
 }
 
 /**
- * Owns the light/dark choice (O-2): defaults to the OS preference, remembers
- * an explicit choice in localStorage, and exposes it two ways — the MUI theme
- * for components, and a `data-theme` attribute on <html> for global.css.
+ * Owns the appearance settings (FR-18): mode (Light / Dark / System, where
+ * System tracks the OS preference live), accent color, density, and font
+ * size. Everything persists per browser and is exposed three ways — the MUI
+ * theme for components, data attributes on <html> for global.css, and the
+ * accent's CSS variables so non-MUI styles use the same ramp.
  */
 export function ThemeModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>(initialMode);
+  const [settings, setSettings] = useState<ThemeSettings>(initialSettings);
+  const [osPrefersDark, setOsPrefersDark] = useState(systemPrefersDark);
+
+  const resolvedMode: 'light' | 'dark' =
+    settings.mode === 'system' ? (osPrefersDark ? 'dark' : 'light') : settings.mode;
+
+  // FR-18.2: System mode follows OS changes live, without a reload.
+  useEffect(() => {
+    if (settings.mode !== 'system' || !window.matchMedia) {
+      return;
+    }
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (event: MediaQueryListEvent) => setOsPrefersDark(event.matches);
+    query.addEventListener('change', onChange);
+    setOsPrefersDark(query.matches);
+    return () => query.removeEventListener('change', onChange);
+  }, [settings.mode]);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = mode;
-    localStorage.setItem(STORAGE_KEY, mode);
-  }, [mode]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    const root = document.documentElement;
+    root.dataset.theme = resolvedMode;
+    root.dataset.density = settings.density;
+    root.dataset.fontsize = settings.fontSize;
+    // The accent's CSS variables (FR-18.3). Inline custom properties win over
+    // both the :root defaults and the [data-theme="dark"] block, so the
+    // chosen ramp applies in either mode.
+    const accent = accentOptions[settings.accent][resolvedMode];
+    root.style.setProperty('--primary', accent.main);
+    root.style.setProperty('--primary-foreground', accent.contrastText);
+    root.style.setProperty('--ring', accent.main);
+    root.style.setProperty('--accent', accent.tint);
+    root.style.setProperty('--accent-foreground', accent.tintForeground);
+    root.style.setProperty('--sidebar-primary', accent.main);
+    root.style.setProperty('--sidebar-primary-foreground', accent.contrastText);
+    root.style.setProperty('--sidebar-accent', accent.tint);
+    root.style.setProperty('--sidebar-accent-foreground', accent.tintForeground);
+    root.style.setProperty('--sidebar-ring', accent.main);
+  }, [settings, resolvedMode]);
 
-  const theme = useMemo(() => buildTheme(mode), [mode]);
+  const theme = useMemo(
+    () => buildTheme(resolvedMode, settings.accent, settings.density),
+    [resolvedMode, settings.accent, settings.density],
+  );
 
-  const value = useMemo(
-    () => ({ mode, toggleMode: () => setMode((current) => (current === 'light' ? 'dark' : 'light')) }),
-    [mode],
+  const value = useMemo<ThemeSettingsContextValue>(
+    () => ({
+      settings,
+      resolvedMode,
+      update: (changes) => setSettings((current) => ({ ...current, ...changes })),
+    }),
+    [settings, resolvedMode],
   );
 
   return (
-    <ThemeModeContext.Provider value={value}>
+    <ThemeSettingsContext.Provider value={value}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
       </ThemeProvider>
-    </ThemeModeContext.Provider>
+    </ThemeSettingsContext.Provider>
   );
 }
 
-export function useThemeMode() {
-  return useContext(ThemeModeContext);
+export function useThemeSettings() {
+  return useContext(ThemeSettingsContext);
 }

@@ -53,6 +53,14 @@
   --info-strong: #1d4ed8;
   --danger-bg: #fdf3f3;          /* overdue row wash */
   --hint: #0d7d70;               /* field hints */
+  /* FR-18.4 density defaults (Comfortable); the compact overrides live on
+     [data-density="compact"] below. MUI spacing scales via the theme. */
+  --cell-pad-y: 12px;
+  --cell-pad-x: 14px;
+  --card-pad: 14px;
+  /* FR-18.1: the toast layer sits on the theme's z-index scale (snackbar
+     tier), not an invented number. */
+  --z-toast: 1400;
   /* Fluent's elevation/depth scale — defined for Phase 1+ to consume,
      not yet wired into any component. */
   --shadow-2: 0 0.6px 1.8px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.06);
@@ -106,6 +114,26 @@
   --info-strong: #6cb8f6;
   --danger-bg: #3a1d1f;
   --hint: #6ccdc2;
+}
+
+/* FR-18.4: Compact density tightens the row and card paddings that decide
+   how many records fit on screen. Stamped on <html> by ThemeModeProvider,
+   which also shrinks the MUI spacing base to match. */
+[data-density="compact"] {
+  --cell-pad-y: 7px;
+  --cell-pad-x: 10px;
+  --card-pad: 10px;
+}
+
+/* FR-18.5: text size scales the root font size, which every rem-based value
+   (both this stylesheet's and MUI's typography) builds on — proportions hold,
+   unlike browser zoom. Medium is the browser default (16px). */
+:root[data-fontsize="small"] {
+  font-size: 14.5px;
+}
+
+:root[data-fontsize="large"] {
+  font-size: 17.5px;
 }
 
 .text-muted-foreground {
@@ -356,7 +384,7 @@ a {
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 1000;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -393,7 +421,7 @@ a {
 
 .data-table th,
 .data-table td {
-  padding: 12px 14px;
+  padding: var(--cell-pad-y) var(--cell-pad-x);
   border-bottom: 1px solid var(--border-soft);
   text-align: left;
   vertical-align: middle;
@@ -453,7 +481,7 @@ a {
 .list-card {
   display: grid;
   gap: 10px;
-  padding: 14px;
+  padding: var(--card-pad);
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--card);
@@ -576,7 +604,7 @@ a {
 .kanban-column {
   display: flex;
   flex-direction: column;
-  padding: 14px;
+  padding: var(--card-pad);
   min-height: 220px;
   max-height: 640px;
   min-width: 0;
@@ -593,7 +621,9 @@ a {
   margin-right: -4px;
 }
 
-@media (max-width: 720px) {
+/* FR-18.1: 600px is the theme's `sm` breakpoint — the same number lives in
+   theme.ts, never a third value invented here. */
+@media (max-width: 600px) {
   .kanban {
     grid-template-columns: none;
     grid-auto-flow: column;
@@ -761,7 +791,9 @@ a {
   color: var(--text-soft);
 }
 
-@media (max-width: 960px) {
+/* FR-18.1: 900px is the theme's `md` breakpoint — the sidebar collapses to
+   mobile at the same width, so the layouts change together. */
+@media (max-width: 900px) {
   .metric-grid,
   .two-column,
   .form-grid {
@@ -769,7 +801,7 @@ a {
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .page-shell {
     padding: 18px;
   }

@@ -5,7 +5,7 @@
 | **Document** | VMS_BRD_V2.0.0 |
 | **Version** | 2.0.0 (In progress) |
 | **Date** | 2026-07-11 (progress updated 2026-07-17) |
-| **Status** | Complete — all 11 items implemented (FR-15 and C-4…C-7 pending push) |
+| **Status** | Complete — all 11 items shipped and all open items resolved. Addendum A (FR-18 Theme Settings) also ✅ shipped 2026-07-17. |
 | **Baseline** | Builds on VMS_BRD_V1.0.0 (all V1 requirements remain in force) |
 | **Concept source** | *Mentored by a Millionaire* (Steven K. Scott) — used as conceptual reference only; all product wording, questions, and templates are original |
 
@@ -271,3 +271,86 @@ These close the remaining Partial/Planned items in VMS_BRD_V1.0.0.
 | O-1 | Final wording of the diligence checklist questions (FR-16.1 list is a first draft). | FR-16 build | ✅ Resolved — shipped as five first-person statements the user confirms (see `ReviewsPage.tsx`); revisit only if the wording should change. |
 | O-2 | Dark mode in or out — still undecided; excluded from V2.0.0 scope until called in. | Nothing in V2 | ✅ Resolved — decided IN and shipped 2026-07-17: header toggle, OS-preference default, choice remembered per browser; Fluent dark tokens across the MUI theme and all page CSS. |
 | O-3 | Whether the V2 release also upgrades the Render database plan (operational, not code). | Production readiness | ✅ Resolved — `render.yaml` pins the database to the paid `basic-256mb` plan (free Postgres is deleted after 30 days). |
+
+---
+
+## Addendum A (2026-07-17) — FR-18 Theme Settings
+
+Added after V2.0.0 closed, as a scope add-on. Dark mode (O-2) shipped as a
+fixed light/dark pair behind one header toggle; FR-18 grows that into a
+proper appearance-settings capability, built on the theming surface MUI's
+`createTheme` actually exposes.
+
+Requirement numbering continues from V2 (which ended at FR-17), so the next
+major BRD (V3) starts at **FR-19**.
+
+### Theming building blocks — current state vs. FR-18
+
+MUI themes are customized through seven configuration categories. Where the
+app stands today, and what FR-18 does with each:
+
+| Category | What it controls | Today (post dark mode) | Under FR-18 |
+|---|---|---|---|
+| `palette` | Colors (primary, secondary, error, warning, info, success) and light/dark `mode` | Fluent light + dark palettes in `buildTheme(mode)`; mode toggled in the header, remembered per browser | Adds a *System* mode option and an accent-color choice (FR-18.2, FR-18.3) |
+| `typography` | Font family, sizes, weights, letter spacing | Font family only (Segoe UI stack); sizes/weights are MUI defaults | Font-size scale setting (FR-18.5) |
+| `spacing` | The base unit behind margins and padding (default 8px) | MUI default, not set explicitly | Density setting scales it (FR-18.4) |
+| `breakpoints` | Responsive thresholds (xs, sm, md, lg, xl) | MUI defaults — while `global.css` media queries use their own 960/720/560px values, so the two systems can disagree | Aligned to one set of thresholds (FR-18.1) |
+| `components` | Global per-component style overrides | Button, Chip, Card, Dialog, OutlinedInput overridden for the Fluent look | Unchanged; new settings flow through these, never around them |
+| `transitions` | How elements animate between states | MUI defaults | Set explicitly and documented (FR-18.1) |
+| `zIndex` | Stacking order of layered elements | MUI defaults (toasts hardcode `z-index: 1000` in CSS) | Set explicitly; toast layer moved onto the scale (FR-18.1) |
+
+### FR-18 Theme Settings — ✅ Done 2026-07-17 (Effort: M)
+
+- FR-18.1 **One theme source of truth.** Every category above is set
+  explicitly in `buildTheme` (spacing base, breakpoint values, transition
+  durations, z-index scale), and `global.css` derives from the same tokens:
+  its media queries use the theme's breakpoint values and its layered
+  elements (toasts) sit on the theme's z-index scale. No silent MUI defaults.
+- FR-18.2 **Mode setting: Light / Dark / System.** The header toggle becomes
+  a three-way appearance setting. *System* follows the OS preference live
+  (reacts to OS changes without reload); an explicit Light or Dark choice is
+  remembered per browser, as today.
+- FR-18.3 **Accent color.** The user picks the brand accent from a curated
+  set (default: the current Communication Blue) — each option ships with
+  pre-validated light- and dark-mode values so contrast never depends on user
+  judgment. Flows through `palette.primary` and the matching CSS variables.
+- FR-18.4 **Density.** A Comfortable / Compact choice scales the spacing base
+  unit and switches the size defaults of dense components (tables, inputs,
+  buttons) so long lists fit more rows without zooming.
+- FR-18.5 **Font size.** A Small / Medium / Large scale applied through the
+  typography config, not browser zoom, so layout proportions hold.
+- FR-18.6 **Settings live in one place.** A small Appearance section (header
+  menu or settings page) groups mode, accent, density, and font size;
+  all choices persist per browser and apply instantly.
+
+**Acceptance criteria**
+1. Selecting System mode follows the OS theme and updates live when the OS
+   preference changes; explicit Light/Dark still wins once chosen.
+2. Changing accent, density, or font size restyles the app instantly and
+   survives a reload.
+3. `global.css` contains no breakpoint value that differs from the theme's,
+   and no hardcoded z-index.
+4. Every appearance setting passes WCAG AA contrast in both modes with any
+   accent selected.
+
+**Business rule**
+
+| # | Rule |
+|---|---|
+| BR-14 | The status and priority palettes are never user-themable. They encode meaning (Completed green, Blocked orange, Critical red) shared by badges, charts, and the Excel export's conditional formatting — an accent-color choice must not change them. |
+
+**Out of scope for FR-18:** per-user theme sync across devices (settings are
+per browser until a user-preferences API exists), fully custom color pickers
+(curated accents only, to protect contrast), and theming of the login page's
+navy hero panel.
+
+**Implementation notes (shipped):** the Appearance menu lives behind the
+header's mode icon (sun/moon/monitor mirrors the active mode). Five accents
+ship (Blue default, Teal, Purple, Green, Orange), each defined once in
+`theme.ts` with light and dark ramps; the provider feeds the same values to
+the MUI palette and the CSS variables. Density scales the MUI spacing base
+(8 → 6) plus the table/card paddings via `[data-density]`; text size scales
+the root font size so every rem-based value follows. The breakpoints are the
+theme's `sm 600` / `md 900` in both systems, and the toast stack sits on the
+theme's snackbar z-index tier. Pre-FR-18 light/dark choices migrate from the
+old storage key automatically.
