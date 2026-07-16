@@ -23,11 +23,11 @@ Each item's status is also marked inline in its section heading below.
 | FR-17 | Persuasive communication module | ✅ Done | `741f7a6e` |
 | FR-14 | Moonshot goals | ✅ Done | `741f7a6e` |
 | C-1 | Excel import persistence | ✅ Done | `5be80973` |
-| FR-15 | Partner Recruitment Portal | ✅ Done | pending push |
-| C-4 | Task estimated / actual hours in UI | ✅ Done | pending push |
-| C-5 | Partner phone in UI | ✅ Done | pending push |
-| C-6 | Due-date / target-date range filters | ✅ Done | `6db60f67` (tasks), goals part pending push |
-| C-7 | Automatic export snapshot before import | ✅ Done | pending push |
+| FR-15 | Partner Recruitment Portal | ✅ Done | `c68b2ff8` |
+| C-4 | Task estimated / actual hours in UI | ✅ Done | `c68b2ff8` |
+| C-5 | Partner phone in UI | ✅ Done | `c68b2ff8` |
+| C-6 | Due-date / target-date range filters | ✅ Done | `6db60f67` (tasks), `c68b2ff8` (goals) |
+| C-7 | Automatic export snapshot before import | ✅ Done | `c68b2ff8` |
 
 **Done (11 of 11):** every V2 item is implemented and verified (backend + frontend tests). Migrations: V5 (diligence checklist), V6 (word picture), V7 (goal moonshot), V8 (ideal partner profiles + partner offer type).
 
