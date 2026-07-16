@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Compass } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 import { getDashboardSummary } from '../api/dashboardApi';
@@ -124,6 +124,7 @@ function periodRange(period: DashboardPeriod): { from: string; to: string } {
 
 export function DashboardPage() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<DashboardSummaryData | null>(null);
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +134,12 @@ export function DashboardPage() {
   const [periodValue, setPeriodValue] = useUrlFilter('period');
   const period = isPeriod(periodValue) ? periodValue : 'month';
   const { from, to } = periodRange(period);
+  // Drill-down links carry the dashboard's vision-area scope, so the target
+  // page shows the same rows the widget counted. When no area is selected the
+  // links carry only their own value (status, priority, dates). The period
+  // window is not forwarded: it only maps onto task due dates, and the "Due"
+  // tile already carries that range explicitly.
+  const scopeSuffix = filterVisionAreaId ? `&visionAreaId=${filterVisionAreaId}` : '';
 
   useEffect(() => {
     if (!token) {
@@ -251,9 +258,10 @@ export function DashboardPage() {
       <DashboardSummary
         summary={summary}
         periodLabel={PERIOD_OPTIONS.find((option) => option.value === period)?.label.toLowerCase() ?? 'this month'}
-        dueInPeriodLink={`/tasks?dueFrom=${from}&dueTo=${to}`}
+        dueInPeriodLink={`/tasks?dueFrom=${from}&dueTo=${to}${scopeSuffix}`}
+        visionAreaId={filterVisionAreaId}
       />
-      <AttentionPanel attention={summary?.attention} />
+      <AttentionPanel attention={summary?.attention} visionAreaId={filterVisionAreaId} />
       <Card>
         <CardHeader title="Priority tasks" subheader="The five highest-priority tasks that are not yet completed" />
         <CardContent>
@@ -323,12 +331,18 @@ export function DashboardPage() {
           formatLabel={formatLabel}
           variant="donut"
           colorForKey={(key) => workStatusColors[key as WorkStatus] ?? neutralFallback}
-          linkForKey={(key) => `/goals?status=${key}`}
+          linkForKey={(key) => `/goals?status=${key}${scopeSuffix}`}
         />
         <CategoryBreakdownChart
           title="Dreams by vision area"
-          description="Where active dreams are concentrated"
+          description="Where active dreams are concentrated — click a slice to open those dreams"
           data={summary?.dreamsByVisionArea ?? {}}
+          // The payload keys this chart by area *name*, so the drill-down maps
+          // it back to the area's id before linking.
+          linkForKey={(name) => {
+            const area = visionAreas.find((candidate) => candidate.name === name);
+            return area ? `/dreams?visionAreaId=${area.id}` : '/dreams';
+          }}
         />
         <CategoryBreakdownChart
           title="Tasks by status"
@@ -337,7 +351,7 @@ export function DashboardPage() {
           formatLabel={formatLabel}
           variant="donut"
           colorForKey={(key) => workStatusColors[key as WorkStatus] ?? neutralFallback}
-          linkForKey={(key) => `/tasks?status=${key}`}
+          linkForKey={(key) => `/tasks?status=${key}${scopeSuffix}`}
         />
         <CategoryBreakdownChart
           title="Tasks by priority"
@@ -346,15 +360,17 @@ export function DashboardPage() {
           formatLabel={formatLabel}
           variant="bar"
           colorForKey={(key) => priorityColors[key as Priority] ?? neutralFallback}
-          linkForKey={(key) => `/tasks?priority=${key}`}
+          linkForKey={(key) => `/tasks?priority=${key}${scopeSuffix}`}
         />
         <CategoryBreakdownChart
           title="Top obstacles"
-          description="What's actually blocking active work right now"
+          description="What's actually blocking active work right now — click a slice to open those obstacles"
           data={topObstaclesByType}
           formatLabel={(key) => (key === OTHER_OBSTACLE_TYPES_KEY ? 'Other types' : obstacleTypeLabels[key as keyof typeof obstacleTypeLabels])}
           variant="donut"
           colorForKey={(key) => OBSTACLE_TYPE_COLORS[key] ?? neutralFallback}
+          // The rollup bucket spans several types, so it links to the plain list.
+          linkForKey={(key) => (key === OTHER_OBSTACLE_TYPES_KEY ? '/obstacles' : `/obstacles?type=${key}`)}
         />
         <Card>
           <CardHeader title="Vision Area progress" subheader="Average goal progress per area — lowest first is what needs attention" />
@@ -379,7 +395,7 @@ export function DashboardPage() {
       </Box>
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' } }}>
       <Card>
-        <CardHeader title="Partner engagement" subheader="Where partners sit in the pipeline, from first contact to done" />
+        <CardHeader title="Partner engagement" subheader="Where partners sit in the pipeline, from first contact to done — click a stage to open those partners" />
         <CardContent>
           {totalPartners === 0 ? (
             <EmptyState>No partners yet.</EmptyState>
@@ -392,14 +408,29 @@ export function DashboardPage() {
                     <YAxis type="category" dataKey="name" hide />
                     <RechartsTooltip content={<ChartTooltipContent />} />
                     {PARTNER_STATUS_ORDER.map((status) => (
-                      <Bar key={status} dataKey={status} stackId="pipeline" name={partnerStatusLabels[status]} fill={PARTNER_STATUS_COLORS[status]} />
+                      <Bar
+                        key={status}
+                        dataKey={status}
+                        stackId="pipeline"
+                        name={partnerStatusLabels[status]}
+                        fill={PARTNER_STATUS_COLORS[status]}
+                        cursor="pointer"
+                        onClick={() => navigate(`/partners?status=${status}`)}
+                      />
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
               <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', justifyContent: 'center', pt: 1.5 }}>
                 {PARTNER_STATUS_ORDER.map((status) => (
-                  <Stack key={status} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                  <Stack
+                    key={status}
+                    component={Link}
+                    to={`/partners?status=${status}`}
+                    direction="row"
+                    spacing={0.75}
+                    sx={{ alignItems: 'center', textDecoration: 'none', '&:hover .MuiTypography-root': { textDecoration: 'underline' } }}
+                  >
                     <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: PARTNER_STATUS_COLORS[status] }} />
                     <Typography variant="caption" color="text.secondary">
                       {partnerStatusLabels[status]} ({partnerCounts[status]})

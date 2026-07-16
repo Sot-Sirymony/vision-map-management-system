@@ -26,6 +26,7 @@ import { Textarea } from '../components/common/Textarea';
 import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
+import { useUrlFilter } from '../hooks/useUrlFilter';
 import type { Dream, Goal, Obstacle, ObstacleRequest, ObstacleStatus, ObstacleType, Partner, Severity, TaskItem, VisionStep } from '../types/vision';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
 import { obstacleStatusLabels, obstacleTypeLabels, priorityLabels, severityLabels } from '../utils/enumLabels';
@@ -67,10 +68,13 @@ export function ObstaclesPage() {
   const [status, setStatus] = useState<ObstacleStatus>('OPEN');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterObstacleType, setFilterObstacleType] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterDreamId, setFilterDreamId] = useState('');
+  // In the URL, not component state: the dashboard's "Top obstacles" chart
+  // links straight into a type-filtered view, and a filtered list stays
+  // shareable and bookmarkable.
+  const [filterObstacleType, setFilterObstacleType] = useUrlFilter('type');
+  const [filterSeverity, setFilterSeverity] = useUrlFilter('severity');
+  const [filterStatus, setFilterStatus] = useUrlFilter('status');
+  const [filterDreamId, setFilterDreamId] = useUrlFilter('dreamId');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   useEffect(() => {

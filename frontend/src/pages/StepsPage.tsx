@@ -1,8 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { archiveStep, permanentlyDeleteStep, createStep, getStepArchiveImpact, listSteps, restoreStep, updateStep } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
+import { listVisionAreas } from '../api/visionAreaApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Checkbox from '@mui/material/Checkbox';
@@ -28,7 +30,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
 import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
-import type { Goal, Priority, TaskItem, VisionStep, VisionStepRequest, WorkStatus } from '../types/vision';
+import type { Dream, Goal, Priority, TaskItem, VisionArea, VisionStep, VisionStepRequest, WorkStatus } from '../types/vision';
 import { priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { isOverdue } from '../utils/overdue';
 import { matchesSearch } from '../utils/search';
@@ -50,6 +52,8 @@ export function StepsPage() {
   });
   const [goals, setGoals] = useState<Goal[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [dreams, setDreams] = useState<Dream[]>([]);
+  const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [goalId, setGoalId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -60,6 +64,7 @@ export function StepsPage() {
   const [status, setStatus] = useState<WorkStatus>('NOT_STARTED');
   // In the URL, not component state: the dashboard links straight into a
   // filtered view, and a filtered list stays shareable and bookmarkable.
+  const [filterVisionAreaId, setFilterVisionAreaId] = useUrlFilter('visionAreaId');
   const [filterGoalId, setFilterGoalId] = useUrlFilter('goalId');
   const [filterStatus, setFilterStatus] = useUrlFilter('status');
   const [filterPriority, setFilterPriority] = useUrlFilter('priority');
@@ -95,11 +100,15 @@ export function StepsPage() {
       return;
     }
     void crud.reload();
-    void Promise.all([listGoals(token), listTasks(token)]).then(([goalData, taskData]) => {
-      setGoals(goalData);
-      setTasks(taskData);
-      setGoalId((current) => current || String(goalData[0]?.id ?? ''));
-    });
+    void Promise.all([listGoals(token), listTasks(token), listDreams(token), listVisionAreas(token)]).then(
+      ([goalData, taskData, dreamData, areaData]) => {
+        setGoals(goalData);
+        setTasks(taskData);
+        setDreams(dreamData);
+        setVisionAreas(areaData);
+        setGoalId((current) => current || String(goalData[0]?.id ?? ''));
+      },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -182,9 +191,21 @@ export function StepsPage() {
     return `Archiving "${step.title}" also archives ${impact.tasks} task(s). Everything can be restored later with "Show archived".`;
   }
 
+  const dreamById = new Map(dreams.map((dream) => [dream.id, dream]));
+  const goalsForFilter = filterVisionAreaId
+    ? goals.filter((goal) => String(dreamById.get(goal.dreamId)?.visionAreaId ?? '') === filterVisionAreaId)
+    : goals;
+
   const filteredSteps = crud.items.filter((step) => {
     if (filterGoalId && String(step.goalId) !== filterGoalId) {
       return false;
+    }
+    if (filterVisionAreaId) {
+      const goal = goals.find((item) => item.id === step.goalId);
+      const dream = goal ? dreamById.get(goal.dreamId) : undefined;
+      if (String(dream?.visionAreaId ?? '') !== filterVisionAreaId) {
+        return false;
+      }
     }
     if (filterStatus && step.status !== filterStatus) {
       return false;
@@ -364,10 +385,19 @@ export function StepsPage() {
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="steps" />
         <FilterSelect
+          label="Vision Area"
+          value={filterVisionAreaId}
+          onChange={(value) => {
+            setFilterVisionAreaId(value);
+            setFilterGoalId('');
+          }}
+          options={optionsFromEntities(visionAreas, (area) => area.name)}
+        />
+        <FilterSelect
           label="Goal"
           value={filterGoalId}
           onChange={setFilterGoalId}
-          options={optionsFromEntities(goals, (goal) => goal.title)}
+          options={optionsFromEntities(goalsForFilter, (goal) => goal.title)}
         />
         <FilterSelect
           label="Status"
@@ -428,7 +458,7 @@ export function StepsPage() {
             columns={columns}
             emptyMessage="No steps match these filters."
             defaultSortKey="sequenceNumber"
-            pageResetKey={`${searchTerm}|${filterGoalId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}`}
+            pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterGoalId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}`}
             rowClassName={(step) => (step.archived ? 'row-archived' : isOverdue(step.targetDate, step.status) ? 'row-overdue' : '')}
             selection={{
               selectedIds,

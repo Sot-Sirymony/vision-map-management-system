@@ -22,7 +22,16 @@ type Finding = {
   action: string;
 };
 
-function buildFindings(attention: DashboardAttention): Finding[] {
+// Appends the dashboard's vision-area scope so the target page shows the same
+// rows the finding counted; without a scope the link keeps only its own filter.
+function scoped(base: string, visionAreaId?: string) {
+  if (!visionAreaId) {
+    return base;
+  }
+  return `${base}${base.includes('?') ? '&' : '?'}visionAreaId=${visionAreaId}`;
+}
+
+function buildFindings(attention: DashboardAttention, visionAreaId?: string): Finding[] {
   const findings: Finding[] = [
     {
       key: 'blocked-no-partner',
@@ -30,7 +39,7 @@ function buildFindings(attention: DashboardAttention): Finding[] {
       count: attention.blockedTasksWithoutPartner.length,
       title: 'Blocked tasks with no partner',
       why: 'Nothing is lined up to unblock these. They will stay stuck until someone helps.',
-      to: '/tasks?status=BLOCKED',
+      to: scoped('/tasks?status=BLOCKED', visionAreaId),
       action: 'Find a partner',
     },
     {
@@ -39,7 +48,7 @@ function buildFindings(attention: DashboardAttention): Finding[] {
       count: attention.complexStepsWithoutTasks.length,
       title: 'Complex steps with no tasks',
       why: 'A step marked complex has nothing to actually do. There is no first action to take.',
-      to: '/steps?complex=true',
+      to: scoped('/steps?complex=true', visionAreaId),
       action: 'Break into tasks',
     },
     {
@@ -48,7 +57,7 @@ function buildFindings(attention: DashboardAttention): Finding[] {
       count: attention.dreamsWithoutGoals.length,
       title: 'Dreams with no goals',
       why: 'A dream with no goals is still a wish — nothing can be executed on it.',
-      to: '/dreams',
+      to: scoped('/dreams', visionAreaId),
       action: 'Add goals',
     },
     {
@@ -57,7 +66,7 @@ function buildFindings(attention: DashboardAttention): Finding[] {
       count: attention.goalsWithoutSteps.length,
       title: 'Goals with no steps',
       why: 'This goal has no path to it yet.',
-      to: '/goals',
+      to: scoped('/goals', visionAreaId),
       action: 'Add steps',
     },
   ];
@@ -71,12 +80,12 @@ function buildFindings(attention: DashboardAttention): Finding[] {
  * so it disappears entirely when there is nothing to fix, rather than sitting
  * there as a permanent scold.
  */
-export function AttentionPanel({ attention }: { attention: DashboardAttention | undefined }) {
+export function AttentionPanel({ attention, visionAreaId }: { attention: DashboardAttention | undefined; visionAreaId?: string }) {
   if (!attention) {
     return null;
   }
 
-  const findings = buildFindings(attention);
+  const findings = buildFindings(attention, visionAreaId);
 
   if (findings.length === 0) {
     return (

@@ -27,6 +27,7 @@ import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useUrlFilter } from '../hooks/useUrlFilter';
 import type { Dream, Goal, Partner, PartnerRequest, PartnerStatus, PartnerSupportType, TaskItem, VisionArea, VisionStep } from '../types/vision';
 import { partnerStatusLabels, partnerSupportTypeLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
@@ -44,9 +45,12 @@ export function PartnersPage() {
   // just the loaded one.
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebouncedValue(searchTerm);
-  const [filterSupportType, setFilterSupportType] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterDreamId, setFilterDreamId] = useState('');
+  // In the URL, not component state: the dashboard's partner pipeline links
+  // straight into a status-filtered view, and a filtered list stays shareable
+  // and bookmarkable.
+  const [filterSupportType, setFilterSupportType] = useUrlFilter('supportType');
+  const [filterStatus, setFilterStatus] = useUrlFilter('status');
+  const [filterDreamId, setFilterDreamId] = useUrlFilter('dreamId');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const crud = useCrudEntity<Partner, PartnerRequest>({
     token,

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listSteps } from '../api/stepApi';
+import { listVisionAreas } from '../api/visionAreaApi';
 import { archiveTask, permanentlyDeleteTask, createTask, listTasks, restoreTask, updateTask, updateTaskStatus } from '../api/taskApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -28,7 +29,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
 import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
-import type { Dream, Goal, ObstacleType, Priority, TaskItem, TaskItemRequest, VisionStep, WorkStatus } from '../types/vision';
+import type { Dream, Goal, ObstacleType, Priority, TaskItem, TaskItemRequest, VisionArea, VisionStep, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
 import { obstacleTypeLabels, priorityLabels, workStatusLabels } from '../utils/enumLabels';
@@ -56,6 +57,7 @@ export function TasksBoardPage() {
   const [steps, setSteps] = useState<VisionStep[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
+  const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
   const [stepId, setStepId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -72,6 +74,7 @@ export function TasksBoardPage() {
   // filtered board, and a filtered board stays shareable and bookmarkable.
   const [filterOwner, setFilterOwner] = useUrlFilter('owner');
   const [filterPriority, setFilterPriority] = useUrlFilter('priority');
+  const [filterVisionAreaId, setFilterVisionAreaId] = useUrlFilter('visionAreaId');
   const [filterDreamId, setFilterDreamId] = useUrlFilter('dreamId');
   const [filterGoalId, setFilterGoalId] = useUrlFilter('goalId');
   const [filterOverdueOnly, setFilterOverdueOnly] = useUrlFlag('overdue');
@@ -79,9 +82,10 @@ export function TasksBoardPage() {
   // This is what makes the dashboard's "Due This Week" tile a link.
   const [filterDueFrom, setFilterDueFrom] = useUrlFilter('dueFrom');
   const [filterDueTo, setFilterDueTo] = useUrlFilter('dueTo');
-  // Narrows the board to a single column. The board is organised by status, so
-  // "show me the blocked ones" means showing one column, not filtering rows.
-  const [filterStatus] = useUrlFilter('status');
+  // In board view this narrows the board to a single column ("show me the
+  // blocked ones" means showing one column); in list view it filters rows, so
+  // a dashboard drill-down lands on the same set either way.
+  const [filterStatus, setFilterStatus] = useUrlFilter('status');
   const visibleColumns = filterStatus
     ? columns.filter((column) => column === filterStatus)
     : columns;
@@ -118,6 +122,7 @@ export function TasksBoardPage() {
     });
     void listGoals(token).then(setGoals);
     void listDreams(token).then(setDreams);
+    void listVisionAreas(token).then(setVisionAreas);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -195,6 +200,10 @@ export function TasksBoardPage() {
 
   const stepById = new Map(steps.map((step) => [step.id, step]));
   const goalById = new Map(goals.map((goal) => [goal.id, goal]));
+  const dreamById = new Map(dreams.map((dream) => [dream.id, dream]));
+  const dreamsForFilter = filterVisionAreaId
+    ? dreams.filter((dream) => String(dream.visionAreaId) === filterVisionAreaId)
+    : dreams;
   const goalsForFilter = filterDreamId
     ? goals.filter((goal) => String(goal.dreamId) === filterDreamId)
     : goals;
@@ -207,6 +216,9 @@ export function TasksBoardPage() {
       return false;
     }
     if (filterPriority && task.priority !== filterPriority) {
+      return false;
+    }
+    if (filterStatus && task.status !== filterStatus) {
       return false;
     }
     if (filterOverdueOnly && !isOverdue(task.dueDate, task.status)) {
@@ -232,6 +244,13 @@ export function TasksBoardPage() {
     if (filterDreamId) {
       const goal = step ? goalById.get(step.goalId) : undefined;
       if (String(goal?.dreamId ?? '') !== filterDreamId) {
+        return false;
+      }
+    }
+    if (filterVisionAreaId) {
+      const goal = step ? goalById.get(step.goalId) : undefined;
+      const dream = goal ? dreamById.get(goal.dreamId) : undefined;
+      if (String(dream?.visionAreaId ?? '') !== filterVisionAreaId) {
         return false;
       }
     }
@@ -386,13 +405,29 @@ export function TasksBoardPage() {
           options={optionsFromLabels(priorityLabels)}
         />
         <FilterSelect
+          label="Status"
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={optionsFromLabels(workStatusLabels)}
+        />
+        <FilterSelect
+          label="Vision Area"
+          value={filterVisionAreaId}
+          onChange={(value) => {
+            setFilterVisionAreaId(value);
+            setFilterDreamId('');
+            setFilterGoalId('');
+          }}
+          options={optionsFromEntities(visionAreas, (area) => area.name)}
+        />
+        <FilterSelect
           label="Dream"
           value={filterDreamId}
           onChange={(value) => {
             setFilterDreamId(value);
             setFilterGoalId('');
           }}
-          options={optionsFromEntities(dreams, (dream) => dream.title)}
+          options={optionsFromEntities(dreamsForFilter, (dream) => dream.title)}
         />
         <FilterSelect
           label="Goal"

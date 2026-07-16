@@ -10,7 +10,19 @@ type DashboardSummaryProps = {
   periodLabel: string;
   // Link for the "Due" tile — the tasks board filtered to the same window.
   dueInPeriodLink: string;
+  // The dashboard's vision-area scope; when set, tile links carry it so the
+  // target page reproduces the scoped counts.
+  visionAreaId?: string;
 };
+
+// Appends the vision-area scope to a drill-down link when the dashboard is
+// filtered; otherwise the link keeps only its own filter.
+function scoped(base: string, visionAreaId?: string) {
+  if (!visionAreaId) {
+    return base;
+  }
+  return `${base}${base.includes('?') ? '&' : '?'}visionAreaId=${visionAreaId}`;
+}
 
 function TileGroup({ label, columns, children }: { label: string; columns: number; children: React.ReactNode }) {
   return (
@@ -42,7 +54,7 @@ function TileGroup({ label, columns, children }: { label: string; columns: numbe
  * with no orphaned tile (the old flat 9-tile grid always left one
  * hanging alone in a half-empty last row).
  */
-export function DashboardSummary({ summary, periodLabel, dueInPeriodLink }: DashboardSummaryProps) {
+export function DashboardSummary({ summary, periodLabel, dueInPeriodLink, visionAreaId }: DashboardSummaryProps) {
   return (
     <Box sx={{ display: 'grid', gap: 2.5 }}>
       {/*
@@ -60,14 +72,14 @@ export function DashboardSummary({ summary, periodLabel, dueInPeriodLink }: Dash
           value={summary?.overdueTasks ?? 0}
           icon={CalendarClock}
           tone={(summary?.overdueTasks ?? 0) > 0 ? 'critical' : 'neutral'}
-          to="/tasks?overdue=true"
+          to={scoped('/tasks?overdue=true', visionAreaId)}
         />
         <DashboardCard
           label="Blocked Tasks"
           value={summary?.blockedTasks ?? 0}
           icon={Ban}
           tone={(summary?.blockedTasks ?? 0) > 0 ? 'warning' : 'neutral'}
-          to="/tasks?status=BLOCKED"
+          to={scoped('/tasks?status=BLOCKED', visionAreaId)}
         />
         <DashboardCard
           label={`Due ${periodLabel}`}
@@ -83,7 +95,7 @@ export function DashboardSummary({ summary, periodLabel, dueInPeriodLink }: Dash
           label="Active Dreams"
           value={summary?.activeDreams ?? 0}
           icon={Sparkles}
-          to="/dreams?status=ACTIVE"
+          to={scoped('/dreams?status=ACTIVE', visionAreaId)}
         />
         <DashboardCard label="Active Goals" value={summary?.activeGoals ?? 0} icon={Flag} />
         <DashboardCard label="Open Tasks" value={summary?.activeTasks ?? 0} icon={CheckSquare} />
