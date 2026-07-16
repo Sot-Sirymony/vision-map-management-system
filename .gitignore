@@ -9,6 +9,10 @@ backend/target/
 .vite/
 *.tsbuildinfo
 
+# Runtime data (pre-import Excel backup snapshots, BRD C-7)
+backend/data/
+data/backup/
+
 # Environment variables
 .env
 .env.local

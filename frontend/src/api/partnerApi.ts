@@ -43,6 +43,10 @@ export function listPartners(
   return apiClient<Page<Partner>>(`/partners?${params.toString()}`, { token });
 }
 
+export function getPartner(token: string, id: number) {
+  return apiClient<Partner>(`/partners/${id}`, { token });
+}
+
 export function createPartner(token: string, request: PartnerRequest) {
   return apiClient<Partner>('/partners', {
     method: 'POST',

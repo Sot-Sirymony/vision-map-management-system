@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
+import { archiveIdealPartnerProfile, createIdealPartnerProfile, listIdealPartnerProfiles, updateIdealPartnerProfile } from '../api/idealPartnerProfileApi';
 import { archiveStep, permanentlyDeleteStep, createStep, getStepArchiveImpact, listSteps, restoreStep, updateStep } from '../api/stepApi';
 import { listTasks } from '../api/taskApi';
 import { listVisionAreas } from '../api/visionAreaApi';
@@ -12,7 +13,9 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import { BulkArchiveAction } from '../components/common/BulkArchiveAction';
+import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
+import { Modal } from '../components/common/Modal';
 import { DataTable, type DataTableColumn } from '../components/common/DataTable';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
@@ -29,8 +32,8 @@ import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
-import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
-import type { Dream, Goal, Priority, TaskItem, VisionArea, VisionStep, VisionStepRequest, WorkStatus } from '../types/vision';
+import { useUrlFilter, useUrlFilterBatch, useUrlFlag } from '../hooks/useUrlFilter';
+import type { Dream, Goal, IdealPartnerProfile, Priority, TaskItem, VisionArea, VisionStep, VisionStepRequest, WorkStatus } from '../types/vision';
 import { priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { isOverdue } from '../utils/overdue';
 import { matchesSearch } from '../utils/search';
@@ -64,8 +67,10 @@ export function StepsPage() {
   const [status, setStatus] = useState<WorkStatus>('NOT_STARTED');
   // In the URL, not component state: the dashboard links straight into a
   // filtered view, and a filtered list stays shareable and bookmarkable.
-  const [filterVisionAreaId, setFilterVisionAreaId] = useUrlFilter('visionAreaId');
+  const [filterVisionAreaId] = useUrlFilter('visionAreaId');
   const [filterGoalId, setFilterGoalId] = useUrlFilter('goalId');
+  // One navigation for multi-key changes — chained setters undo each other.
+  const setFilterBatch = useUrlFilterBatch();
   const [filterStatus, setFilterStatus] = useUrlFilter('status');
   const [filterPriority, setFilterPriority] = useUrlFilter('priority');
   const [filterOverdueOnly, setFilterOverdueOnly] = useUrlFlag('overdue');
@@ -76,6 +81,14 @@ export function StepsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  // Ideal partner profiles (FR-15.1): one per step, edited in a small modal.
+  const [profiles, setProfiles] = useState<IdealPartnerProfile[]>([]);
+  const [profileStep, setProfileStep] = useState<VisionStep | null>(null);
+  const [profileExperience, setProfileExperience] = useState('');
+  const [profileTraits, setProfileTraits] = useState('');
+  const [profileMotivation, setProfileMotivation] = useState('');
+  const [profileOffer, setProfileOffer] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
 
   // Arrived from a goal's "Add step" shortcut: pre-select that goal and open the
   // create form, then strip the params so a refresh doesn't reopen it.
@@ -109,8 +122,69 @@ export function StepsPage() {
         setGoalId((current) => current || String(goalData[0]?.id ?? ''));
       },
     );
+    void listIdealPartnerProfiles(token).then(setProfiles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  const profileByStepId = new Map(profiles.map((profile) => [profile.stepId, profile]));
+
+  function openProfileEditor(step: VisionStep) {
+    const existing = profileByStepId.get(step.id);
+    setProfileExperience(existing?.requiredExperience ?? '');
+    setProfileTraits(existing?.characterTraits ?? '');
+    setProfileMotivation(existing?.motivation ?? '');
+    setProfileOffer(existing?.offerInReturn ?? '');
+    setProfileStep(step);
+  }
+
+  async function handleProfileSave() {
+    if (!token || !profileStep) {
+      return;
+    }
+    setProfileSaving(true);
+    const request = {
+      stepId: profileStep.id,
+      requiredExperience: profileExperience,
+      characterTraits: profileTraits,
+      motivation: profileMotivation,
+      offerInReturn: profileOffer,
+    };
+    try {
+      const existing = profileByStepId.get(profileStep.id);
+      if (existing) {
+        await updateIdealPartnerProfile(token, existing.id, request);
+      } else {
+        await createIdealPartnerProfile(token, request);
+      }
+      setProfiles(await listIdealPartnerProfiles(token));
+      setProfileStep(null);
+    } catch (profileError) {
+      crud.setError(profileError instanceof Error ? profileError.message : 'Unable to save the ideal partner profile.');
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  async function handleProfileArchive() {
+    if (!token || !profileStep) {
+      return;
+    }
+    const existing = profileByStepId.get(profileStep.id);
+    if (!existing) {
+      setProfileStep(null);
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      await archiveIdealPartnerProfile(token, existing.id);
+      setProfiles(await listIdealPartnerProfiles(token));
+      setProfileStep(null);
+    } catch (profileError) {
+      crud.setError(profileError instanceof Error ? profileError.message : 'Unable to remove the ideal partner profile.');
+    } finally {
+      setProfileSaving(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -243,6 +317,12 @@ export function StepsPage() {
         extraActions={[
           { label: 'View tasks', onClick: () => navigate(`/tasks?stepId=${step.id}`) },
           { label: 'Add task', onClick: () => navigate(`/tasks?create=task&parent=${step.id}`) },
+          ...(step.complex
+            ? [{
+                label: profileByStepId.has(step.id) ? 'Edit ideal partner profile' : 'Define ideal partner profile',
+                onClick: () => openProfileEditor(step),
+              }]
+            : []),
         ]}
         label="Step actions"
       />
@@ -387,10 +467,7 @@ export function StepsPage() {
         <FilterSelect
           label="Vision Area"
           value={filterVisionAreaId}
-          onChange={(value) => {
-            setFilterVisionAreaId(value);
-            setFilterGoalId('');
-          }}
+          onChange={(value) => setFilterBatch({ visionAreaId: value, goalId: '' })}
           options={optionsFromEntities(visionAreas, (area) => area.name)}
         />
         <FilterSelect
@@ -478,6 +555,42 @@ export function StepsPage() {
           />
         </CardContent>
       </Card>
+      )}
+      {profileStep && (
+        <Modal title={`Ideal partner for: ${profileStep.title}`} onClose={() => setProfileStep(null)}>
+          <div className="stack-list">
+            <p className="field-hint">
+              Describe the person this step needs before looking for them — it turns recruiting
+              from "who do I know?" into "who fits this?".
+            </p>
+            <label>
+              Required experience
+              <Textarea value={profileExperience} onChange={(event) => setProfileExperience(event.target.value)} />
+            </label>
+            <label>
+              Character traits
+              <Textarea value={profileTraits} onChange={(event) => setProfileTraits(event.target.value)} />
+            </label>
+            <label>
+              What would motivate them
+              <Textarea value={profileMotivation} onChange={(event) => setProfileMotivation(event.target.value)} />
+            </label>
+            <label>
+              What you can offer in return
+              <Textarea value={profileOffer} onChange={(event) => setProfileOffer(event.target.value)} />
+            </label>
+            <div className="row-actions">
+              <Button type="button" onClick={() => void handleProfileSave()} disabled={profileSaving}>
+                {profileSaving ? 'Saving...' : 'Save profile'}
+              </Button>
+              {profileByStepId.has(profileStep.id) && (
+                <Button type="button" variant="secondary" onClick={() => void handleProfileArchive()} disabled={profileSaving}>
+                  Remove profile
+                </Button>
+              )}
+            </div>
+          </div>
+        </Modal>
       )}
     </PageSection>
   );

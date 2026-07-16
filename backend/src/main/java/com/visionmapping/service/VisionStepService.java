@@ -124,6 +124,8 @@ public class VisionStepService {
         VisionStep entity = lookup.step(id);
         archiveCascade.unarchiveGoalChain(entity.getGoal());
         entity.setArchived(false);
+        // BR-13: the step's ideal partner profile follows the step back.
+        archiveCascade.setProfileArchived(entity.getId(), false);
         progress.recalculateGoal(entity.getGoal());
     }
 

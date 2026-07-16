@@ -250,7 +250,11 @@ export function VisionAreasPage() {
           label="Status"
           value={filterStatus}
           onChange={setFilterStatus}
-          options={optionsFromLabels(lifecycleStatusLabels)}
+          // "Archived" can only ever match hidden rows, so the option appears
+          // only while "Show archived" is on — otherwise it filters to nothing.
+          options={optionsFromLabels(lifecycleStatusLabels).filter(
+            (option) => crud.showArchived || option.value !== 'ARCHIVED',
+          )}
         />
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>

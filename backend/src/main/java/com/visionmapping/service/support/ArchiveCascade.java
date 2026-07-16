@@ -10,6 +10,7 @@ import com.visionmapping.entity.enums.DreamStatus;
 import com.visionmapping.entity.enums.LifecycleStatus;
 import com.visionmapping.repository.DreamRepository;
 import com.visionmapping.repository.GoalRepository;
+import com.visionmapping.repository.IdealPartnerProfileRepository;
 import com.visionmapping.repository.TaskItemRepository;
 import com.visionmapping.repository.VisionStepRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class ArchiveCascade {
     private final GoalRepository goalRepository;
     private final VisionStepRepository visionStepRepository;
     private final TaskItemRepository taskItemRepository;
+    private final IdealPartnerProfileRepository idealPartnerProfileRepository;
 
     // --- Down-cascade: archiving a parent archives its descendants -----------
 
@@ -60,6 +62,14 @@ public class ArchiveCascade {
         for (TaskItem task : taskItemRepository.findByStep_IdAndUser_Id(stepId, lookup.userId())) {
             task.setArchived(true);
         }
+        // BR-13: the step's ideal partner profile is archived with it.
+        setProfileArchived(stepId, true);
+    }
+
+    /** BR-13: a step's ideal partner profile follows the step's archived flag. */
+    public void setProfileArchived(Long stepId, boolean archived) {
+        idealPartnerProfileRepository.findByStep_IdAndUser_Id(stepId, lookup.userId())
+                .ifPresent(profile -> profile.setArchived(archived));
     }
 
     // --- Impact: how many not-yet-archived descendants a cascade would hide --

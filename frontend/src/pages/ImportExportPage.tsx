@@ -102,6 +102,9 @@ export function ImportExportPage() {
                 {Object.entries(summary.rowsBySheet).map(([sheet, count]) => `${sheet}: ${count}`).join(' · ')}
               </p>
             )}
+            {summary.backupFile && (
+              <p className="field-hint">A backup snapshot was saved before the import: {summary.backupFile}</p>
+            )}
             {summary.createdRecords > 0 && (
               <p className="field-hint">Open Goals, Steps, or Tasks to see the imported records.</p>
             )}

@@ -1,5 +1,6 @@
 package com.visionmapping.dto.request;
 
+import com.visionmapping.entity.enums.OfferType;
 import com.visionmapping.entity.enums.PartnerStatus;
 import com.visionmapping.entity.enums.PartnerSupportType;
 import jakarta.validation.constraints.Email;
@@ -15,6 +16,7 @@ public record PartnerRequest(
         @Size(max = 60) String phone,
         @Size(max = 120) String strength,
         @NotNull PartnerSupportType supportType,
+        OfferType offerType,
         Long relatedVisionAreaId,
         Long relatedDreamId,
         Long relatedGoalId,

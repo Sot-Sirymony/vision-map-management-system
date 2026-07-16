@@ -12,6 +12,7 @@ import com.visionmapping.entity.VisionStep;
 import com.visionmapping.repository.CommunicationMessageRepository;
 import com.visionmapping.repository.DreamRepository;
 import com.visionmapping.repository.GoalRepository;
+import com.visionmapping.repository.IdealPartnerProfileRepository;
 import com.visionmapping.repository.ObstacleRepository;
 import com.visionmapping.repository.PartnerRepository;
 import com.visionmapping.repository.ProgressLogRepository;
@@ -49,6 +50,7 @@ public class PermanentDeleteCascade {
     private final ReviewRepository reviewRepository;
     private final ObstacleRepository obstacleRepository;
     private final ProgressLogRepository progressLogRepository;
+    private final IdealPartnerProfileRepository idealPartnerProfileRepository;
 
     public void deleteVisionArea(VisionArea area) {
         Subtree subtree = new Subtree();
@@ -107,6 +109,11 @@ public class PermanentDeleteCascade {
         Long userId = lookup.userId();
         for (TaskItem task : subtree.tasks) {
             progressLogRepository.deleteAll(progressLogRepository.findByRelatedTask_IdAndUser_Id(task.getId(), userId));
+        }
+        // An ideal partner profile cannot outlive its step (BR-13).
+        for (VisionStep step : subtree.steps) {
+            idealPartnerProfileRepository.findByStep_IdAndUser_Id(step.getId(), userId)
+                    .ifPresent(idealPartnerProfileRepository::delete);
         }
         partnerRepository.findByUser_Id(userId).forEach(partner -> unlinkPartner(partner, deleted));
         obstacleRepository.findByUser_Id(userId).forEach(obstacle -> unlinkObstacle(obstacle, deleted));

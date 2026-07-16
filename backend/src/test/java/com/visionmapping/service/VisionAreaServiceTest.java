@@ -21,6 +21,7 @@ import com.visionmapping.mapper.VisionMappingMapper;
 import com.visionmapping.repository.CommunicationMessageRepository;
 import com.visionmapping.repository.DreamRepository;
 import com.visionmapping.repository.GoalRepository;
+import com.visionmapping.repository.IdealPartnerProfileRepository;
 import com.visionmapping.repository.ObstacleRepository;
 import com.visionmapping.repository.PartnerRepository;
 import com.visionmapping.repository.ProgressLogRepository;
@@ -60,6 +61,7 @@ class VisionAreaServiceTest {
     @Mock private ReviewRepository reviewRepository;
     @Mock private ObstacleRepository obstacleRepository;
     @Mock private ProgressLogRepository progressLogRepository;
+    @Mock private IdealPartnerProfileRepository idealPartnerProfileRepository;
 
     private VisionAreaService service;
     private AppUser testUser;
@@ -70,10 +72,10 @@ class VisionAreaServiceTest {
                 visionStepRepository, taskItemRepository, partnerRepository, communicationMessageRepository,
                 reviewRepository, obstacleRepository, progressLogRepository);
         ArchiveCascade archiveCascade = new ArchiveCascade(lookup, dreamRepository, goalRepository,
-                visionStepRepository, taskItemRepository);
+                visionStepRepository, taskItemRepository, idealPartnerProfileRepository);
         PermanentDeleteCascade permanentDeleteCascade = new PermanentDeleteCascade(lookup, visionAreaRepository,
                 dreamRepository, goalRepository, visionStepRepository, taskItemRepository, partnerRepository,
-                communicationMessageRepository, reviewRepository, obstacleRepository, progressLogRepository);
+                communicationMessageRepository, reviewRepository, obstacleRepository, progressLogRepository, idealPartnerProfileRepository);
         service = new VisionAreaService(lookup, archiveCascade, permanentDeleteCascade,
                 new VisionMappingMapper(), visionAreaRepository);
         testUser = AppUser.builder().id(1L).fullName("Test User").email("test@example.com")

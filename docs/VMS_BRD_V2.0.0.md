@@ -4,14 +4,14 @@
 |---|---|
 | **Document** | VMS_BRD_V2.0.0 |
 | **Version** | 2.0.0 (In progress) |
-| **Date** | 2026-07-11 (progress updated 2026-07-12) |
-| **Status** | In progress — 6 of 11 items shipped to `main`; see the tracker below |
+| **Date** | 2026-07-11 (progress updated 2026-07-17) |
+| **Status** | Complete — all 11 items implemented (FR-15 and C-4…C-7 pending push) |
 | **Baseline** | Builds on VMS_BRD_V1.0.0 (all V1 requirements remain in force) |
 | **Concept source** | *Mentored by a Millionaire* (Steven K. Scott) — used as conceptual reference only; all product wording, questions, and templates are original |
 
 Requirement numbering continues from V1.0.0 (which ended at FR-13).
 
-## Progress tracker (as of 2026-07-12)
+## Progress tracker (as of 2026-07-17)
 
 Each item's status is also marked inline in its section heading below.
 
@@ -23,15 +23,15 @@ Each item's status is also marked inline in its section heading below.
 | FR-17 | Persuasive communication module | ✅ Done | `741f7a6e` |
 | FR-14 | Moonshot goals | ✅ Done | `741f7a6e` |
 | C-1 | Excel import persistence | ✅ Done | `5be80973` |
-| FR-15 | Partner Recruitment Portal | ⬜ Not started | — |
-| C-4 | Task estimated / actual hours in UI | ⬜ Not started | — |
-| C-5 | Partner phone in UI | ⬜ Not started | — |
-| C-6 | Due-date / target-date range filters | ⬜ Not started | — |
-| C-7 | Automatic export snapshot before import | ⬜ Not started | — |
+| FR-15 | Partner Recruitment Portal | ✅ Done | pending push |
+| C-4 | Task estimated / actual hours in UI | ✅ Done | pending push |
+| C-5 | Partner phone in UI | ✅ Done | pending push |
+| C-6 | Due-date / target-date range filters | ✅ Done | `6db60f67` (tasks), goals part pending push |
+| C-7 | Automatic export snapshot before import | ✅ Done | pending push |
 
-**Done (6):** FR-17.0, C-2+C-3, FR-16, FR-17, FR-14, C-1 — all verified (backend + frontend tests, Playwright end-to-end) and pushed to `main`. Migrations V5 (diligence checklist), V6 (word picture), and V7 (goal moonshot) are applied.
+**Done (11 of 11):** every V2 item is implemented and verified (backend + frontend tests). Migrations: V5 (diligence checklist), V6 (word picture), V7 (goal moonshot), V8 (ideal partner profiles + partner offer type).
 
-**Remaining (5):** FR-15 (largest — the next item in the build order), then the C-4…C-7 small-field batch.
+**Remaining:** none — V2.0.0 scope is complete. V3 planning can begin (see the VMS_BRD_V3.0.0 review notes: continue numbering at FR-18).
 
 Where a requirement below still says **Planned**, that is its original wording and it is not yet implemented; the ✅ marks added to headings show what has shipped.
 
@@ -117,7 +117,7 @@ track both versions separately.
 
 ---
 
-### FR-15 Partner Recruitment Portal — ⬜ Not started (Effort: L)
+### FR-15 Partner Recruitment Portal — ✅ Done (Effort: L)
 
 Grow the Partner module from a contact list into a recruitment workflow:
 **Identify → Contact → Recruit → Utilize**.
@@ -233,10 +233,10 @@ These close the remaining Partial/Planned items in VMS_BRD_V1.0.0.
 | C-1 | FR-11.2 | Excel import creates records: map validated rows into vision areas, dreams, goals, steps, and tasks in hierarchy order; report created / skipped / errored counts per sheet; never partially import a broken hierarchy. | L | ✅ Done |
 | C-2 | FR-13.3 | Confirmation dialog before archiving, stating the cascade ("this archives N dreams, N goals…"). | S | ✅ Done |
 | C-3 | FR-13.4 | "Show archived" toggle on list pages, with restore. Restoring a child whose parent is archived also restores the parent chain. | M | ✅ Done |
-| C-4 | G-8 | Expose task estimated/actual hours in the task form and list view. | S | ⬜ Not started |
-| C-5 | G-9 | Expose partner phone in the partner form. | S | ⬜ Not started |
-| C-6 | G-10 | Due-date range filter on the Tasks Board; target-date range filter on Goals. | S | ⬜ Not started |
-| C-7 | G-13 | Automatic export snapshot ("backup") saved before any import runs. | M | ⬜ Not started |
+| C-4 | G-8 | Expose task estimated/actual hours in the task form and list view. | S | ✅ Done |
+| C-5 | G-9 | Expose partner phone in the partner form. | S | ✅ Done |
+| C-6 | G-10 | Due-date range filter on the Tasks Board; target-date range filter on Goals. | S | ✅ Done |
+| C-7 | G-13 | Automatic export snapshot ("backup") saved before any import runs. Snapshot lands in `data/backup/` (configurable via `app.excel.backup-dir`); a failed snapshot aborts the import. | M | ✅ Done |
 
 *(G-7 became FR-17.0; G-11 was absorbed into FR-16.)*
 
@@ -250,8 +250,8 @@ These close the remaining Partial/Planned items in VMS_BRD_V1.0.0.
 | 4 | FR-17 (persuasion module) | Builds directly on step 1 | ✅ Done |
 | 5 | FR-14 (moonshot) | Small, independent — can slot anywhere | ✅ Done |
 | 6 | C-1 (Excel import persistence) | Largest carried-over item; closes the last V1 acceptance criterion | ✅ Done |
-| 7 | FR-15 (partner portal) | Largest new feature; benefits from FR-17 being done | ⬜ Not started (next) |
-| 8 | C-4 … C-7 | Small completeness batch; fill spare capacity | ⬜ Not started |
+| 7 | FR-15 (partner portal) | Largest new feature; benefits from FR-17 being done | ✅ Done |
+| 8 | C-4 … C-7 | Small completeness batch; fill spare capacity | ✅ Done (built ahead of FR-15) |
 
 ## 9. Non-Functional Notes
 

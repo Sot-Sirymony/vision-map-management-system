@@ -2,6 +2,7 @@ package com.visionmapping.mapper;
 
 import com.visionmapping.dto.response.CommunicationMessageResponse;
 import com.visionmapping.dto.response.DreamResponse;
+import com.visionmapping.dto.response.IdealPartnerProfileResponse;
 import com.visionmapping.dto.response.GoalResponse;
 import com.visionmapping.dto.response.ObstacleResponse;
 import com.visionmapping.dto.response.PartnerResponse;
@@ -13,6 +14,7 @@ import com.visionmapping.dto.response.VisionStepResponse;
 import com.visionmapping.entity.CommunicationMessage;
 import com.visionmapping.entity.Dream;
 import com.visionmapping.entity.Goal;
+import com.visionmapping.entity.IdealPartnerProfile;
 import com.visionmapping.entity.Obstacle;
 import com.visionmapping.entity.Partner;
 import com.visionmapping.entity.ProgressLog;
@@ -63,9 +65,15 @@ public class VisionMappingMapper {
     public PartnerResponse toResponse(Partner entity) {
         return new PartnerResponse(entity.getId(), entity.getCode(), entity.getName(), entity.getRole(),
                 entity.getOrganization(), entity.getEmail(), entity.getPhone(), entity.getStrength(), entity.getSupportType(),
-                id(entity.getRelatedVisionArea()), id(entity.getRelatedDream()), id(entity.getRelatedGoal()),
+                entity.getOfferType(), id(entity.getRelatedVisionArea()), id(entity.getRelatedDream()), id(entity.getRelatedGoal()),
                 id(entity.getRelatedStep()), id(entity.getRelatedTask()), entity.getStatus(), entity.getNotes(),
                 entity.isArchived(), entity.getCreatedAt(), entity.getUpdatedAt());
+    }
+
+    public IdealPartnerProfileResponse toResponse(IdealPartnerProfile entity) {
+        return new IdealPartnerProfileResponse(entity.getId(), entity.getStep().getId(), entity.getRequiredExperience(),
+                entity.getCharacterTraits(), entity.getMotivation(), entity.getOfferInReturn(), entity.isArchived(),
+                entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     public CommunicationMessageResponse toResponse(CommunicationMessage entity) {

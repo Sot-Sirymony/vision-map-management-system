@@ -68,6 +68,7 @@ public class PartnerService {
                 .phone(request.phone())
                 .strength(request.strength())
                 .supportType(request.supportType())
+                .offerType(request.offerType())
                 .relatedVisionArea(lookup.optionalVisionArea(request.relatedVisionAreaId()))
                 .relatedDream(lookup.optionalDream(request.relatedDreamId()))
                 .relatedGoal(lookup.optionalGoal(request.relatedGoalId()))
@@ -93,6 +94,7 @@ public class PartnerService {
         entity.setPhone(request.phone());
         entity.setStrength(request.strength());
         entity.setSupportType(request.supportType());
+        entity.setOfferType(request.offerType());
         entity.setRelatedVisionArea(lookup.optionalVisionArea(request.relatedVisionAreaId()));
         entity.setRelatedDream(lookup.optionalDream(request.relatedDreamId()));
         entity.setRelatedGoal(lookup.optionalGoal(request.relatedGoalId()));

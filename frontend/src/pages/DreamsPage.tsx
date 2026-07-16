@@ -398,7 +398,11 @@ export function DreamsPage() {
           label="Status"
           value={filterStatus}
           onChange={setFilterStatus}
-          options={optionsFromLabels(dreamStatusLabels)}
+          // "Archived" can only ever match hidden rows, so the option appears
+          // only while "Show archived" is on — otherwise it filters to nothing.
+          options={optionsFromLabels(dreamStatusLabels).filter(
+            (option) => crud.showArchived || option.value !== 'ARCHIVED',
+          )}
         />
         <label className="checkbox-field">
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />

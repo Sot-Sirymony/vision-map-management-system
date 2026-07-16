@@ -6,6 +6,7 @@ import type {
   LifecycleStatus,
   ObstacleStatus,
   ObstacleType,
+  OfferType,
   PartnerStatus,
   PartnerSupportType,
   Priority,
@@ -101,6 +102,14 @@ export const partnerSupportTypeLabels: Record<PartnerSupportType, string> = {
   FINANCIAL: 'Financial',
   TECHNICAL: 'Technical',
   EMOTIONAL: 'Emotional',
+  OTHER: 'Other',
+};
+
+export const offerTypeLabels: Record<OfferType, string> = {
+  MONEY: 'Money',
+  SHARED_VISION: 'Shared Vision',
+  RECOGNITION: 'Recognition',
+  EXPERIENCE: 'Experience',
   OTHER: 'Other',
 };
 

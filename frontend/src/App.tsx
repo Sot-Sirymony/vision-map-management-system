@@ -19,6 +19,7 @@ const GoalsPage = lazy(() => import('./pages/GoalsPage').then((m) => ({ default:
 const StepsPage = lazy(() => import('./pages/StepsPage').then((m) => ({ default: m.StepsPage })));
 const TasksBoardPage = lazy(() => import('./pages/TasksBoardPage').then((m) => ({ default: m.TasksBoardPage })));
 const PartnersPage = lazy(() => import('./pages/PartnersPage').then((m) => ({ default: m.PartnersPage })));
+const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage').then((m) => ({ default: m.PartnerDetailPage })));
 const ObstaclesPage = lazy(() => import('./pages/ObstaclesPage').then((m) => ({ default: m.ObstaclesPage })));
 const CommunicationBuilderPage = lazy(() => import('./pages/CommunicationBuilderPage').then((m) => ({ default: m.CommunicationBuilderPage })));
 const ReviewsPage = lazy(() => import('./pages/ReviewsPage').then((m) => ({ default: m.ReviewsPage })));
@@ -40,6 +41,7 @@ export function App() {
             <Route path="/steps" element={<StepsPage />} />
             <Route path="/tasks" element={<TasksBoardPage />} />
             <Route path="/partners" element={<PartnersPage />} />
+            <Route path="/partners/:partnerId" element={<PartnerDetailPage />} />
             <Route path="/obstacles" element={<ObstaclesPage />} />
             <Route path="/communication" element={<CommunicationBuilderPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />

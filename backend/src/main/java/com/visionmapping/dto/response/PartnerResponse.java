@@ -1,5 +1,6 @@
 package com.visionmapping.dto.response;
 
+import com.visionmapping.entity.enums.OfferType;
 import com.visionmapping.entity.enums.PartnerStatus;
 import com.visionmapping.entity.enums.PartnerSupportType;
 import java.time.Instant;
@@ -14,6 +15,7 @@ public record PartnerResponse(
         String phone,
         String strength,
         PartnerSupportType supportType,
+        OfferType offerType,
         Long relatedVisionAreaId,
         Long relatedDreamId,
         Long relatedGoalId,

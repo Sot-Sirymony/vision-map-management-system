@@ -84,6 +84,10 @@ export function GoalsPage() {
   const [filterStatus, setFilterStatus] = useUrlFilter('status');
   const [filterPriority, setFilterPriority] = useUrlFilter('priority');
   const [filterOverdueOnly, setFilterOverdueOnly] = useUrlFlag('overdue');
+  // Target-date range (BRD C-6). Inclusive on both ends; either bound may be
+  // empty. Goals without a target date drop out while a bound is set.
+  const [filterTargetFrom, setFilterTargetFrom] = useUrlFilter('targetFrom');
+  const [filterTargetTo, setFilterTargetTo] = useUrlFilter('targetTo');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<WorkStatus>('IN_PROGRESS');
   const [bulkApplying, setBulkApplying] = useState(false);
@@ -207,6 +211,13 @@ export function GoalsPage() {
       return false;
     }
     if (filterOverdueOnly && !isOverdue(goal.targetDate, goal.status)) {
+      return false;
+    }
+    // Target-date range: string compare is safe because targetDate is ISO yyyy-MM-dd.
+    if (filterTargetFrom && (!goal.targetDate || goal.targetDate < filterTargetFrom)) {
+      return false;
+    }
+    if (filterTargetTo && (!goal.targetDate || goal.targetDate > filterTargetTo)) {
       return false;
     }
     if (!matchesSearch(searchTerm, goal.code, goal.title, goal.description, goal.successCriteria)) {
@@ -428,6 +439,14 @@ export function GoalsPage() {
           onChange={setFilterPriority}
           options={optionsFromLabels(priorityLabels)}
         />
+        <label>
+          Target from
+          <Input type="date" value={filterTargetFrom} onChange={(event) => setFilterTargetFrom(event.target.value)} />
+        </label>
+        <label>
+          Target to
+          <Input type="date" value={filterTargetTo} onChange={(event) => setFilterTargetTo(event.target.value)} />
+        </label>
         <label className="checkbox-field">
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
@@ -475,7 +494,7 @@ export function GoalsPage() {
             rows={filteredGoals}
             columns={columns}
             emptyMessage="No goals match these filters."
-            pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}`}
+            pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}|${filterTargetFrom}|${filterTargetTo}`}
             rowClassName={(goal) => (goal.archived ? 'row-archived' : isOverdue(goal.targetDate, goal.status) ? 'row-overdue' : '')}
             selection={{
               selectedIds,

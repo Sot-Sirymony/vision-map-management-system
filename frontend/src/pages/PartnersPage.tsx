@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
+import { listIdealPartnerProfiles } from '../api/idealPartnerProfileApi';
 import { listGoals } from '../api/goalApi';
 import { archivePartner, permanentlyDeletePartner, createPartner, listPartners, restorePartner, updatePartner } from '../api/partnerApi';
 import { listSteps } from '../api/stepApi';
@@ -7,6 +9,7 @@ import { listTasks } from '../api/taskApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -28,12 +31,13 @@ import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useUrlFilter } from '../hooks/useUrlFilter';
-import type { Dream, Goal, Partner, PartnerRequest, PartnerStatus, PartnerSupportType, TaskItem, VisionArea, VisionStep } from '../types/vision';
-import { partnerStatusLabels, partnerSupportTypeLabels } from '../utils/enumLabels';
+import type { Dream, Goal, IdealPartnerProfile, OfferType, Partner, PartnerRequest, PartnerStatus, PartnerSupportType, TaskItem, VisionArea, VisionStep } from '../types/vision';
+import { offerTypeLabels, partnerStatusLabels, partnerSupportTypeLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function PartnersPage() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   // Partners are paged and sorted by the server, so the table only renders what
   // the current request returned.
   const [page, setPage] = useState(0);
@@ -79,9 +83,14 @@ export function PartnersPage() {
   const [role, setRole] = useState('');
   const [organization, setOrganization] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [strength, setStrength] = useState('');
   const [supportType, setSupportType] = useState<PartnerSupportType>('MENTOR');
+  const [offerType, setOfferType] = useState<OfferType | ''>('');
   const [status, setStatus] = useState<PartnerStatus>('TO_CONTACT');
+  // Wanted-partner profiles defined on steps (FR-15.1), shown here so
+  // recruitment starts from what's actually needed.
+  const [profiles, setProfiles] = useState<IdealPartnerProfile[]>([]);
   const [relatedVisionAreaId, setRelatedVisionAreaId] = useState('');
   const [relatedDreamId, setRelatedDreamId] = useState('');
   const [relatedGoalId, setRelatedGoalId] = useState('');
@@ -103,6 +112,7 @@ export function PartnersPage() {
         setTasks(taskData);
       },
     );
+    void listIdealPartnerProfiles(token).then(setProfiles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page, rowsPerPage, sort, debouncedSearch, filterSupportType, filterStatus, filterDreamId]);
 
@@ -122,8 +132,10 @@ export function PartnersPage() {
       role,
       organization,
       email: email || undefined,
+      phone: phone || undefined,
       strength,
       supportType,
+      offerType: offerType || undefined,
       status,
       relatedVisionAreaId: optionalNumber(relatedVisionAreaId),
       relatedDreamId: optionalNumber(relatedDreamId),
@@ -137,6 +149,7 @@ export function PartnersPage() {
       setRole('');
       setOrganization('');
       setEmail('');
+      setPhone('');
       setStrength('');
       setNotes('');
     }
@@ -149,8 +162,10 @@ export function PartnersPage() {
     setRole(partner.role ?? '');
     setOrganization(partner.organization ?? '');
     setEmail(partner.email ?? '');
+    setPhone(partner.phone ?? '');
     setStrength(partner.strength ?? '');
     setSupportType(partner.supportType);
+    setOfferType(partner.offerType ?? '');
     setStatus(partner.status);
     setRelatedVisionAreaId(partner.relatedVisionAreaId ? String(partner.relatedVisionAreaId) : '');
     setRelatedDreamId(partner.relatedDreamId ? String(partner.relatedDreamId) : '');
@@ -166,8 +181,10 @@ export function PartnersPage() {
     setRole('');
     setOrganization('');
     setEmail('');
+    setPhone('');
     setStrength('');
     setSupportType('MENTOR');
+    setOfferType('');
     setStatus('TO_CONTACT');
     setRelatedVisionAreaId('');
     setRelatedDreamId('');
@@ -216,6 +233,7 @@ export function PartnersPage() {
         onRestore={() => void crud.restore(partner.id)}
         onDeletePermanently={() => void crud.permanentlyDelete(partner.id)}
         archived={partner.archived}
+        extraActions={[{ label: 'View details', onClick: () => navigate(`/partners/${partner.id}`) }]}
         label="Partner actions"
       />
     );
@@ -264,6 +282,10 @@ export function PartnersPage() {
         <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
       </label>
       <label>
+        Phone
+        <Input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
+      </label>
+      <label>
         Support Type
         <FormControl fullWidth size="small">
           <Select value={supportType} onChange={(event) => setSupportType(event.target.value as PartnerSupportType)}>
@@ -272,6 +294,18 @@ export function PartnersPage() {
             ))}
           </Select>
         </FormControl>
+      </label>
+      <label>
+        Offer Type
+        <FormControl fullWidth size="small">
+          <Select displayEmpty value={offerType} onChange={(event) => setOfferType(event.target.value as OfferType | '')}>
+            <MenuItem value="">None</MenuItem>
+            {(['MONEY', 'SHARED_VISION', 'RECOGNITION', 'EXPERIENCE', 'OTHER'] as const).map((value) => (
+              <MenuItem value={value} key={value}>{offerTypeLabels[value]}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <span className="field-hint">What this partner most likely responds to in exchange for their help.</span>
       </label>
       <label>
         Status
@@ -449,6 +483,30 @@ export function PartnersPage() {
         />
         </CardContent>
       </Card>
+      )}
+      {profiles.length > 0 && (
+        <Card>
+          <CardHeader
+            title="Ideal partner profiles"
+            subheader="The partners your steps still need — defined on the Steps page, recruited from here"
+          />
+          <CardContent>
+            <div className="stack-list">
+              {profiles.map((profile) => {
+                const step = steps.find((candidate) => candidate.id === profile.stepId);
+                return (
+                  <article className="list-card" key={profile.id}>
+                    <strong>{step ? step.title : `Step #${profile.stepId}`}</strong>
+                    {profile.requiredExperience && <p>Experience: {profile.requiredExperience}</p>}
+                    {profile.characterTraits && <p>Traits: {profile.characterTraits}</p>}
+                    {profile.motivation && <p>Motivation: {profile.motivation}</p>}
+                    {profile.offerInReturn && <p>In return: {profile.offerInReturn}</p>}
+                  </article>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </PageSection>
   );

@@ -36,6 +36,11 @@ import com.visionmapping.service.ReviewService;
 import com.visionmapping.service.DashboardService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,6 +57,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,6 +81,11 @@ public class ExcelService {
             "Progress Logs",
             "Instructions"
     );
+
+    // Where pre-import snapshots land (BRD C-7). Not final so Lombok's
+    // required-args constructor keeps covering only the service dependencies.
+    @Value("${app.excel.backup-dir:data/backup}")
+    private String backupDirectory;
 
     private final DashboardService dashboardService;
     private final ProgressLogService progressLogService;
@@ -130,9 +141,9 @@ public class ExcelService {
                             .map(item -> List.of(item.id(), item.code(), item.stepId(), item.title(), item.owner(), item.priority(), value(item.startDate()), item.dueDate(), item.status(), item.progressPercent(), value(item.blockerReason()), value(item.nextAction())))
                             .toList(), headerStyle);
 
-            writeRows(workbook, "Partners", List.of("ID", CODE, "Name", "Role", "Organization", "Email", "Support Type", STATUS, "Notes"),
+            writeRows(workbook, "Partners", List.of("ID", CODE, "Name", "Role", "Organization", "Email", "Support Type", "Offer Type", STATUS, "Notes"),
                     partnerService.listPartners(Pageable.unpaged(), false, null).stream()
-                            .map(item -> List.of(item.id(), item.code(), item.name(), value(item.role()), value(item.organization()), value(item.email()), item.supportType(), item.status(), value(item.notes())))
+                            .map(item -> List.of(item.id(), item.code(), item.name(), value(item.role()), value(item.organization()), value(item.email()), item.supportType(), value(item.offerType()), item.status(), value(item.notes())))
                             .toList(), headerStyle);
 
             writeRows(workbook, "Communication", List.of("ID", "Partner ID", "Audience", "Purpose", "Subject", "Request", "Message", STATUS, "Follow Up"),
@@ -184,13 +195,38 @@ public class ExcelService {
     @Transactional
     public ExcelImportSummaryResponse importWorkbook(MultipartFile file) {
         List<String> errors = new ArrayList<>();
-        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
-            validateStructure(workbook, errors);
-            return new HierarchyImport(visionAreaService, dreamService, goalService, visionStepService, taskItemService).run(workbook, errors);
+
+        // BRD C-7: snapshot the current data before anything is imported, so a
+        // bad import can always be recovered from. A failed snapshot aborts the
+        // import — proceeding without the safety copy would defeat its purpose.
+        String backupFile;
+        try {
+            backupFile = saveBackupSnapshot();
         } catch (IOException exception) {
-            errors.add("Unable to read workbook: " + exception.getMessage());
+            errors.add("Import aborted: unable to save the automatic backup snapshot: " + exception.getMessage());
             return new ExcelImportSummaryResponse(0, 0, new LinkedHashMap<>(), errors);
         }
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            validateStructure(workbook, errors);
+            return new HierarchyImport(visionAreaService, dreamService, goalService, visionStepService, taskItemService)
+                    .run(workbook, errors)
+                    .withBackupFile(backupFile);
+        } catch (IOException exception) {
+            errors.add("Unable to read workbook: " + exception.getMessage());
+            return new ExcelImportSummaryResponse(0, 0, new LinkedHashMap<>(), errors, backupFile);
+        }
+    }
+
+    private String saveBackupSnapshot() throws IOException {
+        Path directory = Path.of(backupDirectory);
+        Files.createDirectories(directory);
+        String fileName = "vision-mapping-backup-"
+                + LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+                + ".xlsx";
+        Path target = directory.resolve(fileName);
+        Files.write(target, exportWorkbook());
+        return target.toAbsolutePath().toString();
     }
 
     private void validateStructure(Workbook workbook, List<String> errors) {

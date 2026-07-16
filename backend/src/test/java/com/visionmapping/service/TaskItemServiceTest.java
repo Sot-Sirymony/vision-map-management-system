@@ -27,6 +27,7 @@ import com.visionmapping.mapper.VisionMappingMapper;
 import com.visionmapping.repository.CommunicationMessageRepository;
 import com.visionmapping.repository.DreamRepository;
 import com.visionmapping.repository.GoalRepository;
+import com.visionmapping.repository.IdealPartnerProfileRepository;
 import com.visionmapping.repository.ObstacleRepository;
 import com.visionmapping.repository.PartnerRepository;
 import com.visionmapping.repository.ProgressLogRepository;
@@ -69,6 +70,7 @@ class TaskItemServiceTest {
     @Mock private ReviewRepository reviewRepository;
     @Mock private ObstacleRepository obstacleRepository;
     @Mock private ProgressLogRepository progressLogRepository;
+    @Mock private IdealPartnerProfileRepository idealPartnerProfileRepository;
 
     private TaskItemService service;
     private AppUser testUser;
@@ -80,10 +82,10 @@ class TaskItemServiceTest {
                 reviewRepository, obstacleRepository, progressLogRepository);
         ProgressCalculator progress = new ProgressCalculator(visionStepRepository, taskItemRepository);
         ArchiveCascade archiveCascade = new ArchiveCascade(lookup, dreamRepository, goalRepository,
-                visionStepRepository, taskItemRepository);
+                visionStepRepository, taskItemRepository, idealPartnerProfileRepository);
         PermanentDeleteCascade permanentDeleteCascade = new PermanentDeleteCascade(lookup, visionAreaRepository,
                 dreamRepository, goalRepository, visionStepRepository, taskItemRepository, partnerRepository,
-                communicationMessageRepository, reviewRepository, obstacleRepository, progressLogRepository);
+                communicationMessageRepository, reviewRepository, obstacleRepository, progressLogRepository, idealPartnerProfileRepository);
         service = new TaskItemService(lookup, progress, archiveCascade, permanentDeleteCascade,
                 new VisionMappingMapper(), taskItemRepository, progressLogRepository, Clock.systemDefaultZone());
         testUser = AppUser.builder().id(1L).fullName("Test User").email("test@example.com")

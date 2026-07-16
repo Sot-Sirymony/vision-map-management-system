@@ -5,6 +5,8 @@ export type DreamStatus = 'IDEA' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ARCHIVED
 export type DreamType = 'SHORT_TERM' | 'LONG_TERM' | 'LIFETIME';
 export type PartnerStatus = 'TO_CONTACT' | 'CONTACTED' | 'ACTIVE' | 'WAITING' | 'DECLINED' | 'COMPLETED';
 export type PartnerSupportType = 'MENTOR' | 'EXPERT' | 'ADVISOR' | 'COLLEAGUE' | 'FINANCIAL' | 'TECHNICAL' | 'EMOTIONAL' | 'OTHER';
+// FR-15.2: the exchange basis a partner responds to.
+export type OfferType = 'MONEY' | 'SHARED_VISION' | 'RECOGNITION' | 'EXPERIENCE' | 'OTHER';
 export type CommunicationStatus = 'DRAFT' | 'SENT' | 'FOLLOWED_UP' | 'REPLIED' | 'CLOSED';
 export type ReviewType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
 export type ObstacleType = 'KNOWLEDGE' | 'SKILL' | 'TIME' | 'MONEY' | 'MOTIVATION' | 'PARTNER' | 'SYSTEM' | 'DECISION' | 'OTHER';
@@ -154,6 +156,7 @@ export type Partner = {
   phone?: string;
   strength?: string;
   supportType: PartnerSupportType;
+  offerType?: OfferType | null;
   relatedVisionAreaId?: number;
   relatedDreamId?: number;
   relatedGoalId?: number;
@@ -172,6 +175,7 @@ export type PartnerRequest = {
   phone?: string;
   strength?: string;
   supportType: PartnerSupportType;
+  offerType?: OfferType;
   relatedVisionAreaId?: number;
   relatedDreamId?: number;
   relatedGoalId?: number;
@@ -180,6 +184,19 @@ export type PartnerRequest = {
   status: PartnerStatus;
   notes?: string;
 };
+
+// FR-15.1: the partner a step needs, written down before anyone is recruited.
+export type IdealPartnerProfile = {
+  id: number;
+  stepId: number;
+  requiredExperience?: string;
+  characterTraits?: string;
+  motivation?: string;
+  offerInReturn?: string;
+  archived: boolean;
+};
+
+export type IdealPartnerProfileRequest = Omit<IdealPartnerProfile, 'id' | 'archived'>;
 
 export type CommunicationMessage = {
   id: number;
@@ -260,6 +277,9 @@ export type ExcelImportSummary = {
   skippedRecords: number;
   rowsBySheet: Record<string, number>;
   validationErrors: string[];
+  // Path of the automatic snapshot saved before the import ran (BRD C-7);
+  // null when the import aborted before starting.
+  backupFile?: string | null;
 };
 
 export type Page<T> = {

@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
+import { listIdealPartnerProfiles } from '../api/idealPartnerProfileApi';
 import { listSteps } from '../api/stepApi';
 import { listVisionAreas } from '../api/visionAreaApi';
 import { archiveTask, permanentlyDeleteTask, createTask, listTasks, restoreTask, updateTask, updateTaskStatus } from '../api/taskApi';
@@ -28,8 +29,8 @@ import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
-import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
-import type { Dream, Goal, ObstacleType, Priority, TaskItem, TaskItemRequest, VisionArea, VisionStep, WorkStatus } from '../types/vision';
+import { useUrlFilter, useUrlFilterBatch, useUrlFlag } from '../hooks/useUrlFilter';
+import type { Dream, Goal, IdealPartnerProfile, ObstacleType, Priority, TaskItem, TaskItemRequest, VisionArea, VisionStep, WorkStatus } from '../types/vision';
 import { isOverdue } from '../utils/overdue';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
 import { obstacleTypeLabels, priorityLabels, workStatusLabels } from '../utils/enumLabels';
@@ -58,6 +59,9 @@ export function TasksBoardPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [visionAreas, setVisionAreas] = useState<VisionArea[]>([]);
+  // Ideal partner profiles by step (FR-15.5): a blocked task whose step has one
+  // points at it, so the fix is one click away instead of a memory exercise.
+  const [profiles, setProfiles] = useState<IdealPartnerProfile[]>([]);
   const [stepId, setStepId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -67,6 +71,9 @@ export function TasksBoardPage() {
   const [dueDate, setDueDate] = useState('');
   const [status, setStatus] = useState<WorkStatus>('NOT_STARTED');
   const [progressPercent, setProgressPercent] = useState(0);
+  // Kept as strings so the inputs can be empty (hours are optional).
+  const [estimatedHours, setEstimatedHours] = useState('');
+  const [actualHours, setActualHours] = useState('');
   const [blockerReason, setBlockerReason] = useState('');
   const [blockerCategory, setBlockerCategory] = useState<ObstacleType | ''>('');
   const [nextAction, setNextAction] = useState('');
@@ -74,9 +81,11 @@ export function TasksBoardPage() {
   // filtered board, and a filtered board stays shareable and bookmarkable.
   const [filterOwner, setFilterOwner] = useUrlFilter('owner');
   const [filterPriority, setFilterPriority] = useUrlFilter('priority');
-  const [filterVisionAreaId, setFilterVisionAreaId] = useUrlFilter('visionAreaId');
-  const [filterDreamId, setFilterDreamId] = useUrlFilter('dreamId');
+  const [filterVisionAreaId] = useUrlFilter('visionAreaId');
+  const [filterDreamId] = useUrlFilter('dreamId');
   const [filterGoalId, setFilterGoalId] = useUrlFilter('goalId');
+  // One navigation for multi-key changes — chained setters undo each other.
+  const setFilterBatch = useUrlFilterBatch();
   const [filterOverdueOnly, setFilterOverdueOnly] = useUrlFlag('overdue');
   // Due-date range (BRD C-6). Inclusive on both ends; either bound may be empty.
   // This is what makes the dashboard's "Due This Week" tile a link.
@@ -123,6 +132,7 @@ export function TasksBoardPage() {
     void listGoals(token).then(setGoals);
     void listDreams(token).then(setDreams);
     void listVisionAreas(token).then(setVisionAreas);
+    void listIdealPartnerProfiles(token).then(setProfiles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -141,6 +151,8 @@ export function TasksBoardPage() {
       dueDate,
       status,
       progressPercent,
+      estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
+      actualHours: actualHours ? Number(actualHours) : undefined,
       blockerReason: blockerReason || undefined,
       nextAction,
     });
@@ -151,6 +163,8 @@ export function TasksBoardPage() {
       setBlockerCategory('');
       setNextAction('');
       setProgressPercent(0);
+      setEstimatedHours('');
+      setActualHours('');
     }
     return success;
   }
@@ -178,6 +192,8 @@ export function TasksBoardPage() {
     setDueDate(task.dueDate);
     setStatus(task.status);
     setProgressPercent(task.progressPercent);
+    setEstimatedHours(task.estimatedHours != null ? String(task.estimatedHours) : '');
+    setActualHours(task.actualHours != null ? String(task.actualHours) : '');
     setBlockerReason(task.blockerReason ?? '');
     setBlockerCategory('');
     setNextAction(task.nextAction ?? '');
@@ -193,6 +209,8 @@ export function TasksBoardPage() {
     setDueDate('');
     setStatus('NOT_STARTED');
     setProgressPercent(0);
+    setEstimatedHours('');
+    setActualHours('');
     setBlockerReason('');
     setBlockerCategory('');
     setNextAction('');
@@ -200,6 +218,7 @@ export function TasksBoardPage() {
 
   const stepById = new Map(steps.map((step) => [step.id, step]));
   const goalById = new Map(goals.map((goal) => [goal.id, goal]));
+  const profileByStepId = new Map(profiles.map((profile) => [profile.stepId, profile]));
   const dreamById = new Map(dreams.map((dream) => [dream.id, dream]));
   const dreamsForFilter = filterVisionAreaId
     ? dreams.filter((dream) => String(dream.visionAreaId) === filterVisionAreaId)
@@ -281,6 +300,12 @@ export function TasksBoardPage() {
       render: (task) => <ProgressBar value={Number(task.progressPercent)} />,
     },
     {
+      key: 'hours',
+      label: 'Hours',
+      sortValue: (task) => Number(task.actualHours ?? 0),
+      render: (task) => formatHours(task),
+    },
+    {
       key: 'actions',
       label: 'Action',
       className: 'row-actions',
@@ -328,6 +353,14 @@ export function TasksBoardPage() {
         <Input type="number" min="0" max="100" value={progressPercent} onChange={(event) => setProgressPercent(Number(event.target.value))} required />
       </label>
       <label>
+        Estimated Hours
+        <Input type="number" min="0" step="0.5" value={estimatedHours} onChange={(event) => setEstimatedHours(event.target.value)} />
+      </label>
+      <label>
+        Actual Hours
+        <Input type="number" min="0" step="0.5" value={actualHours} onChange={(event) => setActualHours(event.target.value)} />
+      </label>
+      <label>
         Priority
         <FormControl fullWidth size="small">
           <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
@@ -358,6 +391,11 @@ export function TasksBoardPage() {
           {blockerCategory && (
             <span className="field-hint">
               {suggestPartnerFor(blockerCategory)?.label ?? 'Look for a partner or connector who can help directly.'}
+            </span>
+          )}
+          {profileByStepId.has(Number(stepId)) && (
+            <span className="field-hint">
+              This step already has an ideal partner profile — see the Partners page for who to recruit.
             </span>
           )}
         </label>
@@ -413,20 +451,13 @@ export function TasksBoardPage() {
         <FilterSelect
           label="Vision Area"
           value={filterVisionAreaId}
-          onChange={(value) => {
-            setFilterVisionAreaId(value);
-            setFilterDreamId('');
-            setFilterGoalId('');
-          }}
+          onChange={(value) => setFilterBatch({ visionAreaId: value, dreamId: '', goalId: '' })}
           options={optionsFromEntities(visionAreas, (area) => area.name)}
         />
         <FilterSelect
           label="Dream"
           value={filterDreamId}
-          onChange={(value) => {
-            setFilterDreamId(value);
-            setFilterGoalId('');
-          }}
+          onChange={(value) => setFilterBatch({ dreamId: value, goalId: '' })}
           options={optionsFromEntities(dreamsForFilter, (dream) => dream.title)}
         />
         <FilterSelect
@@ -473,6 +504,7 @@ export function TasksBoardPage() {
               rows={visibleTasks}
               columns={taskColumns}
               emptyMessage="No tasks match these filters."
+              pageResetKey={`${searchTerm}|${filterOwner}|${filterPriority}|${filterStatus}|${filterVisionAreaId}|${filterDreamId}|${filterGoalId}|${filterDueFrom}|${filterDueTo}|${filterOverdueOnly}|${filterStepId ?? ''}`}
               rowClassName={(task) => (task.archived ? 'row-archived' : isOverdue(task.dueDate, task.status) ? 'row-overdue' : '')}
               selection={{
                 selectedIds,
@@ -511,6 +543,9 @@ export function TasksBoardPage() {
               </div>
               <ProgressBar value={Number(task.progressPercent)} />
               {task.blockerReason && <p>{task.blockerReason}</p>}
+              {task.status === 'BLOCKED' && profileByStepId.has(task.stepId) && (
+                <p><Link to="/partners">Ideal partner profile defined for this step →</Link></p>
+              )}
             </>
           )}
           cardActions={(task) => (
@@ -527,6 +562,14 @@ export function TasksBoardPage() {
       )}
     </PageSection>
   );
+}
+
+// "actual / estimated h" — either side may be missing.
+function formatHours(task: TaskItem) {
+  if (task.estimatedHours == null && task.actualHours == null) {
+    return '-';
+  }
+  return `${task.actualHours ?? 0} / ${task.estimatedHours ?? '?'} h`;
 }
 
 function taskHighlightClass(task: TaskItem) {

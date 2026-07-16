@@ -1,5 +1,6 @@
 package com.visionmapping.entity;
 
+import com.visionmapping.entity.enums.OfferType;
 import com.visionmapping.entity.enums.PartnerStatus;
 import com.visionmapping.entity.enums.PartnerSupportType;
 import jakarta.persistence.Column;
@@ -60,6 +61,11 @@ public class Partner extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "support_type", nullable = false, length = 40)
     private PartnerSupportType supportType;
+
+    // FR-15.2: the exchange basis this partner responds to. Optional.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "offer_type", length = 40)
+    private OfferType offerType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_vision_area_id")

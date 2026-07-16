@@ -40,3 +40,31 @@ export function useUrlFlag(key: string): [boolean, (value: boolean) => void] {
   const [value, setValue] = useUrlFilter(key);
   return [value === 'true', (next: boolean) => setValue(next ? 'true' : '')];
 }
+
+/**
+ * Updates several URL filter keys in ONE navigation. Required whenever a
+ * single event changes more than one filter (e.g. picking a Vision Area also
+ * clears the dependent Dream/Goal filters): chained single-key setters each
+ * rebuild the URL from the same pre-event snapshot, so the last call silently
+ * undoes the earlier ones. An empty value drops its key, matching useUrlFilter.
+ */
+export function useUrlFilterBatch(): (changes: Record<string, string>) => void {
+  const [, setSearchParams] = useSearchParams();
+
+  return (changes: Record<string, string>) => {
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current);
+        for (const [key, value] of Object.entries(changes)) {
+          if (value) {
+            params.set(key, value);
+          } else {
+            params.delete(key);
+          }
+        }
+        return params;
+      },
+      { replace: true },
+    );
+  };
+}
