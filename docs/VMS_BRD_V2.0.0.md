@@ -80,7 +80,7 @@ V2.0.0 also closes the functional gaps carried over from the V1 baseline
 ### Out of scope for V2.0.0
 - Multi-user collaboration, notifications, calendar sync, mobile apps.
 - Document/file uploads (remains on the long-term roadmap).
-- Dark mode (still pending a scope decision).
+- Dark mode — *was* pending a scope decision (O-2); called in and shipped on 2026-07-17.
 - Admin-role functionality.
 
 ---
@@ -266,8 +266,8 @@ These close the remaining Partial/Planned items in VMS_BRD_V1.0.0.
 
 ## 10. Open Items
 
-| # | Question | Blocking |
-|---|---|---|
-| O-1 | Final wording of the diligence checklist questions (FR-16.1 list is a first draft). | FR-16 build |
-| O-2 | Dark mode in or out — still undecided; excluded from V2.0.0 scope until called in. | Nothing in V2 |
-| O-3 | Whether the V2 release also upgrades the Render database plan (operational, not code). | Production readiness |
+| # | Question | Blocking | Status (2026-07-17) |
+|---|---|---|---|
+| O-1 | Final wording of the diligence checklist questions (FR-16.1 list is a first draft). | FR-16 build | ✅ Resolved — shipped as five first-person statements the user confirms (see `ReviewsPage.tsx`); revisit only if the wording should change. |
+| O-2 | Dark mode in or out — still undecided; excluded from V2.0.0 scope until called in. | Nothing in V2 | ✅ Resolved — decided IN and shipped 2026-07-17: header toggle, OS-preference default, choice remembered per browser; Fluent dark tokens across the MUI theme and all page CSS. |
+| O-3 | Whether the V2 release also upgrades the Render database plan (operational, not code). | Production readiness | ✅ Resolved — `render.yaml` pins the database to the paid `basic-256mb` plan (free Postgres is deleted after 30 days). |

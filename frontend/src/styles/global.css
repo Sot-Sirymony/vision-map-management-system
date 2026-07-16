@@ -7,8 +7,8 @@
  * scaffold; the app is MUI-only now).
  */
 :root {
-  color: #242424;
-  background: #fafafa;
+  color: var(--foreground);
+  background: var(--page);
   font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -39,12 +39,73 @@
   --sidebar-accent-foreground: #005a9e;
   --sidebar-border: #e1e1e1;
   --sidebar-ring: #0078d4;
+  /* Semantic tones used by the page CSS below, so dark mode is a variable
+     swap rather than a second stylesheet. */
+  --page: #fafafa;               /* page canvas, one step under cards */
+  --background-subtle: #fafafa;  /* archived rows */
+  --border-soft: #f0f0f0;        /* table row separators */
+  --text-label: #475569;         /* form/filter labels */
+  --text-soft: #64748b;          /* tertiary text on cards */
+  --text-faint: #94a3b8;         /* codes, empty-state hints */
+  --info-bg: #eff6ff;            /* informational banners / coaching panels */
+  --info-border: #bfdbfe;
+  --info-text: #1e3a8a;
+  --info-strong: #1d4ed8;
+  --danger-bg: #fdf3f3;          /* overdue row wash */
+  --hint: #0d7d70;               /* field hints */
   /* Fluent's elevation/depth scale — defined for Phase 1+ to consume,
      not yet wired into any component. */
   --shadow-2: 0 0.6px 1.8px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.06);
   --shadow-4: 0 1.6px 3.6px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.06);
   --shadow-8: 0 3.2px 7.2px rgba(0, 0, 0, 0.13), 0 0.6px 1.8px rgba(0, 0, 0, 0.08);
   --shadow-16: 0 6.4px 14.4px rgba(0, 0, 0, 0.13), 0 1.2px 3.6px rgba(0, 0, 0, 0.08);
+}
+
+/*
+ * Dark mode (O-2). The attribute is stamped on <html> by ThemeModeProvider,
+ * which also swaps the MUI palette — both read the same choice. Values are
+ * Fluent's dark-theme tokens (surface #252423 on page #1b1a19, stroke
+ * #3b3a39), matching theme.ts.
+ */
+[data-theme="dark"] {
+  --background: #1b1a19;
+  --foreground: #f3f2f1;
+  --card: #252423;
+  --card-foreground: #f3f2f1;
+  --popover: #252423;
+  --popover-foreground: #f3f2f1;
+  --primary: #4ba0e1;
+  --primary-foreground: #1b1a19;
+  --secondary: #323130;
+  --secondary-foreground: #f3f2f1;
+  --muted: #323130;
+  --muted-foreground: #a19f9d;
+  --accent: #0e3a5c;
+  --accent-foreground: #9ec9ec;
+  --destructive: #e37d80;
+  --border: #3b3a39;
+  --input: #3b3a39;
+  --ring: #4ba0e1;
+  --sidebar: #252423;
+  --sidebar-foreground: #f3f2f1;
+  --sidebar-primary: #4ba0e1;
+  --sidebar-primary-foreground: #1b1a19;
+  --sidebar-accent: #0e3a5c;
+  --sidebar-accent-foreground: #9ec9ec;
+  --sidebar-border: #3b3a39;
+  --sidebar-ring: #4ba0e1;
+  --page: #1b1a19;
+  --background-subtle: #201f1e;
+  --border-soft: #2d2c2b;
+  --text-label: #c8c6c4;
+  --text-soft: #a19f9d;
+  --text-faint: #797775;
+  --info-bg: #10243d;
+  --info-border: #1e4976;
+  --info-text: #9ec9ec;
+  --info-strong: #6cb8f6;
+  --danger-bg: #3a1d1f;
+  --hint: #6ccdc2;
 }
 
 .text-muted-foreground {
@@ -99,8 +160,8 @@ a {
 .empty-state,
 .kanban-column,
 .auth-panel {
-  background: #ffffff;
-  border: 1px solid #e1e1e1;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 4px;
 }
 
@@ -110,9 +171,9 @@ a {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 18px;
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1e3a8a;
+  background: var(--info-bg);
+  border-color: var(--info-border);
+  color: var(--info-text);
   font-size: 0.9rem;
 }
 
@@ -130,7 +191,7 @@ a {
   gap: 4px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-label);
   min-width: 150px;
 }
 
@@ -159,13 +220,13 @@ a {
   align-items: center;
   gap: 12px;
   padding: 12px 18px;
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: var(--info-bg);
+  border-color: var(--info-border);
 }
 
 .bulk-actions-bar .bulk-count {
   font-weight: 600;
-  color: #1d4ed8;
+  color: var(--info-strong);
 }
 
 .data-table tr.row-archived td {
@@ -173,16 +234,16 @@ a {
 }
 
 .data-table tr.row-archived {
-  background: #fafafa;
+  background: var(--background-subtle);
 }
 
 .list-card--archived {
   opacity: 0.65;
-  background: #fafafa;
+  background: var(--background-subtle);
 }
 
 .data-table tr.row-overdue {
-  background: #fdf3f3;
+  background: var(--danger-bg);
 }
 
 .data-table tr.row-overdue td:first-child {
@@ -209,7 +270,7 @@ a {
 
 .metric-card p {
   margin: 0 0 8px;
-  color: #64748b;
+  color: var(--text-soft);
   font-size: 0.875rem;
 }
 
@@ -248,7 +309,7 @@ a {
 
 .form-grid label,
 .form-stack label {
-  color: #334155;
+  color: var(--text-label);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -262,21 +323,21 @@ a {
   margin-top: 4px;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #0d7d70;
+  color: var(--hint);
 }
 
 .diligence-checklist {
   display: grid;
   gap: 10px;
   padding: 14px 16px;
-  border: 1px solid #e1e1e1;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: #f5f5f5;
+  background: var(--muted);
 }
 
 .diligence-checklist p {
   margin: 0;
-  color: #616161;
+  color: var(--muted-foreground);
   font-size: 0.82rem;
   font-weight: 400;
 }
@@ -288,7 +349,7 @@ a {
   gap: 12px;
   font-size: 0.875rem;
   font-weight: 400;
-  color: #242424;
+  color: var(--foreground);
 }
 
 .toast-stack {
@@ -333,19 +394,19 @@ a {
 .data-table th,
 .data-table td {
   padding: 12px 14px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-soft);
   text-align: left;
   vertical-align: middle;
 }
 
 .data-table thead th {
-  background: #f5f5f5;
-  color: #616161;
+  background: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  border-bottom: 1px solid #e1e1e1;
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
@@ -362,7 +423,7 @@ a {
 }
 
 .data-table tbody tr:hover {
-  background: #f5f5f5;
+  background: var(--muted);
 }
 
 .data-table tbody tr:last-child td {
@@ -380,7 +441,7 @@ a {
   justify-content: center;
   gap: 16px;
   padding: 14px 0 4px;
-  color: #475569;
+  color: var(--text-label);
   font-size: 0.9rem;
 }
 
@@ -393,9 +454,9 @@ a {
   display: grid;
   gap: 10px;
   padding: 14px;
-  border: 1px solid #e1e1e1;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: #ffffff;
+  background: var(--card);
   cursor: grab;
   min-width: 0;
   transition: box-shadow 0.12s ease;
@@ -412,7 +473,7 @@ a {
 
 .list-card p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--text-soft);
 }
 
 .inline-meta,
@@ -434,17 +495,17 @@ a {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .empty-state {
   padding: 18px;
-  color: #64748b;
+  color: var(--text-soft);
 }
 
 .coaching-panel {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-left: 4px solid #3b82f6;
   border-radius: 8px;
   padding: 14px 16px;
@@ -453,12 +514,12 @@ a {
 .coaching-panel strong {
   display: block;
   margin-bottom: 4px;
-  color: #1e3a8a;
+  color: var(--info-text);
 }
 
 .coaching-panel p {
   margin: 0 0 8px;
-  color: #475569;
+  color: var(--text-label);
   font-size: 0.9rem;
 }
 
@@ -469,7 +530,7 @@ a {
   display: grid;
   gap: 6px;
   font-size: 0.9rem;
-  color: #334155;
+  color: var(--text-label);
 }
 
 .coaching-panel li span {
@@ -546,8 +607,8 @@ a {
 }
 
 .kanban-column--over {
-  background-color: #deecf9;
-  box-shadow: inset 0 0 0 2px #0078d4;
+  background-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--ring);
 }
 
 .list-card--dragging {
@@ -560,9 +621,9 @@ a {
 }
 
 .vision-tree-dream {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-left: 4px solid #0f172a;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--foreground);
   border-radius: 10px;
   padding: 18px 20px;
   display: grid;
@@ -571,7 +632,7 @@ a {
 
 .vision-tree-area {
   margin: 0;
-  color: #64748b;
+  color: var(--text-soft);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -592,13 +653,13 @@ a {
 
 .vision-tree-code {
   font-family: monospace;
-  color: #94a3b8;
+  color: var(--text-faint);
   font-size: 0.85rem;
 }
 
 .vision-tree-meta {
   margin: 0;
-  color: #475569;
+  color: var(--text-label);
   font-size: 0.9rem;
 }
 
@@ -612,13 +673,13 @@ a {
   display: grid;
   gap: 12px;
   padding-left: 24px;
-  border-left: 2px solid #e2e8f0;
+  border-left: 2px solid var(--border-soft);
   margin-left: 8px;
 }
 
 .vision-tree-empty {
   margin: 0;
-  color: #94a3b8;
+  color: var(--text-faint);
   font-size: 0.88rem;
   font-style: italic;
 }
@@ -626,8 +687,8 @@ a {
 .vision-tree-goal,
 .vision-tree-step,
 .vision-tree-task {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--card);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 12px 14px;
   display: grid;
@@ -661,12 +722,12 @@ a {
 .field {
   width: 100%;
   min-height: 42px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
   margin-top: 6px;
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--card);
+  color: var(--foreground);
 }
 
 .button {
@@ -679,8 +740,8 @@ a {
 }
 
 .button-secondary {
-  color: #17324d;
-  background: #dbeafe;
+  color: var(--accent-foreground);
+  background: var(--accent);
 }
 
 .auth-shell {
@@ -697,7 +758,7 @@ a {
 }
 
 .auth-link {
-  color: #64748b;
+  color: var(--text-soft);
 }
 
 @media (max-width: 960px) {

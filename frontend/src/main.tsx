@@ -1,18 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { App } from './App';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeModeProvider } from './context/ThemeModeContext';
 import { ToastProvider } from './context/ToastContext';
-import theme from './theme';
 import './styles/global.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeModeProvider>
       <BrowserRouter>
         <AuthProvider>
           <ToastProvider>
@@ -20,6 +17,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
-    </ThemeProvider>
+    </ThemeModeProvider>
   </React.StrictMode>,
 );
