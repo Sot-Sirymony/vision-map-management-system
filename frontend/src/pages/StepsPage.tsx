@@ -534,7 +534,8 @@ export function StepsPage() {
             rows={filteredSteps}
             columns={columns}
             emptyMessage="No steps match these filters."
-            defaultSortKey="sequenceNumber"
+            defaultSortKey="priority"
+            defaultSortDirection="desc"
             pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterGoalId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}`}
             rowClassName={(step) => (step.archived ? 'row-archived' : isOverdue(step.targetDate, step.status) ? 'row-overdue' : '')}
             selection={{

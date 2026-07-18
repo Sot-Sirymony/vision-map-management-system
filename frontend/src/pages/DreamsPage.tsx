@@ -420,6 +420,8 @@ export function DreamsPage() {
             rows={filteredDreams}
             columns={columns}
             emptyMessage={hasFilters ? 'No dreams match these filters.' : 'No dreams yet.'}
+            defaultSortKey="priority"
+            defaultSortDirection="desc"
             pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamType}|${filterPriority}|${filterStatus}|${filterOverdueOnly}`}
             rowClassName={(dream) => (dream.archived ? 'row-archived' : '')}
             selection={{

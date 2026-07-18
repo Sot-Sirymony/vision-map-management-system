@@ -414,6 +414,8 @@ export function ObstaclesPage() {
           rows={filteredObstacles}
           columns={columns}
           emptyMessage={hasFilters ? 'No obstacles match these filters.' : 'No obstacles yet.'}
+          defaultSortKey="severity"
+          defaultSortDirection="desc"
           pageResetKey={`${searchTerm}|${filterObstacleType}|${filterSeverity}|${filterStatus}|${filterDreamId}`}
           rowClassName={(obstacle) => (obstacle.archived ? 'row-archived' : '')}
           selection={{

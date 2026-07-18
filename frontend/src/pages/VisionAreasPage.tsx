@@ -268,6 +268,8 @@ export function VisionAreasPage() {
               rows={filteredAreas}
               columns={columns}
               emptyMessage={hasFilters ? 'No vision areas match these filters.' : 'No vision areas yet.'}
+              defaultSortKey="priority"
+              defaultSortDirection="desc"
               pageResetKey={`${searchTerm}|${filterPriority}|${filterStatus}`}
               rowClassName={(area) => (area.archived ? 'row-archived' : '')}
               selection={{

@@ -494,6 +494,8 @@ export function GoalsPage() {
             rows={filteredGoals}
             columns={columns}
             emptyMessage="No goals match these filters."
+            defaultSortKey="priority"
+            defaultSortDirection="desc"
             pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}|${filterTargetFrom}|${filterTargetTo}`}
             rowClassName={(goal) => (goal.archived ? 'row-archived' : isOverdue(goal.targetDate, goal.status) ? 'row-overdue' : '')}
             selection={{

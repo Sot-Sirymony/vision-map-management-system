@@ -504,6 +504,8 @@ export function TasksBoardPage() {
               rows={visibleTasks}
               columns={taskColumns}
               emptyMessage="No tasks match these filters."
+              defaultSortKey="priority"
+              defaultSortDirection="desc"
               pageResetKey={`${searchTerm}|${filterOwner}|${filterPriority}|${filterStatus}|${filterVisionAreaId}|${filterDreamId}|${filterGoalId}|${filterDueFrom}|${filterDueTo}|${filterOverdueOnly}|${filterStepId ?? ''}`}
               rowClassName={(task) => (task.archived ? 'row-archived' : isOverdue(task.dueDate, task.status) ? 'row-overdue' : '')}
               selection={{
