@@ -6,15 +6,22 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'color'> 
   inputRef?: Ref<HTMLInputElement>;
 };
 
-export function Input({ min, max, minLength, maxLength, step, pattern, ...props }: InputProps) {
+export function Input({ min, max, minLength, maxLength, step, pattern, 'aria-label': ariaLabel, ...props }: InputProps) {
   return (
     <TextField
       variant="outlined"
       size="small"
       fullWidth
       // data-autofocus lets the Modal re-focus the intended first field after
-      // MUI's focus trap has claimed focus for the dialog (FR-22.3).
-      slotProps={{ htmlInput: { min, max, minLength, maxLength, step, pattern, ...(props.autoFocus ? { 'data-autofocus': true } : {}) } }}
+      // MUI's focus trap has claimed focus for the dialog (FR-22.3);
+      // aria-label must land on the native input, not TextField's root div.
+      slotProps={{
+        htmlInput: {
+          min, max, minLength, maxLength, step, pattern,
+          ...(ariaLabel ? { 'aria-label': ariaLabel } : {}),
+          ...(props.autoFocus ? { 'data-autofocus': true } : {}),
+        },
+      }}
       {...props}
     />
   );

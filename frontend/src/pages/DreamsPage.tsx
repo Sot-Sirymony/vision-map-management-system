@@ -303,7 +303,7 @@ export function DreamsPage() {
       <label>
         Vision Area
         <FormControl fullWidth size="small" required>
-          <Select displayEmpty value={visionAreaId} onChange={(event) => setVisionAreaId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Vision Area" }} displayEmpty value={visionAreaId} onChange={(event) => setVisionAreaId(event.target.value)}>
             <MenuItem value="" disabled><em>Select a vision area</em></MenuItem>
             {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
           </Select>
@@ -316,7 +316,7 @@ export function DreamsPage() {
       <label>
         Type
         <FormControl fullWidth size="small">
-          <Select value={dreamType} onChange={(event) => setDreamType(event.target.value as DreamType)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Type" }} value={dreamType} onChange={(event) => setDreamType(event.target.value as DreamType)}>
             <MenuItem value="SHORT_TERM">Short Term</MenuItem>
             <MenuItem value="LONG_TERM">Long Term</MenuItem>
             <MenuItem value="LIFETIME">Lifetime</MenuItem>
@@ -330,7 +330,7 @@ export function DreamsPage() {
       <label>
         Priority
         <FormControl fullWidth size="small">
-          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Priority" }} value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
             <MenuItem value="LOW">Low</MenuItem>
             <MenuItem value="MEDIUM">Medium</MenuItem>
             <MenuItem value="HIGH">High</MenuItem>
@@ -341,7 +341,7 @@ export function DreamsPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as DreamStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as DreamStatus)}>
             <MenuItem value="IDEA">Idea</MenuItem>
             <MenuItem value="ACTIVE">Active</MenuItem>
             <MenuItem value="PAUSED">Paused</MenuItem>

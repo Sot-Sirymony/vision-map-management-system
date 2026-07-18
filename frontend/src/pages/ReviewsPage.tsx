@@ -264,7 +264,7 @@ export function ReviewsPage() {
       <label>
         Type
         <FormControl fullWidth size="small">
-          <Select value={reviewType} onChange={(event) => setReviewType(event.target.value as ReviewType)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Type" }} value={reviewType} onChange={(event) => setReviewType(event.target.value as ReviewType)}>
             {(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY'] as const).map((value) => (
               <MenuItem value={value} key={value}>{reviewTypeLabels[value]}</MenuItem>
             ))}
@@ -278,7 +278,7 @@ export function ReviewsPage() {
       <label>
         Vision Area
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedVisionAreaId} onChange={(event) => setRelatedVisionAreaId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Vision Area" }} displayEmpty value={relatedVisionAreaId} onChange={(event) => setRelatedVisionAreaId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
           </Select>
@@ -287,7 +287,7 @@ export function ReviewsPage() {
       <label>
         Dream
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Dream" }} displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
           </Select>

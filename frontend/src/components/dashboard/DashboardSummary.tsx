@@ -1,7 +1,7 @@
 import { Ban, CalendarClock, CalendarDays, CheckCircle2, CheckSquare, Compass, Flag, Rocket, Sparkles, TrendingUp } from 'lucide-react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { moonshotVioletDeep } from '../../theme';
+
 import { DashboardCard } from './DashboardCard';
 import type { DashboardSummary as DashboardSummaryData } from '../../types/vision';
 
@@ -30,7 +30,7 @@ function TileGroup({ label, columns, children }: { label: string; columns: numbe
     <Box component="section">
       <Typography
         variant="overline"
-        component="h3"
+        component="h2"
         sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1, display: 'block', mb: 1.5 }}
       >
         {label}
@@ -120,7 +120,7 @@ export function DashboardSummary({ summary, periodLabel, dueInPeriodLink, vision
         />
       </TileGroup>
       {(summary?.moonshotGoals ?? 0) > 0 && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: moonshotVioletDeep, mt: -0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'var(--moonshot-fg)', mt: -0.5 }}>
           <Rocket size={14} />
           <Typography variant="caption" sx={{ fontWeight: 600 }}>
             {summary?.moonshotGoals} of your goals {summary?.moonshotGoals === 1 ? 'is a moonshot' : 'are moonshots'}.

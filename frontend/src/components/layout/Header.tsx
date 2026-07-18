@@ -24,7 +24,7 @@ export function Header() {
   const { toggle } = useSidebarState();
 
   return (
-    <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default' }}>
+    <AppBar component="header" position="static" color="transparent" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default' }}>
       <Toolbar sx={{ gap: 1.5, minHeight: '56px !important' }}>
         <IconButton onClick={toggle} aria-label="Toggle sidebar" edge="start" size="small">
           <PanelLeft size={18} />

@@ -142,7 +142,7 @@ export function DreamWizard({ token, visionAreas, initialVisionAreaId, onClose, 
           <label>
             Which area of life or work does this belong to?
             <FormControl fullWidth size="small" required>
-              <Select displayEmpty value={visionAreaId} onChange={(event) => setVisionAreaId(event.target.value)}>
+              <Select SelectDisplayProps={{ 'aria-label': "Which area of life or work does this belong to?" }} displayEmpty value={visionAreaId} onChange={(event) => setVisionAreaId(event.target.value)}>
                 <MenuItem value="" disabled><em>Select a vision area</em></MenuItem>
                 {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
               </Select>
@@ -151,7 +151,7 @@ export function DreamWizard({ token, visionAreas, initialVisionAreaId, onClose, 
           <label>
             How far out does it reach?
             <FormControl fullWidth size="small">
-              <Select value={dreamType} onChange={(event) => setDreamType(event.target.value as DreamType)}>
+              <Select SelectDisplayProps={{ 'aria-label': "How far out does it reach?" }} value={dreamType} onChange={(event) => setDreamType(event.target.value as DreamType)}>
                 <MenuItem value="SHORT_TERM">Short Term</MenuItem>
                 <MenuItem value="LONG_TERM">Long Term</MenuItem>
                 <MenuItem value="LIFETIME">Lifetime</MenuItem>
@@ -194,7 +194,7 @@ export function DreamWizard({ token, visionAreas, initialVisionAreaId, onClose, 
           <label>
             How important is it right now?
             <FormControl fullWidth size="small">
-              <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+              <Select SelectDisplayProps={{ 'aria-label': "How important is it right now?" }} value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
                 <MenuItem value="LOW">Low</MenuItem>
                 <MenuItem value="MEDIUM">Medium</MenuItem>
                 <MenuItem value="HIGH">High</MenuItem>

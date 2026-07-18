@@ -79,6 +79,7 @@ export function DreamDetailPage() {
               Dream
               <FormControl fullWidth size="small">
                 <Select
+                  SelectDisplayProps={{ 'aria-label': 'Dream' }}
                   value={String(selectedDream?.id ?? '')}
                   onChange={(event) => event.target.value && navigate(`/dreams/${event.target.value}`)}
                 >

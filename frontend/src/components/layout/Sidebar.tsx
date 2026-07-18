@@ -85,7 +85,7 @@ function NavUser({ collapsed }: { collapsed: boolean }) {
           '&:hover': { bgcolor: 'action.hover' },
         }}
       >
-        <Avatar sx={{ width: 32, height: 32, fontSize: 'var(--font-meta)' }}>{initials(user?.fullName ?? 'VM')}</Avatar>
+        <Avatar sx={{ width: 32, height: 32, fontSize: 'var(--font-meta)', bgcolor: 'var(--muted)', color: 'var(--foreground)', fontWeight: 600 }}>{initials(user?.fullName ?? 'VM')}</Avatar>
         {!collapsed && (
           <>
             <Box sx={{ flex: 1, overflow: 'hidden', textAlign: 'left' }}>
@@ -121,6 +121,7 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: ()
   // flat list of eleven entries. Collapsed mode drops the labels and keeps a
   // subtle divider between groups.
   return (
+    <Box>
     <List sx={{ px: 1 }}>
       {navGroups.map((group, groupIndex) => (
         <li key={group.label} style={{ listStyle: 'none' }}>
@@ -172,12 +173,13 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: ()
         </li>
       ))}
     </List>
+    </Box>
   );
 }
 
 function SidebarContents({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: () => void }) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box component="nav" aria-label="Sidebar" sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Brand collapsed={collapsed} />
       <Divider />
       <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', py: 1 }}>

@@ -18,13 +18,13 @@ export function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
     return null;
   }
   return (
-    <nav className="crumbs" aria-label="Hierarchy">
+    <span className="crumbs">
       {shown.map((crumb, index) => (
         <Fragment key={`${crumb.label}-${index}`}>
           {index > 0 && <span aria-hidden="true" className="crumbs-sep">›</span>}
           {crumb.to ? <Link to={crumb.to}>{crumb.label}</Link> : <span>{crumb.label}</span>}
         </Fragment>
       ))}
-    </nav>
+    </span>
   );
 }

@@ -409,7 +409,7 @@ export function TasksBoardPage() {
       <label>
         Step
         <FormControl fullWidth size="small" required>
-          <Select value={stepId} onChange={(event) => setStepId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Step" }} value={stepId} onChange={(event) => setStepId(event.target.value)}>
             {steps.map((step) => <MenuItem value={String(step.id)} key={step.id}>{step.title}</MenuItem>)}
           </Select>
         </FormControl>
@@ -426,7 +426,7 @@ export function TasksBoardPage() {
       <label>
         Priority
         <FormControl fullWidth size="small">
-          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Priority" }} value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
             <MenuItem value="LOW">Low</MenuItem>
             <MenuItem value="MEDIUM">Medium</MenuItem>
             <MenuItem value="HIGH">High</MenuItem>
@@ -437,7 +437,7 @@ export function TasksBoardPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
             {columns.map((column) => <MenuItem value={column} key={column}>{workStatusLabels[column]}</MenuItem>)}
           </Select>
         </FormControl>
@@ -446,7 +446,7 @@ export function TasksBoardPage() {
         <label>
           What's missing?
           <FormControl fullWidth size="small">
-            <Select displayEmpty value={blockerCategory} onChange={(event) => setBlockerCategory(event.target.value as ObstacleType)}>
+            <Select SelectDisplayProps={{ 'aria-label': "What's missing?" }} displayEmpty value={blockerCategory} onChange={(event) => setBlockerCategory(event.target.value as ObstacleType)}>
               <MenuItem value="" disabled><em>Select a category...</em></MenuItem>
               {blockerCategories.map((category) => <MenuItem value={category} key={category}>{obstacleTypeLabels[category]}</MenuItem>)}
             </Select>

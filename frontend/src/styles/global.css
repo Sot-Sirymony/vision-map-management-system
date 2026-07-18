@@ -46,13 +46,14 @@
   --border-soft: #f0f0f0;        /* table row separators */
   --text-label: #475569;         /* form/filter labels */
   --text-soft: #64748b;          /* tertiary text on cards */
-  --text-faint: #94a3b8;         /* codes, empty-state hints */
+  --text-faint: #64707d;         /* codes, empty-state hints — 4.5:1 floor (FR-26.4) */
   --info-bg: #eff6ff;            /* informational banners / coaching panels */
   --info-border: #bfdbfe;
   --info-text: #1e3a8a;
   --info-strong: #1d4ed8;
   --danger-bg: #fdf3f3;          /* overdue row wash */
   --hint: #0d7d70;               /* field hints */
+  --moonshot-fg: #6b21a8;        /* moonshot text; light-legible violet */
   /* FR-18.4 density defaults (Comfortable); the compact overrides live on
      [data-density="compact"] below. MUI spacing scales via the theme. */
   --cell-pad-y: 12px;
@@ -122,13 +123,14 @@
   --border-soft: #2d2c2b;
   --text-label: #c8c6c4;
   --text-soft: #a19f9d;
-  --text-faint: #797775;
+  --text-faint: #8f8d8b;
   --info-bg: #10243d;
   --info-border: #1e4976;
   --info-text: #9ec9ec;
   --info-strong: #6cb8f6;
   --danger-bg: #3a1d1f;
   --hint: #6ccdc2;
+  --moonshot-fg: #cdbce6;
 }
 
 /* FR-18.4: Compact density tightens the row and card paddings that decide
@@ -174,6 +176,16 @@ textarea {
 
 a {
   color: inherit;
+}
+
+/* FR-26.1: one visible focus indicator for every non-MUI interactive element,
+   in both themes (MUI controls carry their own ring via the theme). */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .page-heading h1,
@@ -585,7 +597,8 @@ a {
 }
 
 .crumbs a {
-  color: var(--text-soft);
+  /* Label tone: keeps 4.5:1 even on the overdue row's danger wash (FR-26.4). */
+  color: var(--text-label);
   text-decoration: none;
 }
 
@@ -1148,7 +1161,8 @@ a {
 
 .map-code {
   font-size: var(--font-caption);
-  color: var(--text-faint);
+  /* Sits on accent-tinted rows — needs the stronger label tone (FR-26.4). */
+  color: var(--text-label);
 }
 
 .map-title {
@@ -1203,7 +1217,7 @@ a {
 
 .map-rail-value {
   font-size: var(--font-caption);
-  color: var(--text-soft);
+  color: var(--text-label);
   text-align: right;
 }
 

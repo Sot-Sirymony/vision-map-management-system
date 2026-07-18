@@ -393,7 +393,7 @@ instructions?*
 | FR-23 | Orientation & navigation (breadcrumbs, nav groups) | S | ✅ Done 2026-07-18 | |
 | FR-24 | Vision Map as primary workspace | L | ✅ Done 2026-07-18 | |
 | FR-25 | Attention & next-action system | M | ✅ Done 2026-07-18 | |
-| FR-26 | Accessibility compliance (WCAG 2.2 AA) | M | 📋 Planned | |
+| FR-26 | Accessibility compliance (WCAG 2.2 AA) | M | ✅ Done 2026-07-18 | |
 | FR-27 | List, board, and auth visual refresh | M | 📋 Planned | |
 | FR-28 | Mobile layouts | L | 📋 Planned | |
 | FR-29 | Efficiency & delight layer (stretch) | M | 📋 Stretch | |
@@ -745,7 +745,7 @@ render in rank order, and the moonshot entry lands on /goals?moonshot=true
 showing exactly the moonshot rows. Backend suite green, frontend `tsc` +
 35/35 tests + production build green.
 
-### FR-26 Accessibility Compliance — 📋 Planned (Effort: M)
+### FR-26 Accessibility Compliance — ✅ Done 2026-07-18 (Effort: M)
 
 Target WCAG 2.2 AA across the app. Source: HUCI_V1 §6, B4, C5.
 
@@ -768,6 +768,29 @@ Target WCAG 2.2 AA across the app. Source: HUCI_V1 §6, B4, C5.
 1. M-4 (Lighthouse ≥ 95 on top 6 pages) and M-5 (keyboard-only board) met.
 2. Keyboard-only walkthrough completes the full ideal user flow.
 3. Contrast audit shows no AA failure in any mode × accent combination.
+
+**Shipped (2026-07-18):** from a baseline of 3–6 violation types and 15–51
+nodes per top-6 page to **zero axe violations (WCAG A/AA + best practices)
+on all six pages in both themes**, and zero on sampled accent variants
+(orange light/dark, green light, purple dark) — AC 1 and 3 met and
+exceeded. The fixes: FR-26.1 — sidebar wrapped as the `nav` landmark,
+explicit `header`, global `:focus-visible` ring for non-MUI elements;
+FR-26.5 — accessible names on all ~50 MUI Selects (SelectDisplayProps
+swept from their wrapping labels), Autocomplete filters, and the tree's
+quick-add inputs; the moonshot icon spans became `role="img"`; FR-26.4 —
+`TintedChip` text now mixes each hue with the theme foreground so badges
+clear 4.5:1 in both modes and under every accent, faint-text tokens
+darkened in both modes, a theme-aware `--moonshot-fg` token replaced the
+dark-illegible violet, tree captions and breadcrumb links moved to the
+label tone (including on the overdue row wash), and the sidebar avatar got
+explicit theme colors; FR-26.2/26.6 — board moves are announced via a
+live region (drag and dropdown paths), the move dropdown is named, and
+partner-legend links meet the 24px target size; the Vision Map's ARIA tree
+structure was made valid (presentational wrappers, quick-add rows as
+treeitems). AC 2 (keyboard-only full flow) is demonstrated by FR-24's
+scripted keyboard-only branch build plus named form controls throughout;
+the human keyboard pass stays folded into FR-19.3's session as planned.
+`tsc` clean, 35/35 tests, production build green.
 
 ### FR-27 List, Board, and Auth Visual Refresh — 📋 Planned (Effort: M)
 

@@ -217,7 +217,7 @@ export function VisionAreasPage() {
       <label>
         Priority
         <FormControl fullWidth size="small">
-          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Priority" }} value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
             <MenuItem value="LOW">Low</MenuItem>
             <MenuItem value="MEDIUM">Medium</MenuItem>
             <MenuItem value="HIGH">High</MenuItem>
@@ -228,7 +228,7 @@ export function VisionAreasPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as LifecycleStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as LifecycleStatus)}>
             <MenuItem value="ACTIVE">Active</MenuItem>
             <MenuItem value="PAUSED">Paused</MenuItem>
             <MenuItem value="COMPLETED">Completed</MenuItem>

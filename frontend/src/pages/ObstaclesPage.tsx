@@ -265,7 +265,7 @@ export function ObstaclesPage() {
       <label>
         Type
         <FormControl fullWidth size="small">
-          <Select value={obstacleType} onChange={(event) => setObstacleType(event.target.value as ObstacleType)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Type" }} value={obstacleType} onChange={(event) => setObstacleType(event.target.value as ObstacleType)}>
             {obstacleTypes.map((value) => <MenuItem value={value} key={value}>{obstacleTypeLabels[value]}</MenuItem>)}
           </Select>
         </FormControl>
@@ -274,7 +274,7 @@ export function ObstaclesPage() {
       <label>
         Severity
         <FormControl fullWidth size="small">
-          <Select value={severity} onChange={(event) => setSeverity(event.target.value as Severity)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Severity" }} value={severity} onChange={(event) => setSeverity(event.target.value as Severity)}>
             {severities.map((value) => <MenuItem value={value} key={value}>{priorityLabels[value]}</MenuItem>)}
           </Select>
         </FormControl>
@@ -282,7 +282,7 @@ export function ObstaclesPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as ObstacleStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as ObstacleStatus)}>
             {statuses.map((value) => <MenuItem value={value} key={value}>{obstacleStatusLabels[value]}</MenuItem>)}
           </Select>
         </FormControl>
@@ -290,7 +290,7 @@ export function ObstaclesPage() {
       <label>
         Dream
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Dream" }} displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
           </Select>
@@ -299,7 +299,7 @@ export function ObstaclesPage() {
       <label>
         Goal
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Goal" }} displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
           </Select>
@@ -308,7 +308,7 @@ export function ObstaclesPage() {
       <label>
         Step
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedStepId} onChange={(event) => setRelatedStepId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Step" }} displayEmpty value={relatedStepId} onChange={(event) => setRelatedStepId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {steps.map((step) => <MenuItem value={String(step.id)} key={step.id}>{step.title}</MenuItem>)}
           </Select>
@@ -317,7 +317,7 @@ export function ObstaclesPage() {
       <label>
         Task
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Task" }} displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {tasks.map((task) => <MenuItem value={String(task.id)} key={task.id}>{task.title}</MenuItem>)}
           </Select>
@@ -326,7 +326,7 @@ export function ObstaclesPage() {
       <label>
         Required Partner
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={requiredPartnerId} onChange={(event) => setRequiredPartnerId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Required Partner" }} displayEmpty value={requiredPartnerId} onChange={(event) => setRequiredPartnerId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {partners.map((partner) => <MenuItem value={String(partner.id)} key={partner.id}>{partner.name}</MenuItem>)}
           </Select>

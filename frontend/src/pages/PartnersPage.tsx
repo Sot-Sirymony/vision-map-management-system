@@ -288,7 +288,7 @@ export function PartnersPage() {
       <label>
         Support Type
         <FormControl fullWidth size="small">
-          <Select value={supportType} onChange={(event) => setSupportType(event.target.value as PartnerSupportType)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Support Type" }} value={supportType} onChange={(event) => setSupportType(event.target.value as PartnerSupportType)}>
             {(['MENTOR', 'EXPERT', 'ADVISOR', 'COLLEAGUE', 'FINANCIAL', 'TECHNICAL', 'EMOTIONAL', 'OTHER'] as const).map((value) => (
               <MenuItem value={value} key={value}>{partnerSupportTypeLabels[value]}</MenuItem>
             ))}
@@ -298,7 +298,7 @@ export function PartnersPage() {
       <label>
         Offer Type
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={offerType} onChange={(event) => setOfferType(event.target.value as OfferType | '')}>
+          <Select SelectDisplayProps={{ 'aria-label': "Offer Type" }} displayEmpty value={offerType} onChange={(event) => setOfferType(event.target.value as OfferType | '')}>
             <MenuItem value="">None</MenuItem>
             {(['MONEY', 'SHARED_VISION', 'RECOGNITION', 'EXPERIENCE', 'OTHER'] as const).map((value) => (
               <MenuItem value={value} key={value}>{offerTypeLabels[value]}</MenuItem>
@@ -310,7 +310,7 @@ export function PartnersPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as PartnerStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as PartnerStatus)}>
             {(['TO_CONTACT', 'CONTACTED', 'ACTIVE', 'WAITING', 'DECLINED', 'COMPLETED'] as const).map((value) => (
               <MenuItem value={value} key={value}>{partnerStatusLabels[value]}</MenuItem>
             ))}
@@ -320,7 +320,7 @@ export function PartnersPage() {
       <label>
         Vision Area
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedVisionAreaId} onChange={(event) => setRelatedVisionAreaId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Vision Area" }} displayEmpty value={relatedVisionAreaId} onChange={(event) => setRelatedVisionAreaId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {visionAreas.map((area) => <MenuItem value={String(area.id)} key={area.id}>{area.name}</MenuItem>)}
           </Select>
@@ -329,7 +329,7 @@ export function PartnersPage() {
       <label>
         Dream
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Dream" }} displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
           </Select>
@@ -338,7 +338,7 @@ export function PartnersPage() {
       <label>
         Goal
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Goal" }} displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
           </Select>
@@ -347,7 +347,7 @@ export function PartnersPage() {
       <label>
         Step
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedStepId} onChange={(event) => setRelatedStepId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Step" }} displayEmpty value={relatedStepId} onChange={(event) => setRelatedStepId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {steps.map((step) => <MenuItem value={String(step.id)} key={step.id}>{step.title}</MenuItem>)}
           </Select>
@@ -356,7 +356,7 @@ export function PartnersPage() {
       <label>
         Task
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Task" }} displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {tasks.map((task) => <MenuItem value={String(task.id)} key={task.id}>{task.title}</MenuItem>)}
           </Select>

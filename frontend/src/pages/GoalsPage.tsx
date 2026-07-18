@@ -325,7 +325,7 @@ export function GoalsPage() {
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
             {goal.moonshot && (
               <Tooltip title={goal.moonshotVision || 'Moonshot goal'} arrow>
-                <Box component="span" sx={{ display: 'inline-flex', color: moonshotViolet }} aria-label="Moonshot goal">
+                <Box component="span" sx={{ display: 'inline-flex', color: moonshotViolet }} role="img" aria-label="Moonshot goal">
                   <Rocket size={16} />
                 </Box>
               </Tooltip>
@@ -373,7 +373,7 @@ export function GoalsPage() {
       <label>
         Dream
         <FormControl fullWidth size="small" required>
-          <Select value={dreamId} onChange={(event) => setDreamId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Dream" }} value={dreamId} onChange={(event) => setDreamId(event.target.value)}>
             {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
           </Select>
         </FormControl>
@@ -385,7 +385,7 @@ export function GoalsPage() {
       <label>
         Priority
         <FormControl fullWidth size="small">
-          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Priority" }} value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
             <MenuItem value="LOW">Low</MenuItem>
             <MenuItem value="MEDIUM">Medium</MenuItem>
             <MenuItem value="HIGH">High</MenuItem>
@@ -396,7 +396,7 @@ export function GoalsPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
             <MenuItem value="NOT_STARTED">Not Started</MenuItem>
             <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
             <MenuItem value="WAITING">Waiting</MenuItem>
@@ -540,7 +540,7 @@ export function GoalsPage() {
               <strong>
                 {goal.moonshot && (
                   <Tooltip title={goal.moonshotVision || 'Moonshot goal'} arrow>
-                    <Box component="span" sx={{ display: 'inline-flex', color: moonshotViolet, mr: 0.75, verticalAlign: 'middle' }} aria-label="Moonshot goal">
+                    <Box component="span" sx={{ display: 'inline-flex', color: moonshotViolet, mr: 0.75, verticalAlign: 'middle' }} role="img" aria-label="Moonshot goal">
                       <Rocket size={16} />
                     </Box>
                   </Tooltip>
@@ -579,7 +579,7 @@ export function GoalsPage() {
                   <label>
                     Set status
                     <FormControl fullWidth size="small">
-                      <Select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value as WorkStatus)}>
+                      <Select SelectDisplayProps={{ 'aria-label': "Set status" }} value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value as WorkStatus)}>
                         {statusOptions.map((option) => <MenuItem value={option.value} key={option.value}>{option.label}</MenuItem>)}
                       </Select>
                     </FormControl>

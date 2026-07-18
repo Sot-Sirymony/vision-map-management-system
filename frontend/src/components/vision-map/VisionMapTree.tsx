@@ -318,7 +318,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
     const options = row.kind === 'dream' ? DREAM_STATUSES : WORK_STATUSES;
     return (
       <FormControl size="small" className="map-status">
-        <Select value={value} onChange={(event) => void changeStatus(row, event.target.value)} aria-label="Status">
+        <Select value={value} onChange={(event) => void changeStatus(row, event.target.value)} SelectDisplayProps={{ 'aria-label': `Status of ${entityTitle(row)}` }}>
           {options.map((option) => <MenuItem value={option.value} key={option.value}>{option.label}</MenuItem>)}
         </Select>
       </FormControl>
@@ -348,11 +348,11 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
   const dreamRow = visibleRows[0];
 
   return (
-    <div className="map-tree" role="tree" aria-label={`Vision map for ${dream.title}`} onKeyDown={handleTreeKeyDown}>
+    <div>
       {error && <p className="map-error" role="alert">{error}</p>}
       <p className="map-hint">↑↓ move · → ← expand / collapse · Enter rename · N add child</p>
-
-      <div className="map-node map-node--dream">
+    <div className="map-tree" role="tree" aria-label={`Vision map for ${dream.title}`} onKeyDown={handleTreeKeyDown}>
+      <div className="map-node map-node--dream" role="none">
         <div className="map-row" {...rowShellProps(dreamRow)}>
           {chevron(dreamRow)}
           <div className="map-main">
@@ -378,7 +378,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
                 return null;
               }
               return (
-                <div className="map-node map-node--goal" key={goal.id}>
+                <div className="map-node map-node--goal" role="none" key={goal.id}>
                   <div className="map-row" {...rowShellProps(goalRow)}>
                     {chevron(goalRow)}
                     <div className="map-main">
@@ -409,7 +409,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
                           return null;
                         }
                         return (
-                          <div className="map-node map-node--step" key={step.id}>
+                          <div className="map-node map-node--step" role="none" key={step.id}>
                             <div className="map-row" {...rowShellProps(stepRow)}>
                               {chevron(stepRow)}
                               <div className="map-main">
@@ -432,7 +432,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
                                     return null;
                                   }
                                   return (
-                                    <div className="map-node map-node--task" key={task.id}>
+                                    <div className="map-node map-node--task" role="none" key={task.id}>
                                       <div className="map-row" {...rowShellProps(taskRow)}>
                                         <span className="map-chevron map-chevron--spacer" />
                                         <div className="map-main">
@@ -464,6 +464,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
                       })}
                       <TitleAddRow
                         placeholder="New step title"
+                        level={3}
                         onAdd={async (title) => {
                           await createStep(token, {
                             goalId: goal.id,
@@ -484,6 +485,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
             })}
             <TitleAddRow
               placeholder="New goal title"
+              level={2}
               onAdd={async (title) => {
                 await createGoal(token, { dreamId: dream.id, title, priority: 'MEDIUM', status: 'NOT_STARTED', moonshot: false });
                 await onDataChange();
@@ -494,11 +496,13 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
         )}
       </div>
     </div>
+    </div>
   );
 }
 
-function TitleAddRow({ placeholder, onAdd, inputRef }: {
+function TitleAddRow({ placeholder, level, onAdd, inputRef }: {
   placeholder: string;
+  level: number;
   onAdd: (title: string) => Promise<void>;
   inputRef: (element: HTMLInputElement | null) => void;
 }) {
@@ -519,11 +523,15 @@ function TitleAddRow({ placeholder, onAdd, inputRef }: {
     }
   }
 
+  // A treeitem in its own right — the "add a child here" affordance — so the
+  // enclosing group's children stay valid for the ARIA tree pattern.
   return (
-    <form className="map-add" onSubmit={(event) => void handleSubmit(event)}>
-      <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={placeholder} inputRef={inputRef} />
-      <Button type="submit" variant="secondary" disabled={busy || !title.trim()}>{busy ? 'Adding...' : 'Add'}</Button>
-    </form>
+    <div role="treeitem" aria-level={level} aria-selected={false}>
+      <form className="map-add" onSubmit={(event) => void handleSubmit(event)}>
+        <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={placeholder} aria-label={placeholder} inputRef={inputRef} />
+        <Button type="submit" variant="secondary" disabled={busy || !title.trim()}>{busy ? 'Adding...' : 'Add'}</Button>
+      </form>
+    </div>
   );
 }
 
@@ -566,13 +574,15 @@ function TaskAddRow({ stepId, token, defaultOwner, onDataChange, inputRef }: {
   }
 
   return (
-    <form className="map-add map-add--task" onSubmit={(event) => void handleSubmit(event)}>
-      <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="New task title" inputRef={inputRef} />
-      <Input value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Owner" />
-      <Input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
-      <Button type="submit" variant="secondary" disabled={busy || !title.trim() || !owner.trim() || !dueDate}>
-        {busy ? 'Adding...' : 'Add task'}
-      </Button>
-    </form>
+    <div role="treeitem" aria-level={4} aria-selected={false}>
+      <form className="map-add map-add--task" onSubmit={(event) => void handleSubmit(event)}>
+        <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="New task title" aria-label="New task title" inputRef={inputRef} />
+        <Input value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Owner" aria-label="Owner" />
+        <Input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} aria-label="Due date" />
+        <Button type="submit" variant="secondary" disabled={busy || !title.trim() || !owner.trim() || !dueDate}>
+          {busy ? 'Adding...' : 'Add task'}
+        </Button>
+      </form>
+    </div>
   );
 }

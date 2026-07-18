@@ -7,7 +7,21 @@ account. Rule set: WCAG 2.0/2.1/2.2 A + AA + best practices. Raw output:
 [screens/axe-results.json](screens/axe-results.json). Re-measure at release
 close with the same instrument (FR-19.6).
 
-## Violations per page (M-4 baseline)
+## Result after FR-26 (2026-07-18)
+
+**Zero axe violations (WCAG A/AA + best practices) on all six top pages, in
+both themes** — and zero on sampled accent variants (orange light/dark,
+green light, purple dark). Raw after-data: `axe-after-fr26.json` in the
+audit scratchpad. What closed the gap: landmarks (`<nav>` sidebar, explicit
+`<header>`, existing `<main>`), accessible names on every MUI Select
+(SelectDisplayProps) and Autocomplete filter, theme-aware chip text
+(`color-mix` toward the foreground token), darker faint-text tokens, a
+theme-aware moonshot foreground token, ARIA-valid tree structure with
+labeled quick-add inputs, per-card "Move to status" names plus a live
+region announcing board moves, breadcrumbs demoted from landmarks, 24px
+legend targets, and a global `:focus-visible` ring.
+
+## Violations per page (M-4 baseline — before)
 
 | Page | Light: types / nodes | Dark: types / nodes |
 |---|---|---|

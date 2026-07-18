@@ -432,7 +432,7 @@ export function StepsPage() {
       <label>
         Goal
         <FormControl fullWidth size="small" required>
-          <Select value={goalId} onChange={(event) => setGoalId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Goal" }} value={goalId} onChange={(event) => setGoalId(event.target.value)}>
             {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
           </Select>
         </FormControl>
@@ -452,7 +452,7 @@ export function StepsPage() {
       <label>
         Priority
         <FormControl fullWidth size="small">
-          <Select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Priority" }} value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
             <MenuItem value="LOW">Low</MenuItem>
             <MenuItem value="MEDIUM">Medium</MenuItem>
             <MenuItem value="HIGH">High</MenuItem>
@@ -463,7 +463,7 @@ export function StepsPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as WorkStatus)}>
             <MenuItem value="NOT_STARTED">Not Started</MenuItem>
             <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
             <MenuItem value="WAITING">Waiting</MenuItem>

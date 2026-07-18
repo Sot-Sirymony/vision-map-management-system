@@ -51,7 +51,7 @@ export function QuickAddRow({ parentLabel, parents, parentValue, onParentChange,
       <label>
         {parentLabel}
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={parentValue} onChange={(event) => onParentChange(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': parentLabel }} displayEmpty value={parentValue} onChange={(event) => onParentChange(event.target.value)}>
             <MenuItem value="" disabled><em>Select…</em></MenuItem>
             {parents.map((parent) => <MenuItem value={parent.value} key={parent.value}>{parent.label}</MenuItem>)}
           </Select>

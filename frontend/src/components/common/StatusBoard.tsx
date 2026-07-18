@@ -38,6 +38,14 @@ export function StatusBoard<T extends { id: number; archived: boolean }, S exten
 }: StatusBoardProps<T, S>) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<S | null>(null);
+  // FR-26.2: moves are announced for screen readers, whether they came from
+  // drag-and-drop or the per-card dropdown.
+  const [announcement, setAnnouncement] = useState('');
+
+  function announceMove(status: S) {
+    const label = columns.find((column) => column.value === status)?.label ?? status;
+    setAnnouncement(`Moved to ${label}.`);
+  }
 
   function handleDragStart(event: DragEvent<HTMLElement>, id: number) {
     setDraggedId(id);
@@ -71,6 +79,7 @@ export function StatusBoard<T extends { id: number; archived: boolean }, S exten
       return;
     }
     onMove(item, column);
+    announceMove(column);
   }
 
   function cardClasses(item: T) {
@@ -91,6 +100,7 @@ export function StatusBoard<T extends { id: number; archived: boolean }, S exten
 
   return (
     <div className="kanban" style={{ '--kanban-cols': columns.length } as CSSProperties}>
+      <span className="sr-only" role="status">{announcement}</span>
       {columns.map((column) => {
         const columnItems = items.filter((item) => statusOf(item) === column.value);
         return (
@@ -122,8 +132,12 @@ export function StatusBoard<T extends { id: number; archived: boolean }, S exten
                       {onMove && !item.archived && (
                         <FormControl size="small">
                           <Select
+                            SelectDisplayProps={{ 'aria-label': 'Move to status' }}
                             value={statusOf(item)}
-                            onChange={(event) => onMove(item, event.target.value as S)}
+                            onChange={(event) => {
+                              onMove(item, event.target.value as S);
+                              announceMove(event.target.value as S);
+                            }}
                           >
                             {moveOptions.map((option) => (
                               <MenuItem value={option.value} key={option.value}>{option.label}</MenuItem>

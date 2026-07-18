@@ -275,7 +275,7 @@ export function CommunicationBuilderPage() {
       <label>
         Partner
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={partnerId} onChange={(event) => setPartnerId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Partner" }} displayEmpty value={partnerId} onChange={(event) => setPartnerId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {partners.map((partner) => <MenuItem value={String(partner.id)} key={partner.id}>{partner.name}</MenuItem>)}
           </Select>
@@ -288,7 +288,7 @@ export function CommunicationBuilderPage() {
       <label>
         Dream
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Dream" }} displayEmpty value={relatedDreamId} onChange={(event) => setRelatedDreamId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {dreams.map((dream) => <MenuItem value={String(dream.id)} key={dream.id}>{dream.title}</MenuItem>)}
           </Select>
@@ -297,7 +297,7 @@ export function CommunicationBuilderPage() {
       <label>
         Goal
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Goal" }} displayEmpty value={relatedGoalId} onChange={(event) => setRelatedGoalId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {goals.map((goal) => <MenuItem value={String(goal.id)} key={goal.id}>{goal.title}</MenuItem>)}
           </Select>
@@ -306,7 +306,7 @@ export function CommunicationBuilderPage() {
       <label>
         Task
         <FormControl fullWidth size="small">
-          <Select displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Task" }} displayEmpty value={relatedTaskId} onChange={(event) => setRelatedTaskId(event.target.value)}>
             <MenuItem value="">None</MenuItem>
             {tasks.map((task) => <MenuItem value={String(task.id)} key={task.id}>{task.title}</MenuItem>)}
           </Select>
@@ -323,7 +323,7 @@ export function CommunicationBuilderPage() {
       <label>
         Status
         <FormControl fullWidth size="small">
-          <Select value={status} onChange={(event) => setStatus(event.target.value as CommunicationStatus)}>
+          <Select SelectDisplayProps={{ 'aria-label': "Status" }} value={status} onChange={(event) => setStatus(event.target.value as CommunicationStatus)}>
             {(['DRAFT', 'SENT', 'FOLLOWED_UP', 'REPLIED', 'CLOSED'] as const).map((value) => (
               <MenuItem value={value} key={value}>{communicationStatusLabels[value]}</MenuItem>
             ))}

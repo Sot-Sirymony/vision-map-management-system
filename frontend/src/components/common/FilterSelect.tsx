@@ -42,7 +42,13 @@ export function FilterSelect({ label, value, onChange, options, allLabel = 'All'
         onChange={(_event, option) => onChange(option?.value ?? '')}
         getOptionLabel={(option) => option.label}
         isOptionEqualToValue={(option, current) => option.value === current.value}
-        renderInput={(params) => <TextField {...params} placeholder={allLabel} />}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            placeholder={allLabel}
+            slotProps={{ ...params.slotProps, htmlInput: { ...params.slotProps.htmlInput, 'aria-label': label } }}
+          />
+        )}
         clearOnEscape
       />
     </label>

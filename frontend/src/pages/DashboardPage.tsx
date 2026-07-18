@@ -205,7 +205,7 @@ export function DashboardPage() {
         <label>
           Period
           <FormControl fullWidth size="small">
-            <Select value={period} onChange={(event) => setPeriodValue(event.target.value)}>
+            <Select SelectDisplayProps={{ 'aria-label': "Period" }} value={period} onChange={(event) => setPeriodValue(event.target.value)}>
               {PERIOD_OPTIONS.map((option) => (
                 <MenuItem value={option.value} key={option.value}>{option.label}</MenuItem>
               ))}
@@ -388,7 +388,7 @@ export function DashboardPage() {
                     to={`/partners?status=${status}`}
                     direction="row"
                     spacing={0.75}
-                    sx={{ alignItems: 'center', textDecoration: 'none', '&:hover .MuiTypography-root': { textDecoration: 'underline' } }}
+                    sx={{ alignItems: 'center', minHeight: 24, px: 0.5, textDecoration: 'none', '&:hover .MuiTypography-root': { textDecoration: 'underline' } }}
                   >
                     <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: PARTNER_STATUS_COLORS[status] }} />
                     <Typography variant="caption" color="text.secondary">
