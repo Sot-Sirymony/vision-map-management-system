@@ -1037,3 +1037,214 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* FR-24: Vision Map working tree. Depth reads through three channels —
+   indentation with a connector line that fades per level, a progressively
+   lighter accent wash per row level, and a fixed right rail keeping every
+   progress bar aligned. */
+.map-tree {
+  display: grid;
+  gap: 10px;
+}
+
+.map-hint {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--text-faint);
+}
+
+.map-error {
+  margin: 0;
+  color: var(--destructive);
+  font-size: var(--font-body-sm);
+}
+
+.map-node--dream {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+}
+
+.map-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.map-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.map-node--goal > .map-row {
+  background: color-mix(in srgb, var(--accent) 38%, var(--card));
+}
+
+.map-node--step > .map-row {
+  background: color-mix(in srgb, var(--accent) 20%, var(--card));
+}
+
+.map-node--task > .map-row {
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+}
+
+.map-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 0;
+}
+
+.map-chevron--spacer {
+  cursor: default;
+}
+
+.map-main {
+  flex: 1;
+  min-width: 220px;
+}
+
+.map-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-area {
+  margin: 0 0 2px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.map-code {
+  font-size: var(--font-caption);
+  color: var(--text-faint);
+}
+
+.map-title {
+  font-weight: 600;
+}
+
+.map-node--dream > .map-row .map-title {
+  font-size: var(--font-title-panel);
+}
+
+.map-title-edit {
+  font: inherit;
+  font-weight: 600;
+  flex: 1;
+  min-width: 160px;
+  padding: 2px 6px;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.map-meta {
+  margin: 2px 0 0;
+  font-size: var(--font-caption);
+  color: var(--text-soft);
+}
+
+.map-blocker {
+  margin: 2px 0 0;
+  font-size: var(--font-caption);
+  color: var(--destructive);
+}
+
+.map-status {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.map-status .MuiSelect-select {
+  font-size: var(--font-meta);
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.map-rail {
+  width: 150px;
+  flex-shrink: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.map-rail-value {
+  font-size: var(--font-caption);
+  color: var(--text-soft);
+  text-align: right;
+}
+
+.map-children {
+  margin: 6px 0 0 21px;
+  padding-left: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.map-children--1 {
+  border-left: 2px solid color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.map-children--2 {
+  border-left: 2px solid color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.map-children--3 {
+  border-left: 2px solid color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* Quick-add affordance: present but quiet until hovered or focused (FR-24.3). */
+.map-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 4px;
+  opacity: 0.7;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+
+.map-add:hover,
+.map-add:focus-within {
+  opacity: 1;
+}
+
+.map-add .MuiTextField-root:first-of-type {
+  flex: 1;
+  min-width: 180px;
+}
+
+.map-add--task .MuiTextField-root:nth-of-type(2) {
+  width: 150px;
+}
+
+.map-add--task .MuiTextField-root:nth-of-type(3) {
+  width: 160px;
+}
+
+.table-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.table-title-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}

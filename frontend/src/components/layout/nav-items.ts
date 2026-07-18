@@ -1,5 +1,6 @@
 import {
   CheckSquare,
+  Network,
   ClipboardList,
   Compass,
   FileSpreadsheet,
@@ -33,6 +34,7 @@ export const navGroups: NavGroup[] = [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/vision-areas', label: 'Vision Areas', icon: Compass },
       { to: '/dreams', label: 'Dreams', icon: Sparkles },
+      { to: '/vision-map', label: 'Vision Map', icon: Network },
     ],
   },
   {

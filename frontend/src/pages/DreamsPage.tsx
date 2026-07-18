@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { archiveDream, permanentlyDeleteDream, createDream, getDreamArchiveImpact, listDreams, restoreDream, updateDream } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listVisionAreas } from '../api/visionAreaApi';
@@ -249,7 +249,14 @@ export function DreamsPage() {
 
   const columns: DataTableColumn<Dream>[] = [
     { key: 'code', label: 'Code', sortValue: (dream) => dream.code, render: (dream) => dream.code },
-    { key: 'title', label: 'Dream', sortValue: (dream) => dream.title, sx: { fontWeight: 500 }, render: (dream) => dream.title },
+    {
+      key: 'title',
+      label: 'Dream',
+      sortValue: (dream) => dream.title,
+      sx: { fontWeight: 500 },
+      // FR-24.4: the map is a dream's landing surface — its title goes there.
+      render: (dream) => <Link className="table-title-link" to={`/dreams/${dream.id}`}>{dream.title}</Link>,
+    },
     {
       key: 'priority',
       label: 'Priority',

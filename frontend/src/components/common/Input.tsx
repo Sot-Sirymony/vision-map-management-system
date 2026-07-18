@@ -1,7 +1,10 @@
-import type { InputHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, Ref } from 'react';
 import TextField from '@mui/material/TextField';
 
-type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'color'>;
+type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'color'> & {
+  /** Ref to the underlying input element (e.g. for programmatic focus). */
+  inputRef?: Ref<HTMLInputElement>;
+};
 
 export function Input({ min, max, minLength, maxLength, step, pattern, ...props }: InputProps) {
   return (

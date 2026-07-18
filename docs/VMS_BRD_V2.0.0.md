@@ -391,7 +391,7 @@ instructions?*
 | FR-21 | Guided onboarding & dream coaching wizard | M | ✅ Done 2026-07-18 | |
 | FR-22 | Low-friction data entry (quick-add, form pass) | M | ✅ Done 2026-07-18 | |
 | FR-23 | Orientation & navigation (breadcrumbs, nav groups) | S | ✅ Done 2026-07-18 | |
-| FR-24 | Vision Map as primary workspace | L | 📋 Planned | |
+| FR-24 | Vision Map as primary workspace | L | ✅ Done 2026-07-18 | |
 | FR-25 | Attention & next-action system | M | 📋 Planned | |
 | FR-26 | Accessibility compliance (WCAG 2.2 AA) | M | 📋 Planned | |
 | FR-27 | List, board, and auth visual refresh | M | 📋 Planned | |
@@ -649,7 +649,7 @@ and a reload, the first task row exposed 4 ancestry links and the dream
 crumb landed on `/dreams/16` with the tree visible, and a bookmarked
 filtered URL still loads. `tsc` clean, 35/35 tests, production build.
 
-### FR-24 Vision Map as Primary Workspace — 📋 Planned (Effort: L)
+### FR-24 Vision Map as Primary Workspace — ✅ Done 2026-07-18 (Effort: L)
 
 The tree on `DreamDetailPage` is today a viewer; the method's core loop
 (break down, refine, review) should happen in one place. Source: HUCI_V1 C1;
@@ -670,6 +670,32 @@ UX&UI_V1 C3.
    the map.
 2. Tree operations pass a keyboard-only test with visible focus.
 3. Collapse state persists per dream per browser.
+
+**Shipped (2026-07-18):** `VisionMapTree` rebuilt as one accessible working
+tree (`role=tree`/`treeitem`, roving tabindex). Every level supports inline
+rename (Enter/F2 or double-click, Esc cancels), a compact quick-status
+control (goal/task via the PATCH endpoints, step/dream via full update),
+and quick-add of a child — goals and steps by title, tasks with owner
+defaulted to the signed-in user and an inline due date (BR-16). Keyboard:
+↑/↓ move, → expand or first child, ← collapse or parent, N jumps to the
+node's child quick-add (auto-expanding first); a hint line documents the
+keys. Collapse state persists per dream via `useStoredState`
+(`vms-map-collapsed-<dreamId>`). Visual depth (FR-24.3): connector lines
+that fade per level, progressively lighter accent washes on goal/step/task
+rows, and a fixed 150px right rail keeping all progress bars aligned with
+a percentage caption. FR-24.4: dream titles in the Dreams table link to the
+map, and a "Vision Map" entry joined the Plan nav group (`/vision-map`
+lands on the first dream). All three acceptance criteria verified live: a
+Goal → Step → Task branch was built keyboard-only via N (owner prefilled,
+step sequence correct), rename and quick-status persisted through the API,
+ArrowDown moved the roving focus, and a collapsed goal stayed collapsed
+after a reload. `tsc` clean, 35/35 tests, production build.
+
+**Notes:** the old node components (DreamNode, GoalNode, StepNode,
+TaskNode, QuickAddTitle) are no longer referenced and await deletion
+approval. Audit H-05 (the page's unscoped list fetches) is intentionally
+deferred: scoping needs additive backend query parameters — queue it with
+FR-25.4's endpoint work.
 
 ### FR-25 Attention & Next-Action System — 📋 Planned (Effort: M)
 
