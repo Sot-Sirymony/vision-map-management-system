@@ -15,6 +15,9 @@ import type {
   Dream, DreamRequest, DreamStatus, Goal, GoalRequest, TaskItem, TaskItemRequest,
   VisionStep, VisionStepRequest, WorkStatus,
 } from '../../types/vision';
+import { useToast } from '../../context/ToastContext';
+import { dreamRequest, goalRequest, stepRequest, taskRequest } from '../../utils/entityRequests';
+import { nudgeAfterTaskComplete } from '../../utils/completionNudge';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { PriorityBadge } from '../common/PriorityBadge';
@@ -46,60 +49,6 @@ const DREAM_STATUSES: { value: DreamStatus; label: string }[] = [
   { value: 'COMPLETED', label: 'Completed' },
 ];
 
-// Full-update request builders: the status/rename quick actions send the
-// entity back unchanged except for the edited field (same pattern the list
-// pages use for board moves).
-const dreamRequest = (dream: Dream): DreamRequest => ({
-  visionAreaId: dream.visionAreaId,
-  title: dream.title,
-  description: dream.description,
-  whyImportant: dream.whyImportant,
-  successDefinition: dream.successDefinition,
-  dreamType: dream.dreamType,
-  priority: dream.priority,
-  targetDate: dream.targetDate,
-  status: dream.status,
-});
-
-const goalRequest = (goal: Goal): GoalRequest => ({
-  dreamId: goal.dreamId,
-  title: goal.title,
-  description: goal.description,
-  successCriteria: goal.successCriteria,
-  priority: goal.priority,
-  targetDate: goal.targetDate,
-  status: goal.status,
-  moonshot: goal.moonshot,
-  moonshotVision: goal.moonshotVision,
-});
-
-const stepRequest = (step: VisionStep): VisionStepRequest => ({
-  goalId: step.goalId,
-  title: step.title,
-  description: step.description,
-  sequenceNumber: step.sequenceNumber,
-  complex: step.complex,
-  priority: step.priority,
-  targetDate: step.targetDate,
-  status: step.status,
-});
-
-const taskRequest = (task: TaskItem): TaskItemRequest => ({
-  stepId: task.stepId,
-  title: task.title,
-  description: task.description,
-  owner: task.owner,
-  priority: task.priority,
-  startDate: task.startDate,
-  dueDate: task.dueDate,
-  status: task.status,
-  progressPercent: task.progressPercent,
-  estimatedHours: task.estimatedHours,
-  actualHours: task.actualHours,
-  blockerReason: task.blockerReason,
-  nextAction: task.nextAction,
-});
-
 type RowInfo = {
   key: string;
   kind: 'dream' | 'goal' | 'step' | 'task';
@@ -119,6 +68,7 @@ type RowInfo = {
  */
 export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, token, onDataChange }: VisionMapTreeProps) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const dreamGoals = goals.filter((goal) => goal.dreamId === dream.id);
   const [collapsedKeys, setCollapsedKeys] = useStoredState<string[]>(`vms-map-collapsed-${dream.id}`, []);
   const collapsed = new Set(collapsedKeys);
@@ -235,6 +185,9 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
         await updateTaskStatus(token, id, status);
       }
       await onDataChange();
+      if (row.kind === 'task' && status === 'COMPLETED') {
+        nudgeAfterTaskComplete({ token, completedTaskId: id, tasks, steps, goals, showToast, onApplied: () => void onDataChange() });
+      }
     } catch (statusError) {
       setError(statusError instanceof Error ? statusError.message : 'Unable to update status.');
     }

@@ -159,15 +159,18 @@ export const moonshotViolet = '#7c3aed';
 export const moonshotVioletDeep = '#6b21a8';
 export const moonshotTint = '#f3edfd';
 
-// Dashboard chart palettes (moved from DashboardPage/CategoryBreakdownChart).
-// Rationale comments live with the widgets that use them.
+// Dashboard chart palettes. FR-25.3 (audit V-02): the partner pipeline chart
+// now draws each stage in exactly the color its status badge uses — the
+// one-source-of-truth rule beats per-chart hue tuning. CONTACTED and ACTIVE
+// share the "work is moving" blue by design; the legend's counts tell them
+// apart, and WAITING is the same colorblind-safe purple as everywhere else.
 export const partnerPipelineColors = {
-  TO_CONTACT: '#8a8886',
-  CONTACTED: '#0078d4',
-  ACTIVE: '#107c10',
-  WAITING: '#d83b01', // audit V-02: contradicts statusColors.WAITING (purple); fix under FR-25.3
-  DECLINED: '#d13438',
-  COMPLETED: '#038387',
+  TO_CONTACT: statusColors.TO_CONTACT,
+  CONTACTED: statusColors.CONTACTED,
+  ACTIVE: statusColors.ACTIVE,
+  WAITING: statusColors.WAITING,
+  DECLINED: statusColors.DECLINED,
+  COMPLETED: statusColors.COMPLETED,
 } as const;
 
 export const obstacleTypeColors: Record<string, string> = {
@@ -183,9 +186,10 @@ export const obstacleTypeColors: Record<string, string> = {
   OTHER_TYPES: '#e1e1e1',
 };
 
-// Review heatmap intensity ramp. Audit V-01: these are foreign (Tailwind)
-// greens, kept verbatim until FR-27 swaps them for a Fluent ramp.
-export const heatmapLevelColors = ['#e5e5e5', '#86efac', '#4ade80', '#22c55e', '#15803d'] as const;
+// Review heatmap intensity ramp (FR-25.3): neutral stroke for "none", then
+// the Fluent green family up to the same Success green the status palette
+// uses for Completed — intensity reads as "increasingly done".
+export const heatmapLevelColors = ['#e1e1e1', '#dff0df', '#6bbf6c', '#107c10', '#0b5a0b'] as const;
 
 // "Depth, applied to data": Fluent's blue ramp for charts whose categories
 // carry no inherent meaning, dark → light, plus the brand blue for

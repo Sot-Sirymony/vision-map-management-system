@@ -428,6 +428,21 @@ a {
   animation: toast-in 0.18s ease-out;
 }
 
+/* FR-25.1 nudge toasts: the action button rides inside the toast. */
+.toast-action {
+  margin-left: 10px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: var(--font-meta);
+  font-weight: 600;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
 @keyframes toast-in {
   from {
     opacity: 0;

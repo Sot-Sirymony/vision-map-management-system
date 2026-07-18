@@ -32,11 +32,13 @@ import { StatusBoard } from '../components/common/StatusBoard';
 import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 import { Textarea } from '../components/common/Textarea';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useCrudEntity } from '../hooks/useCrudEntity';
 import { useStoredState } from '../hooks/useStoredState';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
 import { useUrlFilter, useUrlFilterBatch, useUrlFlag } from '../hooks/useUrlFilter';
 import type { Dream, Goal, IdealPartnerProfile, ObstacleType, Priority, TaskItem, TaskItemRequest, VisionArea, VisionStep, WorkStatus } from '../types/vision';
+import { nudgeAfterTaskComplete } from '../utils/completionNudge';
 import { isOverdue } from '../utils/overdue';
 import { suggestPartnerFor } from '../utils/partnerSuggestion';
 import { obstacleTypeLabels, priorityLabels, workStatusLabels } from '../utils/enumLabels';
@@ -49,6 +51,7 @@ const blockerCategories: ObstacleType[] = ['KNOWLEDGE', 'SKILL', 'TIME', 'MONEY'
 export function TasksBoardPage() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterStepId = searchParams.get('stepId');
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
@@ -186,6 +189,17 @@ export function TasksBoardPage() {
       nextAction,
     });
     if (success) {
+      if (token && crud.editingId !== null && status === 'COMPLETED') {
+        nudgeAfterTaskComplete({
+          token,
+          completedTaskId: crud.editingId,
+          tasks: crud.items,
+          steps,
+          goals,
+          showToast,
+          onApplied: () => void crud.reload(),
+        });
+      }
       setTitle('');
       setDescription('');
       setBlockerReason('');
@@ -205,6 +219,17 @@ export function TasksBoardPage() {
     try {
       await updateTaskStatus(token, id, nextStatus);
       await crud.reload();
+      if (nextStatus === 'COMPLETED') {
+        nudgeAfterTaskComplete({
+          token,
+          completedTaskId: id,
+          tasks: crud.items,
+          steps,
+          goals,
+          showToast,
+          onApplied: () => void crud.reload(),
+        });
+      }
     } catch (moveError) {
       crud.setError(moveError instanceof Error ? moveError.message : 'Unable to update task status.');
     }

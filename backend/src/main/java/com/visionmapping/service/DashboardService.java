@@ -385,11 +385,20 @@ public class DashboardService {
                 .map(mapper::toResponse)
                 .toList();
 
+        // FR-25.2: a moonshot that never started is ambition going stale —
+        // surfaced so the user either starts it or consciously revises it.
+        List<GoalResponse> inactiveMoonshotGoals = data.goals().stream()
+                .filter(Goal::isMoonshot)
+                .filter(goal -> goal.getStatus() == WorkStatus.NOT_STARTED)
+                .map(mapper::toResponse)
+                .toList();
+
         return new DashboardSummaryResponse.Attention(
                 blockedTasksWithoutPartner,
                 complexStepsWithoutTasks,
                 dreamsWithoutGoals,
-                goalsWithoutSteps);
+                goalsWithoutSteps,
+                inactiveMoonshotGoals);
     }
 
     /**

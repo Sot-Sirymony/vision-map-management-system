@@ -90,6 +90,7 @@ export function GoalsPage() {
   const [filterStatus, setFilterStatus] = useUrlFilter('status');
   const [filterPriority, setFilterPriority] = useUrlFilter('priority');
   const [filterOverdueOnly, setFilterOverdueOnly] = useUrlFlag('overdue');
+  const [filterMoonshotOnly, setFilterMoonshotOnly] = useUrlFlag('moonshot');
   // Target-date range (BRD C-6). Inclusive on both ends; either bound may be
   // empty. Goals without a target date drop out while a bound is set.
   const [filterTargetFrom, setFilterTargetFrom] = useUrlFilter('targetFrom');
@@ -219,6 +220,9 @@ export function GoalsPage() {
       return false;
     }
     if (filterOverdueOnly && !isOverdue(goal.targetDate, goal.status)) {
+      return false;
+    }
+    if (filterMoonshotOnly && !goal.moonshot) {
       return false;
     }
     // Target-date range: string compare is safe because targetDate is ISO yyyy-MM-dd.
@@ -489,6 +493,10 @@ export function GoalsPage() {
           <Checkbox checked={filterOverdueOnly} onChange={(event) => setFilterOverdueOnly(event.target.checked)} />
           Overdue only
         </label>
+        <label className="checkbox-field">
+          <Checkbox checked={filterMoonshotOnly} onChange={(event) => setFilterMoonshotOnly(event.target.checked)} />
+          Moonshots only
+        </label>
         <ShowArchivedToggle checked={crud.showArchived} onToggle={crud.toggleShowArchived} />
       </Card>
       <div className="view-toggle-row">
@@ -560,7 +568,7 @@ export function GoalsPage() {
             emptyMessage="No goals match these filters."
             defaultSortKey="priority"
             defaultSortDirection="desc"
-            pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}|${filterTargetFrom}|${filterTargetTo}`}
+            pageResetKey={`${searchTerm}|${filterVisionAreaId}|${filterDreamId}|${filterStatus}|${filterPriority}|${filterOverdueOnly}|${filterMoonshotOnly}|${filterTargetFrom}|${filterTargetTo}`}
             rowClassName={(goal) => (goal.archived ? 'row-archived' : isOverdue(goal.targetDate, goal.status) ? 'row-overdue' : '')}
             selection={{
               selectedIds,

@@ -213,13 +213,14 @@ export function DashboardPage() {
           </FormControl>
         </label>
       </Card>
+      {/* FR-25.3: what to DO comes before what IS — the feed leads the page. */}
+      <AttentionPanel attention={summary?.attention} overdueCount={summary?.overdueTasks ?? 0} visionAreaId={filterVisionAreaId} />
       <DashboardSummary
         summary={summary}
         periodLabel={PERIOD_OPTIONS.find((option) => option.value === period)?.label.toLowerCase() ?? 'this month'}
         dueInPeriodLink={`/tasks?dueFrom=${from}&dueTo=${to}${scopeSuffix}`}
         visionAreaId={filterVisionAreaId}
       />
-      <AttentionPanel attention={summary?.attention} visionAreaId={filterVisionAreaId} />
       <Card>
         <CardHeader title="Priority tasks" subheader="The five highest-priority tasks that are not yet completed" />
         <CardContent>

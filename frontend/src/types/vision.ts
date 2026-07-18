@@ -342,4 +342,5 @@ export type DashboardAttention = {
   complexStepsWithoutTasks: VisionStep[];
   dreamsWithoutGoals: Dream[];
   goalsWithoutSteps: Goal[];
+  inactiveMoonshotGoals: Goal[];
 };

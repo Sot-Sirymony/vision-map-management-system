@@ -357,6 +357,24 @@ class DashboardServiceTest {
     }
 
     @Test
+    void attentionFlagsInactiveMoonshotGoals() {
+        Dream dream = dream(1L, visionArea(1L));
+        Goal stale = goal(10L, dream, WorkStatus.NOT_STARTED, BigDecimal.ZERO, false);
+        stale.setMoonshot(true);
+        Goal moving = goal(11L, dream, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(20), false);
+        moving.setMoonshot(true);
+        Goal standardIdle = goal(12L, dream, WorkStatus.NOT_STARTED, BigDecimal.ZERO, false);
+
+        when(goalRepository.findByUser_IdAndArchivedFalse(1L)).thenReturn(List.of(stale, moving, standardIdle));
+
+        DashboardSummaryResponse summary = service.buildDashboardSummary();
+
+        assertThat(summary.attention().inactiveMoonshotGoals())
+                .extracting(com.visionmapping.dto.response.GoalResponse::id)
+                .containsExactly(10L);
+    }
+
+    @Test
     void dashboardCountsMoonshotGoalsAndBlockedTasks() {
         Dream dream = dream(1L, visionArea(1L));
         Goal moonshot = goal(10L, dream, WorkStatus.IN_PROGRESS, BigDecimal.valueOf(10), false);

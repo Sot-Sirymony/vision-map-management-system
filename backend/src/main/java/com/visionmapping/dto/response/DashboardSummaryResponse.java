@@ -63,7 +63,8 @@ public record DashboardSummaryResponse(
             List<TaskItemResponse> blockedTasksWithoutPartner,
             List<VisionStepResponse> complexStepsWithoutTasks,
             List<DreamResponse> dreamsWithoutGoals,
-            List<GoalResponse> goalsWithoutSteps
+            List<GoalResponse> goalsWithoutSteps,
+            List<GoalResponse> inactiveMoonshotGoals
     ) {
     }
 }

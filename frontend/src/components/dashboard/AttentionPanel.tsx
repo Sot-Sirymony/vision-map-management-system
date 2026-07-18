@@ -7,7 +7,7 @@ import CardHeader from '@mui/material/CardHeader';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { Ban, CheckCircle2, GitBranch, Sparkles, Target } from 'lucide-react';
+import { Ban, CalendarClock, CheckCircle2, GitBranch, Rocket, Sparkles, Target } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { DashboardAttention } from '../../types/vision';
 
@@ -32,7 +32,8 @@ function scoped(base: string, visionAreaId?: string) {
   return `${base}${base.includes('?') ? '&' : '?'}visionAreaId=${visionAreaId}`;
 }
 
-function buildFindings(attention: DashboardAttention, visionAreaId?: string): Finding[] {
+function buildFindings(attention: DashboardAttention, overdueCount: number, visionAreaId?: string): Finding[] {
+  // Ranked: hard blockers first, time pressure second, structural gaps after.
   const findings: Finding[] = [
     {
       key: 'blocked-no-partner',
@@ -42,6 +43,15 @@ function buildFindings(attention: DashboardAttention, visionAreaId?: string): Fi
       why: 'Nothing is lined up to unblock these. They will stay stuck until someone helps.',
       to: scoped('/tasks?status=BLOCKED', visionAreaId),
       action: 'Find a partner',
+    },
+    {
+      key: 'overdue',
+      icon: CalendarClock,
+      count: overdueCount,
+      title: 'Overdue tasks',
+      why: 'Past their due date and not completed. Reschedule them or finish them — a stale date helps nobody.',
+      to: scoped('/tasks?overdue=true', visionAreaId),
+      action: 'Review overdue',
     },
     {
       key: 'complex-no-tasks',
@@ -70,6 +80,15 @@ function buildFindings(attention: DashboardAttention, visionAreaId?: string): Fi
       to: scoped('/goals', visionAreaId),
       action: 'Add steps',
     },
+    {
+      key: 'moonshot-inactive',
+      icon: Rocket,
+      count: (attention.inactiveMoonshotGoals ?? []).length,
+      title: 'Moonshots not started',
+      why: 'Ambition going stale — start the first step, or consciously revise the goal.',
+      to: scoped('/goals?moonshot=true', visionAreaId),
+      action: 'Start or revise',
+    },
   ];
 
   return findings.filter((finding) => finding.count > 0);
@@ -81,12 +100,12 @@ function buildFindings(attention: DashboardAttention, visionAreaId?: string): Fi
  * so it disappears entirely when there is nothing to fix, rather than sitting
  * there as a permanent scold.
  */
-export function AttentionPanel({ attention, visionAreaId }: { attention: DashboardAttention | undefined; visionAreaId?: string }) {
+export function AttentionPanel({ attention, overdueCount = 0, visionAreaId }: { attention: DashboardAttention | undefined; overdueCount?: number; visionAreaId?: string }) {
   if (!attention) {
     return null;
   }
 
-  const findings = buildFindings(attention, visionAreaId);
+  const findings = buildFindings(attention, overdueCount, visionAreaId);
 
   if (findings.length === 0) {
     return (

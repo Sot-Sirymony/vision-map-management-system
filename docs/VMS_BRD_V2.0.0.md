@@ -392,7 +392,7 @@ instructions?*
 | FR-22 | Low-friction data entry (quick-add, form pass) | M | ✅ Done 2026-07-18 | |
 | FR-23 | Orientation & navigation (breadcrumbs, nav groups) | S | ✅ Done 2026-07-18 | |
 | FR-24 | Vision Map as primary workspace | L | ✅ Done 2026-07-18 | |
-| FR-25 | Attention & next-action system | M | 📋 Planned | |
+| FR-25 | Attention & next-action system | M | ✅ Done 2026-07-18 | |
 | FR-26 | Accessibility compliance (WCAG 2.2 AA) | M | 📋 Planned | |
 | FR-27 | List, board, and auth visual refresh | M | 📋 Planned | |
 | FR-28 | Mobile layouts | L | 📋 Planned | |
@@ -697,7 +697,7 @@ approval. Audit H-05 (the page's unscoped list fetches) is intentionally
 deferred: scoping needs additive backend query parameters — queue it with
 FR-25.4's endpoint work.
 
-### FR-25 Attention & Next-Action System — 📋 Planned (Effort: M)
+### FR-25 Attention & Next-Action System — ✅ Done 2026-07-18 (Effort: M)
 
 Make the system coach forward instead of only confirming actions.
 Source: HUCI_V1 C4; UX&UI_V1 C2. Implements business rule 11 in the UI.
@@ -721,6 +721,29 @@ Source: HUCI_V1 C4; UX&UI_V1 C2. Implements business rule 11 in the UI.
    accepting it applies the existing status rules (BR-8 unchanged).
 2. Every attention item navigates to the screen where it can be resolved.
 3. Dashboard charts use only `statusColors`/`priorityColors` values.
+
+**Shipped (2026-07-18):** FR-25.1 — toasts gained an optional action button,
+and `nudgeAfterTaskComplete` (utils/completionNudge.ts) implements business
+rule 11: completing a step's last task offers "Complete step"; accepting it
+checks the goal the same way ("Complete goal"). Wired into the Tasks Board
+(status moves and edit saves) and the Vision Map's quick-status; the change
+itself goes through the normal endpoints so every rule still applies.
+FR-25.2 — the audit found the attention feed richer than planned (four
+finding types with deep links already shipped); added the two missing
+entries: Overdue tasks (linking to /tasks?overdue=true) and Moonshots not
+started (a new additive backend field `attention.inactiveMoonshotGoals`
+with test coverage — FR-25.4 — linking to a new moonshot filter on the
+Goals page), ranked hard-blockers → time-pressure → structural gaps.
+FR-25.3 — the feed now leads the dashboard above the stat tiles, the
+partner pipeline chart draws every stage in exactly its status-badge color
+(closing audit V-02: WAITING is now the shared colorblind-safe purple), and
+the review heatmap's foreign Tailwind greens were replaced with a Fluent
+green ramp topped by the shared Completed green. Verified live end-to-end:
+the full nudge chain (task completed in the tree → step nudge → accepted →
+goal nudge → accepted, statuses confirmed via API), the feed's new entries
+render in rank order, and the moonshot entry lands on /goals?moonshot=true
+showing exactly the moonshot rows. Backend suite green, frontend `tsc` +
+35/35 tests + production build green.
 
 ### FR-26 Accessibility Compliance — 📋 Planned (Effort: M)
 
