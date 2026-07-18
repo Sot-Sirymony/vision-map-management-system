@@ -41,7 +41,7 @@ function Brand({ collapsed }: { collapsed: boolean }) {
           display: 'grid',
           placeItems: 'center',
           fontWeight: 700,
-          fontSize: '0.8rem',
+          fontSize: 'var(--font-meta)',
           flexShrink: 0,
         }}
       >
@@ -85,7 +85,7 @@ function NavUser({ collapsed }: { collapsed: boolean }) {
           '&:hover': { bgcolor: 'action.hover' },
         }}
       >
-        <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem' }}>{initials(user?.fullName ?? 'VM')}</Avatar>
+        <Avatar sx={{ width: 32, height: 32, fontSize: 'var(--font-meta)' }}>{initials(user?.fullName ?? 'VM')}</Avatar>
         {!collapsed && (
           <>
             <Box sx={{ flex: 1, overflow: 'hidden', textAlign: 'left' }}>
@@ -142,7 +142,7 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: ()
             <ListItemIcon sx={{ minWidth: 0, mr: collapsed ? 0 : 1.5, justifyContent: 'center', color: 'inherit' }}>
               <item.icon size={18} />
             </ListItemIcon>
-            {!collapsed && <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: '0.875rem' } } }} />}
+            {!collapsed && <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: 'var(--font-body-sm)' } } }} />}
           </ListItemButton>
         );
         return (

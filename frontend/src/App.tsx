@@ -37,6 +37,7 @@ export function App() {
             <Route path="/vision-areas" element={<VisionAreasPage />} />
             <Route path="/dreams" element={<DreamsPage />} />
             <Route path="/dreams/:dreamId" element={<DreamDetailPage />} />
+            <Route path="/vision-map" element={<DreamDetailPage />} />
             <Route path="/goals" element={<GoalsPage />} />
             <Route path="/steps" element={<StepsPage />} />
             <Route path="/tasks" element={<TasksBoardPage />} />

@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { ListChecks } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
@@ -17,6 +18,7 @@ import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { Modal } from '../components/common/Modal';
 import { DataTable, type DataTableColumn } from '../components/common/DataTable';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
@@ -80,6 +82,7 @@ export function StepsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   // Ideal partner profiles (FR-15.1): one per step, edited in a small modal.
   const [profiles, setProfiles] = useState<IdealPartnerProfile[]>([]);
@@ -455,13 +458,15 @@ export function StepsPage() {
         saving={crud.saving}
         disabled={goals.length === 0}
         autoOpenCreate={autoOpenCreate}
+        creating={createOpen}
+        onCreatingChange={setCreateOpen}
         onSubmit={handleSubmit}
         onCancelEdit={cancelEdit}
       >
         {formFields}
       </CrudModalForm>
-      {crud.loading && <Loading />}
-      {crud.error && <ErrorMessage message={crud.error} />}
+      {crud.loading && <Loading variant="table" />}
+      {crud.error && <ErrorMessage message={crud.error} onRetry={() => void crud.reload()} />}
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="steps" />
         <FilterSelect
@@ -501,7 +506,22 @@ export function StepsPage() {
       <div className="view-toggle-row">
         <ViewToggle value={viewMode} onChange={setViewMode} label="Step view" />
       </div>
-      {viewMode === 'board' && (
+      {!crud.loading && crud.items.length === 0 ? (
+        <EmptyState
+          headline="No steps yet"
+          icon={ListChecks}
+          action={
+            goals.length === 0 ? (
+              <Button type="button" onClick={() => navigate('/goals?create=goal')}>Create a goal first</Button>
+            ) : (
+              <Button type="button" onClick={() => setCreateOpen(true)}>Create your first step</Button>
+            )
+          }
+        >
+          Steps are the action stages of a goal. Mark a step complex to break it into tasks.
+        </EmptyState>
+      ) : null}
+      {crud.items.length > 0 && viewMode === 'board' && (
         <StatusBoard
           items={filteredSteps}
           columns={Object.entries(workStatusLabels).map(([value, label]) => ({ value: value as WorkStatus, label }))}
@@ -527,7 +547,7 @@ export function StepsPage() {
           cardActions={(step) => renderStepActions(step)}
         />
       )}
-      {viewMode === 'list' && (
+      {crud.items.length > 0 && viewMode === 'list' && (
       <Card>
         <CardContent>
           <DataTable

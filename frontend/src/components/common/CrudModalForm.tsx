@@ -16,6 +16,16 @@ type CrudModalFormProps = {
    * open, so cancelling the modal doesn't immediately reopen it.
    */
   autoOpenCreate?: boolean;
+  /**
+   * FR-21.2 controlled mode: the parent owns the create-modal open state, so
+   * other surfaces (an empty state's "Create your first…" button, a wizard's
+   * "skip the guide") can open the same form. Leave undefined for the
+   * original self-managed behavior.
+   */
+  creating?: boolean;
+  onCreatingChange?: (creating: boolean) => void;
+  /** Hide the built-in trigger button when the parent renders its own. */
+  hideTrigger?: boolean;
   onSubmit: (event: FormEvent) => void | Promise<boolean>;
   onCancelEdit: () => void;
   children: ReactNode;
@@ -41,11 +51,22 @@ export function CrudModalForm({
   disabled,
   extraActions,
   autoOpenCreate = false,
+  creating: creatingProp,
+  onCreatingChange,
+  hideTrigger = false,
   onSubmit,
   onCancelEdit,
   children,
 }: CrudModalFormProps) {
-  const [creating, setCreating] = useState(false);
+  const [creatingInternal, setCreatingInternal] = useState(false);
+  const creating = creatingProp ?? creatingInternal;
+
+  function setCreating(next: boolean) {
+    onCreatingChange?.(next);
+    if (creatingProp === undefined) {
+      setCreatingInternal(next);
+    }
+  }
 
   // Open once when arriving with create intent; the flag going false again
   // (after the page clears its URL param) must not slam the modal shut.
@@ -53,6 +74,7 @@ export function CrudModalForm({
     if (autoOpenCreate) {
       setCreating(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoOpenCreate]);
 
   async function handleCreateSubmit(event: FormEvent) {
@@ -80,7 +102,9 @@ export function CrudModalForm({
 
   return (
     <>
-      <Button type="button" className="create-trigger" onClick={() => setCreating(true)} disabled={disabled}>{createLabel}</Button>
+      {!hideTrigger && (
+        <Button type="button" className="create-trigger" onClick={() => setCreating(true)} disabled={disabled}>{createLabel}</Button>
+      )}
       {creating && (
         <Modal title={editTitle.replace('Edit', 'Create')} onClose={() => setCreating(false)}>
           <form className="form-grid" onSubmit={(event) => void handleCreateSubmit(event)}>

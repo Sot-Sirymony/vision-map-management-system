@@ -101,10 +101,10 @@ export function StatusBoard<T extends { id: number; archived: boolean }, S exten
             onDragLeave={() => setDragOverColumn((current) => (current === column.value ? null : current))}
             onDrop={(event) => handleColumnDrop(event, column.value)}
           >
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold flex items-center gap-1.5">
               {column.label}
               <span className="text-muted-foreground font-normal">{columnItems.length}</span>
-            </h3>
+            </h2>
             {columnItems.length === 0 ? (
               <EmptyState>{onMove ? `Drop ${entityLabel} here` : `No ${entityLabel}`}</EmptyState>
             ) : (

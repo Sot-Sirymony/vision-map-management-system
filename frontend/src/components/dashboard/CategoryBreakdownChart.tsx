@@ -7,6 +7,7 @@ import CardHeader from '@mui/material/CardHeader';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { ChartTooltipContent } from './ChartTooltipContent';
+import { chartBlueRamp, chartPrimary } from '../../theme';
 
 // A single-hue depth ramp off Fluent's Communication Blue — pressed to light
 // tint — for charts with no specific semantic color mapping. Category is
@@ -16,7 +17,7 @@ import { ChartTooltipContent } from './ChartTooltipContent';
 // darkest-first (not light-to-dark) since most charts here only ever show
 // 2-4 categories — the pale end of the ramp is a fallback for the rare
 // 5th/6th slot, not what a typical 3-category chart should lead with.
-const DEFAULT_DONUT_COLORS = ['#005a9e', '#0078d4', '#2b88d8', '#71afe5', '#c7e0f4', '#deecf9'];
+const DEFAULT_DONUT_COLORS = [...chartBlueRamp];
 
 type CategoryBreakdownChartProps = {
   title: string;
@@ -66,7 +67,7 @@ export function CategoryBreakdownChart({
       <CardContent>
         {chartData.length === 0 ? (
           <Box sx={{ display: 'flex', height: 220, alignItems: 'center', justifyContent: 'center' }}>
-            <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>No data yet.</Box>
+            <Box component="span" sx={{ fontSize: 'var(--font-body-sm)', color: 'text.secondary' }}>No data yet.</Box>
           </Box>
         ) : variant === 'donut' ? (
           <>
@@ -108,7 +109,7 @@ export function CategoryBreakdownChart({
                 <Tooltip content={<ChartTooltipContent />} />
                 <Bar
                   dataKey="count"
-                  fill="#0078d4"
+                  fill={chartPrimary}
                   radius={4}
                   onClick={openCategory}
                   shape={

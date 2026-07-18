@@ -1,6 +1,7 @@
 import { Ban, CalendarClock, CalendarDays, CheckCircle2, CheckSquare, Compass, Flag, Rocket, Sparkles, TrendingUp } from 'lucide-react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { moonshotVioletDeep } from '../../theme';
 import { DashboardCard } from './DashboardCard';
 import type { DashboardSummary as DashboardSummaryData } from '../../types/vision';
 
@@ -119,7 +120,7 @@ export function DashboardSummary({ summary, periodLabel, dueInPeriodLink, vision
         />
       </TileGroup>
       {(summary?.moonshotGoals ?? 0) > 0 && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#6b21a8', mt: -0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: moonshotVioletDeep, mt: -0.5 }}>
           <Rocket size={14} />
           <Typography variant="caption" sx={{ fontWeight: 600 }}>
             {summary?.moonshotGoals} of your goals {summary?.moonshotGoals === 1 ? 'is a moonshot' : 'are moonshots'}.

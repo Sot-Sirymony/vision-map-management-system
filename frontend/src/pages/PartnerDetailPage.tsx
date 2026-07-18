@@ -149,12 +149,12 @@ export function PartnerDetailPage() {
                     px: 1.5,
                     py: 0.5,
                     borderRadius: 1,
-                    fontSize: '0.85rem',
+                    fontSize: 'var(--font-body-sm)',
                     fontWeight: candidate === stage ? 700 : 400,
-                    bgcolor: candidate === stage ? '#deecf9' : 'transparent',
-                    color: candidate === stage ? '#005a9e' : 'text.secondary',
+                    bgcolor: candidate === stage ? 'var(--accent)' : 'transparent',
+                    color: candidate === stage ? 'var(--accent-foreground)' : 'text.secondary',
                     border: '1px solid',
-                    borderColor: candidate === stage ? '#0078d4' : 'divider',
+                    borderColor: candidate === stage ? 'primary.main' : 'divider',
                   }}
                 >
                   {candidate}

@@ -6,6 +6,7 @@ import { PriorityBadge } from '../common/PriorityBadge';
 import { ProgressBar } from '../common/ProgressBar';
 import { StatusBadge } from '../common/StatusBadge';
 import { QuickAddTitle } from './QuickAddTitle';
+import { moonshotTint, moonshotViolet, moonshotVioletDeep } from '../../theme';
 import { StepNode } from './StepNode';
 
 type GoalNodeProps = {
@@ -39,9 +40,9 @@ export function GoalNode({ goal, steps, tasks, token, onDataChange }: GoalNodePr
         {goal.moonshot && (
           <Chip
             size="small"
-            icon={<Rocket size={13} />}
+            icon={<Rocket size={14} />}
             label="Moonshot"
-            sx={{ bgcolor: '#f3edfd', color: '#6b21a8', fontWeight: 700, '& .MuiChip-icon': { color: '#7c3aed' } }}
+            sx={{ bgcolor: moonshotTint, color: moonshotVioletDeep, fontWeight: 700, '& .MuiChip-icon': { color: moonshotViolet } }}
           />
         )}
         <PriorityBadge priority={goal.priority} />

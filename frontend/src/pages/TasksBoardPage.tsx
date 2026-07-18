@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { CheckSquare } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { listGoals } from '../api/goalApi';
 import { listIdealPartnerProfiles } from '../api/idealPartnerProfileApi';
@@ -13,8 +14,10 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import { BulkArchiveAction } from '../components/common/BulkArchiveAction';
+import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { DataTable, type DataTableColumn } from '../components/common/DataTable';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
@@ -42,9 +45,11 @@ const blockerCategories: ObstacleType[] = ['KNOWLEDGE', 'SKILL', 'TIME', 'MONEY'
 
 export function TasksBoardPage() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterStepId = searchParams.get('stepId');
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const crud = useCrudEntity<TaskItem, TaskItemRequest>({
     token,
     entityLabel: 'tasks',
@@ -424,13 +429,15 @@ export function TasksBoardPage() {
         saving={crud.saving}
         disabled={steps.length === 0}
         autoOpenCreate={autoOpenCreate}
+        creating={createOpen}
+        onCreatingChange={setCreateOpen}
         onSubmit={handleSubmit}
         onCancelEdit={cancelEdit}
       >
         {formFields}
       </CrudModalForm>
-      {crud.loading && <Loading />}
-      {crud.error && <ErrorMessage message={crud.error} />}
+      {crud.loading && <Loading variant="cards" />}
+      {crud.error && <ErrorMessage message={crud.error} onRetry={() => void crud.reload()} />}
       <Card className="filter-bar flex-row">
         <label>
           Owner
@@ -497,7 +504,22 @@ export function TasksBoardPage() {
       <div className="view-toggle-row">
         <ViewToggle value={viewMode} onChange={setViewMode} label="Task view" />
       </div>
-      {viewMode === 'list' ? (
+      {!crud.loading && crud.items.length === 0 ? (
+        <EmptyState
+          headline="No tasks yet"
+          icon={CheckSquare}
+          action={
+            steps.length === 0 ? (
+              <Button type="button" onClick={() => navigate('/steps?create=step')}>Create a step first</Button>
+            ) : (
+              <Button type="button" onClick={() => setCreateOpen(true)}>Create your first task</Button>
+            )
+          }
+        >
+          Tasks are the small executable actions that move a step forward — each with an owner, due date, and priority.
+        </EmptyState>
+      ) : null}
+      {crud.items.length > 0 && (viewMode === 'list' ? (
         <Card>
           <CardContent>
             <DataTable
@@ -561,7 +583,7 @@ export function TasksBoardPage() {
             />
           )}
         />
-      )}
+      ))}
     </PageSection>
   );
 }

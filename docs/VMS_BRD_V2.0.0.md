@@ -386,9 +386,9 @@ instructions?*
 
 | Item | Description | Effort | Status | Commit |
 |---|---|---|---|---|
-| FR-19 | Experience baseline & audit program | M | 📋 Planned | |
-| FR-20 | Design-system foundations (type ramp, states, motion) | M | 📋 Planned | |
-| FR-21 | Guided onboarding & dream coaching wizard | M | 📋 Planned | |
+| FR-19 | Experience baseline & audit program | M | 🔶 Nearly done — static + runtime instruments complete 2026-07-18 (`docs/hci-audit.md`, `docs/uxui-audit/` incl. axe baseline + 58 screenshots); only the human instruments remain: first-use test + SUS (M-1/M-3/M-6, blocked on O-7 participants) | |
+| FR-20 | Design-system foundations (type ramp, states, motion) | M | ✅ Done 2026-07-18 | |
+| FR-21 | Guided onboarding & dream coaching wizard | M | ✅ Done 2026-07-18 | |
 | FR-22 | Low-friction data entry (quick-add, form pass) | M | 📋 Planned | |
 | FR-23 | Orientation & navigation (breadcrumbs, nav groups) | S | 📋 Planned | |
 | FR-24 | Vision Map as primary workspace | L | 📋 Planned | |
@@ -423,7 +423,7 @@ A/E; UX&UI Phases A/E).
 | M-7 | Distinct font size/weight combinations in codebase | measure | ≤ 9 |
 | M-8 | Pages with layout jump during load | measure | 0 |
 
-### FR-19 Experience Baseline & Audit Program — 📋 Planned (Effort: M)
+### FR-19 Experience Baseline & Audit Program — 🔶 In progress (Effort: M)
 
 Measure before improving; the audits rank everything that follows.
 
@@ -452,7 +452,29 @@ Measure before improving; the audits rank everything that follows.
 2. Each finding is mapped to an FR in this addendum or explicitly deferred
    to a V2.2/V3 backlog with a reason.
 
-### FR-20 Design-System Foundations — 📋 Planned (Effort: M)
+**Status (2026-07-18):** static instruments complete — FR-19.1 heuristic
+evaluation (16 findings, H-01…H-16), FR-19.2 cognitive walkthrough (M-2
+baseline: ≈ 111 interactions via list pages vs ≈ 63 via the Vision Map's
+existing quick-adds), and the FR-19.5 code-level censuses (M-7 ≈ 17 type
+combinations; 59 hex literals outside token files; a WAITING-color
+contradiction between the partner pipeline chart and the app palette).
+Key scope corrections recorded in `docs/hci-audit.md` §1: the board already
+has a keyboard move path and drop highlighting, quick-add already exists at
+all three tree levels, and the dashboard already has a (single-step)
+first-run prompt — FR-21/22/26/27 shrink accordingly.
+
+**Runtime instruments completed 2026-07-18:** FR-19.4 accessibility baseline
+measured with axe-core via Playwright (M-4: 3–6 violation types per top-6
+page; dominant issues are color-contrast, 102 nodes, and missing landmark
+regions, 156 nodes; login page clean) — see
+`docs/uxui-audit/a11y-baseline.md`. FR-19.5 screenshot inventory captured
+(58 images, all pages × light/dark × comfortable/compact plus the worst
+FR-18 combination on the top 6) with **zero layout breakages** in the
+combination sweep. **Pending:** only FR-19.3 (first-use test + SUS,
+M-1/M-3/M-6) — human participants required (O-7); the manual keyboard-only
+focus pass folds into that session.
+
+### FR-20 Design-System Foundations — ✅ Done 2026-07-18 (Effort: M)
 
 Codify the system pieces missing from `theme.ts`/`global.css` once, so every
 later requirement is cheap. Source: UX&UI_V1 Phase B.
@@ -483,7 +505,21 @@ later requirement is cheap. Source: UX&UI_V1 Phase B.
    `theme.ts`/`global.css` (BR-15 check passes).
 3. Reduced-motion users see no non-essential animation.
 
-### FR-21 Guided Onboarding & Dream Coaching Wizard — 📋 Planned (Effort: M)
+**Shipped (2026-07-18):** 6-size type ramp in `theme.ts` typography +
+`--font-*` variables (M-7: 17 → 6); every page's title is its single `<h1>`
+via `PageSection` (which also gained the FR-20.2 `actions` slot); motion
+tokens (100/180/250 ms + easing) in both theme and CSS with a global
+`prefers-reduced-motion` kill switch (BR-19); shape-matched table/cards/tree
+skeletons wired per page (M-8); EmptyState full-size form
+(icon/headline/action) and ErrorMessage Retry on all data pages; hex sweep
+complete — **0 literals outside the token files** (was 59), palettes
+relocated verbatim with recolor decisions deferred to FR-25/27 as planned;
+icon scale normalized (14/16/18/24) with the concept vocabulary in
+`docs/uxui-icons.md`. Verified: `tsc` clean, 35/35 tests, production build,
+post-change screenshots in light and dark. Remediation detail:
+`docs/uxui-audit/README.md` §"FR-20 remediation".
+
+### FR-21 Guided Onboarding & Dream Coaching Wizard — ✅ Done 2026-07-18 (Effort: M)
 
 Solve the empty-start problem: a new user currently faces zeroed stat cards
 and 11 sidebar entries with no path in. Source: HUCI_V1 B1, B2, C3.
@@ -510,6 +546,24 @@ and 11 sidebar entries with no path in. Source: HUCI_V1 B1, B2, C3.
 2. A user can complete the wizard into a Dream with ≥ 1 Goal without
    visiting another page.
 3. All existing Dream validation rules still apply; no schema change.
+
+**Shipped (2026-07-18):** `GettingStarted` replaces the single-step first-run
+card — three chained steps (area → dream → break it down) that stay as a
+dashboard banner until the first dream has goals, fixing the audit's H-01
+dead end; each step deep-links into a create flow (`/vision-areas?create=area`
+auto-opens the form, `/dreams?create=dream` opens the wizard, and a new
+`/vision-map` route lands on the tree). `DreamWizard` asks the method's
+clarifying questions across three friendly steps (what/area, why/success,
+when/priority — only title and area are hard requirements, per FR-21.4),
+then adds first goals inline. FR-21.2: the five hierarchy pages got
+full-size empty states with a context action, including "create the parent
+first" routing when the parent level is empty (`CrudModalForm` gained a
+controlled-create mode to support this). All three acceptance criteria
+verified by a scripted end-to-end run on a fresh account (register →
+checklist → area → wizard → dream + goal → checklist gone), which also
+caught and fixed a mount-order bug where the wizard opened before areas
+loaded and Continue stayed disabled. `tsc` clean, 35/35 tests, production
+build green.
 
 ### FR-22 Low-Friction Data Entry — 📋 Planned (Effort: M)
 
@@ -736,7 +790,7 @@ touched once.
 
 | # | Question | Blocking | Status |
 |---|---|---|---|
-| O-4 | Task quick-add vs required fields: default due date to a value (e.g., +7 days) or always prompt inline? BR-16 allows either; pick one behavior. | FR-22 build | Open |
+| O-4 | Task quick-add vs required fields: default due date to a value (e.g., +7 days) or always prompt inline? BR-16 allows either; pick one behavior. | FR-22 build | ✅ Resolved 2026-07-18 — the Vision Map's task quick-add already prompts inline for title + owner + due date (`StepNode.tsx`); FR-22 follows that precedent (inline prompt, no invented default date). |
 | O-5 | Sidebar regrouping (FR-23.2): announce in-app once, or ship silently? Returning users know the flat list. | FR-23 ship | Open |
 | O-6 | Does FR-29 ship in V2.1 or move to V3? Decide after FR-24 lands and remaining capacity is known. | Release cut | Open |
 | O-7 | First-use test participants (FR-19.3): who are the 3–5 testers and when? Needs scheduling before build starts. | FR-19 | Open |

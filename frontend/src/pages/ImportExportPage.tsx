@@ -98,7 +98,7 @@ export function ImportExportPage() {
               </div>
             </div>
             {Object.keys(summary.rowsBySheet).length > 0 && (
-              <p className="field-hint" style={{ color: '#616161' }}>
+              <p className="field-hint" style={{ color: 'var(--muted-foreground)' }}>
                 {Object.entries(summary.rowsBySheet).map(([sheet, count]) => `${sheet}: ${count}`).join(' · ')}
               </p>
             )}

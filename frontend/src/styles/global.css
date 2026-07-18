@@ -67,6 +67,21 @@
   --shadow-4: 0 1.6px 3.6px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.06);
   --shadow-8: 0 3.2px 7.2px rgba(0, 0, 0, 0.13), 0 0.6px 1.8px rgba(0, 0, 0, 0.08);
   --shadow-16: 0 6.4px 14.4px rgba(0, 0, 0, 0.13), 0 1.2px 3.6px rgba(0, 0, 0, 0.08);
+  /* FR-20.1 type ramp — mirrors theme.ts `typography` (the two must change
+     together). Six sizes are the whole scale; no other font-size values may
+     appear in this file (M-7). */
+  --font-caption: 0.75rem;      /* metadata: codes, dates, hints */
+  --font-meta: 0.8rem;          /* labels, badges, filter captions */
+  --font-body-sm: 0.875rem;     /* secondary/dense text, table cells */
+  --font-body: 0.9rem;          /* default body text */
+  --font-title-panel: 1.25rem;  /* section/panel titles (h2) */
+  --font-title-page: 1.5rem;    /* page title (h1, one per page) */
+  /* FR-20.4 motion tokens — mirrors theme.ts `transitions`. fast: hover
+     feedback; base: open/close; slow: layout shifts. */
+  --motion-fast: 100ms;
+  --motion-base: 180ms;
+  --motion-slow: 250ms;
+  --motion-ease: cubic-bezier(0.33, 0, 0.67, 1);
 }
 
 /*
@@ -161,10 +176,21 @@ a {
   color: inherit;
 }
 
-.page-heading h2,
+.page-heading h1,
 .auth-panel h1 {
   margin: 0;
   line-height: 1.2;
+  font-size: var(--font-title-page);
+  font-weight: 600;
+}
+
+/* FR-20.2 page template: title + subtitle left, primary action right. */
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .page-shell {
@@ -202,7 +228,7 @@ a {
   background: var(--info-bg);
   border-color: var(--info-border);
   color: var(--info-text);
-  font-size: 0.9rem;
+  font-size: var(--font-body);
 }
 
 .filter-bar {
@@ -217,7 +243,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.82rem;
+  font-size: var(--font-meta);
   font-weight: 600;
   color: var(--text-label);
   min-width: 150px;
@@ -299,11 +325,11 @@ a {
 .metric-card p {
   margin: 0 0 8px;
   color: var(--text-soft);
-  font-size: 0.875rem;
+  font-size: var(--font-body-sm);
 }
 
 .metric-card strong {
-  font-size: 1.5rem;
+  font-size: var(--font-title-page);
   font-weight: 600;
 }
 
@@ -338,7 +364,7 @@ a {
 .form-grid label,
 .form-stack label {
   color: var(--text-label);
-  font-size: 0.875rem;
+  font-size: var(--font-body-sm);
   font-weight: 500;
 }
 
@@ -349,7 +375,7 @@ a {
 .field-hint {
   display: block;
   margin-top: 4px;
-  font-size: 0.8rem;
+  font-size: var(--font-meta);
   font-weight: 500;
   color: var(--hint);
 }
@@ -366,7 +392,7 @@ a {
 .diligence-checklist p {
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 0.82rem;
+  font-size: var(--font-meta);
   font-weight: 400;
 }
 
@@ -375,7 +401,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 0.875rem;
+  font-size: var(--font-body-sm);
   font-weight: 400;
   color: var(--foreground);
 }
@@ -398,7 +424,7 @@ a {
   border-radius: 8px;
   border-left: 3px solid #16a34a;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
-  font-size: 0.9rem;
+  font-size: var(--font-body);
   animation: toast-in 0.18s ease-out;
 }
 
@@ -416,7 +442,7 @@ a {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--font-body-sm);
 }
 
 .data-table th,
@@ -430,7 +456,7 @@ a {
 .data-table thead th {
   background: var(--muted);
   color: var(--muted-foreground);
-  font-size: 0.75rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -447,7 +473,7 @@ a {
 }
 
 .data-table tbody tr {
-  transition: background-color 0.12s ease;
+  transition: background-color var(--motion-fast) var(--motion-ease);
 }
 
 .data-table tbody tr:hover {
@@ -470,7 +496,7 @@ a {
   gap: 16px;
   padding: 14px 0 4px;
   color: var(--text-label);
-  font-size: 0.9rem;
+  font-size: var(--font-body);
 }
 
 .stack-list {
@@ -487,7 +513,7 @@ a {
   background: var(--card);
   cursor: grab;
   min-width: 0;
-  transition: box-shadow 0.12s ease;
+  transition: box-shadow var(--motion-fast) var(--motion-ease);
 }
 
 .list-card:hover {
@@ -531,6 +557,61 @@ a {
   color: var(--text-soft);
 }
 
+/* FR-21.3 dream wizard */
+.wizard-progress {
+  margin: 0 0 12px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.wizard-created {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--foreground);
+}
+
+.wizard-goal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.wizard-goal-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-soft);
+}
+
+/* FR-20.3 full-size empty state: icon chip, headline, description, action. */
+.empty-state--page .empty-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.empty-state--page .empty-state-headline {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.empty-state--page .empty-state-body {
+  max-width: 440px;
+}
+
 .coaching-panel {
   background: var(--info-bg);
   border: 1px solid var(--info-border);
@@ -548,7 +629,7 @@ a {
 .coaching-panel p {
   margin: 0 0 8px;
   color: var(--text-label);
-  font-size: 0.9rem;
+  font-size: var(--font-body);
 }
 
 .coaching-panel ul {
@@ -557,7 +638,7 @@ a {
   list-style: none;
   display: grid;
   gap: 6px;
-  font-size: 0.9rem;
+  font-size: var(--font-body);
   color: var(--text-label);
 }
 
@@ -579,16 +660,16 @@ a {
 }
 
 .coaching-panel.step-needs-tasks strong {
-  font-size: 0.85rem;
+  font-size: var(--font-body-sm);
 }
 
 .coaching-panel.step-needs-tasks p {
-  font-size: 0.82rem;
+  font-size: var(--font-meta);
   margin-bottom: 6px;
 }
 
 .coaching-panel.step-needs-tasks a {
-  font-size: 0.85rem;
+  font-size: var(--font-body-sm);
   font-weight: 600;
 }
 
@@ -610,7 +691,7 @@ a {
   min-width: 0;
   border-radius: 4px;
   box-shadow: var(--shadow-4);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease);
 }
 
 .kanban-column .stack-list {
@@ -663,14 +744,14 @@ a {
 .vision-tree-area {
   margin: 0;
   color: var(--text-soft);
-  font-size: 0.8rem;
+  font-size: var(--font-meta);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .vision-tree-dream h2 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: var(--font-title-panel);
   font-weight: 600;
 }
 
@@ -684,19 +765,19 @@ a {
 .vision-tree-code {
   font-family: monospace;
   color: var(--text-faint);
-  font-size: 0.85rem;
+  font-size: var(--font-body-sm);
 }
 
 .vision-tree-meta {
   margin: 0;
   color: var(--text-label);
-  font-size: 0.9rem;
+  font-size: var(--font-body);
 }
 
 .vision-tree-blocker {
   margin: 0;
   color: #b45309;
-  font-size: 0.85rem;
+  font-size: var(--font-body-sm);
 }
 
 .vision-tree-children {
@@ -710,7 +791,7 @@ a {
 .vision-tree-empty {
   margin: 0;
   color: var(--text-faint);
-  font-size: 0.88rem;
+  font-size: var(--font-body);
   font-style: italic;
 }
 
@@ -859,5 +940,18 @@ a {
   }
   html {
     @apply font-sans;
+  }
+}
+/* FR-20.4 / BR-19: motion is decorative-optional. Users who ask the OS for
+   reduced motion get none — including MUI's JS-driven transitions, which
+   respect this media query via the browser, and every CSS transition above. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

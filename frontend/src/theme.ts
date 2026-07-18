@@ -129,6 +129,71 @@ export type PriorityToken = keyof typeof priorityColors;
 export const neutralFallback = NEUTRAL_IDLE;
 
 /**
+ * BR-15 (V2.1): every color the app renders lives in this file or global.css.
+ * The exports below relocate values that page/component files used to
+ * hardcode. Values are moved verbatim — recoloring (e.g. the partner chart's
+ * WAITING orange, audit finding V-02, or the non-Fluent moonshot violet) is
+ * FR-25/FR-27 work, not this file's.
+ */
+
+// Fluent neutrals shared by tiles, icons, and chart fallbacks.
+export const fluentNeutrals = {
+  fg2: '#616161', // neutralForeground2 — secondary text
+  fgDisabled: '#8a8886',
+  stroke: '#e1e1e1',
+  bg3: '#f5f5f5', // recessed panels
+} as const;
+
+// Semantic tile tints (Fluent Success/Warning/Danger tint+foreground pairs)
+// used by dashboard stat tiles and the attention panel.
+export const semanticTints = {
+  neutral: { bg: '#f5f5f5', fg: '#616161' },
+  positive: { bg: '#dff6dd', fg: '#107c10' },
+  warning: { bg: '#fdece3', fg: '#d83b01' },
+  critical: { bg: '#fde7e9', fg: '#d13438' },
+} as const;
+
+// Moonshot marker (FR-14). Audit note: violet is not a Fluent token and the
+// deep shade fails contrast on dark surfaces — revisit under FR-26.4.
+export const moonshotViolet = '#7c3aed';
+export const moonshotVioletDeep = '#6b21a8';
+export const moonshotTint = '#f3edfd';
+
+// Dashboard chart palettes (moved from DashboardPage/CategoryBreakdownChart).
+// Rationale comments live with the widgets that use them.
+export const partnerPipelineColors = {
+  TO_CONTACT: '#8a8886',
+  CONTACTED: '#0078d4',
+  ACTIVE: '#107c10',
+  WAITING: '#d83b01', // audit V-02: contradicts statusColors.WAITING (purple); fix under FR-25.3
+  DECLINED: '#d13438',
+  COMPLETED: '#038387',
+} as const;
+
+export const obstacleTypeColors: Record<string, string> = {
+  KNOWLEDGE: '#004578',
+  SKILL: '#005a9e',
+  TIME: '#0063b1',
+  MONEY: '#106ebe',
+  MOTIVATION: '#0078d4',
+  PARTNER: '#2b88d8',
+  SYSTEM: '#4ba0e1',
+  DECISION: '#71afe5',
+  OTHER: '#8a8886',
+  OTHER_TYPES: '#e1e1e1',
+};
+
+// Review heatmap intensity ramp. Audit V-01: these are foreign (Tailwind)
+// greens, kept verbatim until FR-27 swaps them for a Fluent ramp.
+export const heatmapLevelColors = ['#e5e5e5', '#86efac', '#4ade80', '#22c55e', '#15803d'] as const;
+
+// "Depth, applied to data": Fluent's blue ramp for charts whose categories
+// carry no inherent meaning, dark → light, plus the brand blue for
+// single-series charts.
+export const chartBlueRamp = ['#005a9e', '#0078d4', '#2b88d8', '#71afe5', '#c7e0f4', '#deecf9'] as const;
+export const chartPrimary = BLUE_MOVING;
+
+/**
  * FR-18.3 — curated accent choices. Each accent ships pre-validated light and
  * dark values (main/hover/pressed on the brand ramp, plus the tint pair used
  * for selected-state washes), so contrast never depends on user judgment.
@@ -236,15 +301,20 @@ export function buildTheme(mode: 'light' | 'dark', accent: AccentId = 'blue', de
     breakpoints: {
       values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 },
     },
+    // FR-20.4 motion tokens: three tiers only — fast (hover feedback), base
+    // (open/close), slow (layout shifts). global.css exposes the same values
+    // as --motion-fast/--motion-base/--motion-slow for non-MUI elements, and
+    // its prefers-reduced-motion block zeroes every animation for users who
+    // asked for that (BR-19).
     transitions: {
       duration: {
-        shortest: 150,
-        shorter: 200,
-        short: 250,
-        standard: 300,
-        complex: 375,
-        enteringScreen: 225,
-        leavingScreen: 195,
+        shortest: 100,
+        shorter: 100,
+        short: 180,
+        standard: 180,
+        complex: 250,
+        enteringScreen: 180,
+        leavingScreen: 100,
       },
     },
     // The toast stack in global.css sits on this same scale (--z-toast: 1400,
@@ -256,8 +326,26 @@ export function buildTheme(mode: 'light' | 'dark', accent: AccentId = 'blue', de
       snackbar: 1400,
       tooltip: 1500,
     },
+    // FR-20.1 type ramp — the app's entire scale, 6 sizes (M-7 target ≤ 9).
+    // global.css mirrors these as --font-* variables for non-MUI text; both
+    // must change together. Semantics: h1 = page title (exactly one per
+    // page — axe `page-has-heading-one`), h2 = section/panel title, h3 =
+    // card/column title, body1 = default text, body2 = secondary/dense text
+    // (tables), caption = metadata (codes, dates, hints).
     typography: {
       fontFamily: '"Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif',
+      h1: { fontSize: '1.5rem', fontWeight: 600, lineHeight: 1.3 },
+      h2: { fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.35 },
+      h3: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.4 },
+      h4: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.4 },
+      h5: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.4 },
+      h6: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.4 },
+      subtitle1: { fontSize: '0.9rem', fontWeight: 600, lineHeight: 1.4 },
+      subtitle2: { fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.4 },
+      body1: { fontSize: '0.9rem', lineHeight: 1.5 },
+      body2: { fontSize: '0.875rem', lineHeight: 1.45 },
+      caption: { fontSize: '0.75rem', lineHeight: 1.4 },
+      overline: { fontSize: '0.75rem', fontWeight: 600, lineHeight: 1.4 },
     },
     components: {
       // MUI's contained Button defaults to uppercase text + a drop shadow;

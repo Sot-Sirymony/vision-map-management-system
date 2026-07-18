@@ -9,8 +9,12 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import { Sparkles } from 'lucide-react';
 import { BulkArchiveAction } from '../components/common/BulkArchiveAction';
+import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
+import { DreamWizard } from '../components/forms/DreamWizard';
 import { DataTable, type DataTableColumn } from '../components/common/DataTable';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
@@ -69,11 +73,15 @@ export function DreamsPage() {
   const [filterStatus, setFilterStatus] = useUrlFilter('status');
   const [filterOverdueOnly, setFilterOverdueOnly] = useUrlFlag('overdue');
   const [searchParams, setSearchParams] = useSearchParams();
-  const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+  // FR-21.3: creation goes through the coaching wizard by default; the flat
+  // form remains for edits and for "skip the guide".
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [flatCreateOpen, setFlatCreateOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
-  // Arrived from a vision area's "Add dream" shortcut: pre-select that area and
-  // open the create form, then strip the params so a refresh doesn't reopen it.
+  // Arrived from a vision area's "Add dream" shortcut or the dashboard's
+  // getting-started checklist: pre-select the area and open the wizard, then
+  // strip the params so a refresh doesn't reopen it.
   useEffect(() => {
     if (searchParams.get('create') !== 'dream') {
       return;
@@ -82,7 +90,7 @@ export function DreamsPage() {
     if (parent) {
       setVisionAreaId(parent);
     }
-    setAutoOpenCreate(true);
+    setWizardOpen(true);
     const next = new URLSearchParams(searchParams);
     next.delete('create');
     next.delete('parent');
@@ -99,15 +107,18 @@ export function DreamsPage() {
       setVisionAreas(areaData.filter((area) => area.status !== 'ARCHIVED'));
       setVisionAreaId((current) => current || String(areaData[0]?.id ?? ''));
     });
-    void listGoals(token).then((goals) => {
-      const counts = new Map<number, number>();
-      for (const goal of goals) {
-        counts.set(goal.dreamId, (counts.get(goal.dreamId) ?? 0) + 1);
-      }
-      setGoalCounts(counts);
-    });
+    void reloadGoalCounts(token);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  async function reloadGoalCounts(activeToken: string) {
+    const goals = await listGoals(activeToken);
+    const counts = new Map<number, number>();
+    for (const goal of goals) {
+      counts.set(goal.dreamId, (counts.get(goal.dreamId) ?? 0) + 1);
+    }
+    setGoalCounts(counts);
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -359,21 +370,49 @@ export function DreamsPage() {
   );
 
   return (
-    <PageSection title="Dreams" subtitle="Capture meaningful outcomes and prepare them for goals.">
+    <PageSection
+      title="Dreams"
+      subtitle="Capture meaningful outcomes and prepare them for goals."
+      actions={
+        <Button type="button" onClick={() => setWizardOpen(true)} disabled={visionAreas.length === 0}>
+          Create dream
+        </Button>
+      }
+    >
       <CrudModalForm
         editing={crud.editingId !== null}
         createLabel="Create dream"
         editTitle="Edit Dream"
         saving={crud.saving}
         disabled={visionAreas.length === 0}
-        autoOpenCreate={autoOpenCreate}
+        creating={flatCreateOpen}
+        onCreatingChange={setFlatCreateOpen}
+        hideTrigger
         onSubmit={handleSubmit}
         onCancelEdit={cancelEdit}
       >
         {formFields}
       </CrudModalForm>
-      {crud.loading && <Loading />}
-      {crud.error && <ErrorMessage message={crud.error} />}
+      {wizardOpen && (
+        <DreamWizard
+          token={token ?? ''}
+          visionAreas={visionAreas}
+          initialVisionAreaId={visionAreaId || undefined}
+          onClose={() => setWizardOpen(false)}
+          onSkip={() => {
+            setWizardOpen(false);
+            setFlatCreateOpen(true);
+          }}
+          onCreated={() => {
+            void crud.reload();
+            if (token) {
+              void reloadGoalCounts(token);
+            }
+          }}
+        />
+      )}
+      {crud.loading && <Loading variant="table" />}
+      {crud.error && <ErrorMessage message={crud.error} onRetry={() => void crud.reload()} />}
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="dreams" />
         <FilterSelect
@@ -413,7 +452,21 @@ export function DreamsPage() {
       <div className="view-toggle-row">
         <ViewToggle value={viewMode} onChange={setViewMode} label="Dream view" />
       </div>
-      {viewMode === 'list' ? (
+      {!crud.loading && crud.items.length === 0 && !hasFilters ? (
+        <EmptyState
+          headline="No dreams yet"
+          icon={Sparkles}
+          action={
+            visionAreas.length === 0 ? (
+              <Button type="button" onClick={() => navigate('/vision-areas?create=area')}>Create a vision area first</Button>
+            ) : (
+              <Button type="button" onClick={() => setWizardOpen(true)}>Start your first dream</Button>
+            )
+          }
+        >
+          A dream is a meaningful outcome you want to reach — the guide asks a few questions to make it clear enough to plan.
+        </EmptyState>
+      ) : viewMode === 'list' ? (
         <Card>
           <CardContent>
           <DataTable

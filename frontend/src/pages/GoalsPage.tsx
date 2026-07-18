@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Rocket } from 'lucide-react';
+import { Flag, Rocket } from 'lucide-react';
 import { listDreams } from '../api/dreamApi';
 import { listSteps } from '../api/stepApi';
 import { archiveGoal, permanentlyDeleteGoal, createGoal, getGoalArchiveImpact, listGoals, restoreGoal, updateGoal, updateGoalStatus } from '../api/goalApi';
@@ -17,6 +17,7 @@ import { BulkArchiveAction } from '../components/common/BulkArchiveAction';
 import { Button } from '../components/common/Button';
 import { CrudModalForm } from '../components/common/CrudModalForm';
 import { DataTable, type DataTableColumn } from '../components/common/DataTable';
+import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Input } from '../components/common/Input';
 import { Loading } from '../components/common/Loading';
@@ -35,6 +36,7 @@ import { useCrudEntity } from '../hooks/useCrudEntity';
 import { FilterSelect, optionsFromEntities, optionsFromLabels } from '../components/common/FilterSelect';
 import { useUrlFilter, useUrlFlag } from '../hooks/useUrlFilter';
 import type { Dream, Goal, GoalRequest, Priority, VisionArea, WorkStatus } from '../types/vision';
+import { moonshotViolet } from '../theme';
 import { priorityLabels } from '../utils/enumLabels';
 import { isOverdue } from '../utils/overdue';
 import { matchesSearch } from '../utils/search';
@@ -54,6 +56,7 @@ export function GoalsPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [autoOpenCreate, setAutoOpenCreate] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const crud = useCrudEntity<Goal, GoalRequest>({
     token,
     entityLabel: 'goals',
@@ -287,8 +290,8 @@ export function GoalsPage() {
         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
           {goal.moonshot && (
             <Tooltip title={goal.moonshotVision || 'Moonshot goal'} arrow>
-              <Box component="span" sx={{ display: 'inline-flex', color: '#7c3aed' }} aria-label="Moonshot goal">
-                <Rocket size={15} />
+              <Box component="span" sx={{ display: 'inline-flex', color: moonshotViolet }} aria-label="Moonshot goal">
+                <Rocket size={16} />
               </Box>
             </Tooltip>
           )}
@@ -406,13 +409,15 @@ export function GoalsPage() {
         saving={crud.saving}
         disabled={dreams.length === 0}
         autoOpenCreate={autoOpenCreate}
+        creating={createOpen}
+        onCreatingChange={setCreateOpen}
         onSubmit={handleSubmit}
         onCancelEdit={cancelEdit}
       >
         {formFields}
       </CrudModalForm>
-      {crud.loading && <Loading />}
-      {crud.error && <ErrorMessage message={crud.error} />}
+      {crud.loading && <Loading variant="table" />}
+      {crud.error && <ErrorMessage message={crud.error} onRetry={() => void crud.reload()} />}
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="goals" />
         <FilterSelect
@@ -456,7 +461,22 @@ export function GoalsPage() {
       <div className="view-toggle-row">
         <ViewToggle value={viewMode} onChange={setViewMode} label="Goal view" />
       </div>
-      {viewMode === 'board' && (
+      {!crud.loading && crud.items.length === 0 ? (
+        <EmptyState
+          headline="No goals yet"
+          icon={Flag}
+          action={
+            dreams.length === 0 ? (
+              <Button type="button" onClick={() => navigate('/dreams?create=dream')}>Create a dream first</Button>
+            ) : (
+              <Button type="button" onClick={() => setCreateOpen(true)}>Create your first goal</Button>
+            )
+          }
+        >
+          Goals are the major results that make a dream real. Each goal breaks down into steps and tasks.
+        </EmptyState>
+      ) : null}
+      {crud.items.length > 0 && viewMode === 'board' && (
         <StatusBoard
           items={filteredGoals}
           columns={statusOptions}
@@ -469,8 +489,8 @@ export function GoalsPage() {
               <strong>
                 {goal.moonshot && (
                   <Tooltip title={goal.moonshotVision || 'Moonshot goal'} arrow>
-                    <Box component="span" sx={{ display: 'inline-flex', color: '#7c3aed', mr: 0.75, verticalAlign: 'middle' }} aria-label="Moonshot goal">
-                      <Rocket size={15} />
+                    <Box component="span" sx={{ display: 'inline-flex', color: moonshotViolet, mr: 0.75, verticalAlign: 'middle' }} aria-label="Moonshot goal">
+                      <Rocket size={16} />
                     </Box>
                   </Tooltip>
                 )}
@@ -487,7 +507,7 @@ export function GoalsPage() {
           cardActions={(goal) => renderGoalActions(goal)}
         />
       )}
-      {viewMode === 'list' && (
+      {crud.items.length > 0 && viewMode === 'list' && (
       <Card>
         <CardContent>
           <DataTable

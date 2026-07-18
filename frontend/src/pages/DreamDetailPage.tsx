@@ -88,8 +88,8 @@ export function DreamDetailPage() {
           </CardContent>
         </Card>
       )}
-      {loading && <Loading />}
-      {error && <ErrorMessage message={error} />}
+      {loading && <Loading variant="tree" />}
+      {error && <ErrorMessage message={error} onRetry={() => void load()} />}
       {!selectedDream ? (
         <EmptyState>No dream selected.</EmptyState>
       ) : (

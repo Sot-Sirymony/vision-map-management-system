@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import { semanticTints } from '../../theme';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import Chip from '@mui/material/Chip';
@@ -91,8 +92,8 @@ export function AttentionPanel({ attention, visionAreaId }: { attention: Dashboa
     return (
       <Card>
         <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 2.5 }}>
-          <Box sx={{ color: '#107c10', display: 'flex' }}>
-            <CheckCircle2 size={20} />
+          <Box sx={{ color: semanticTints.positive.fg, display: 'flex' }}>
+            <CheckCircle2 size={18} />
           </Box>
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>Your map holds together</Typography>
@@ -137,8 +138,8 @@ export function AttentionPanel({ attention, visionAreaId }: { attention: Dashboa
                   flexShrink: 0,
                   display: 'grid',
                   placeItems: 'center',
-                  bgcolor: '#fdece3',
-                  color: '#d83b01',
+                  bgcolor: semanticTints.warning.bg,
+                  color: semanticTints.warning.fg,
                 }}
               >
                 <finding.icon size={16} />

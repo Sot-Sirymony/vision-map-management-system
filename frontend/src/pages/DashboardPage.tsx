@@ -9,6 +9,7 @@ import { listVisionAreas } from '../api/visionAreaApi';
 import { FilterSelect, optionsFromEntities } from '../components/common/FilterSelect';
 import { AttentionPanel } from '../components/dashboard/AttentionPanel';
 import { DashboardSummary } from '../components/dashboard/DashboardSummary';
+import { GettingStarted } from '../components/dashboard/GettingStarted';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { Loading } from '../components/common/Loading';
@@ -35,7 +36,7 @@ import Typography from '@mui/material/Typography';
 import { useAuth } from '../context/AuthContext';
 import { useUrlFilter } from '../hooks/useUrlFilter';
 import type { DashboardSummary as DashboardSummaryData, PartnerStatus, Priority, VisionArea, WorkStatus } from '../types/vision';
-import { neutralFallback } from '../theme';
+import { chartPrimary, heatmapLevelColors, neutralFallback, obstacleTypeColors, partnerPipelineColors } from '../theme';
 import { obstacleTypeLabels, partnerStatusLabels, priorityColors, workStatusColors } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
@@ -44,49 +45,13 @@ const TOP_OBSTACLE_TYPE_COUNT = 4;
 const OTHER_OBSTACLE_TYPES_KEY = 'OTHER_TYPES';
 const PARTNER_STATUS_ORDER: PartnerStatus[] = ['TO_CONTACT', 'CONTACTED', 'ACTIVE', 'WAITING', 'DECLINED', 'COMPLETED'];
 const HEATMAP_WEEKS = 12;
-const HEATMAP_LEVEL_COLORS = ['#e5e5e5', '#86efac', '#4ade80', '#22c55e', '#15803d'];
-
-// Pipeline stage colors — not/yet (gray) → reached out (blue) → engaged (green) /
-// stalled (amber) / declined (red) → done (teal, kept distinct from the green
-// "active" state so a finished engagement doesn't read as still-in-progress).
-// Each stage keeps its own hue on purpose (unlike the blue-only ramp used for
-// obstacle types below) — this is real status information, not an arbitrary
-// category, and collapsing "declined" and "active" into shades of the same
-// blue would erase the one thing this chart needs to communicate at a glance.
-// Hex values are Fluent's actual tokens from each hue's shared color ramp.
-const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = {
-  TO_CONTACT: '#8a8886',
-  CONTACTED: '#0078d4',
-  ACTIVE: '#107c10',
-  WAITING: '#d83b01',
-  DECLINED: '#d13438',
-  COMPLETED: '#038387',
-};
-
-// Local to this compact widget (Decision A) — not the app-wide enum color
-// system, since this only ever shows the top few types plus a rollup bucket.
-// Unlike the partner pipeline above, no obstacle type is inherently "worse"
-// than another (Knowledge isn't more urgent than Time), so category is
-// encoded as depth along Fluent's blue ramp rather than hue — matching the
-// same "Depth, applied to data" treatment as the default donut/bar palette.
-// Deliberately stops at #71afe5 rather than running all the way to the
-// lightest tints (#c7e0f4/#deecf9) — those are legible as a large donut/bar
-// fill only when paired with a visible border, which these chart shapes
-// don't draw, so anything past this point washes out against a white card.
-// OTHER and the rollup bucket stay neutral gray, marking them as "not a
-// specific single category" rather than another step in the ramp.
-const OBSTACLE_TYPE_COLORS: Record<string, string> = {
-  KNOWLEDGE: '#004578',
-  SKILL: '#005a9e',
-  TIME: '#0063b1',
-  MONEY: '#106ebe',
-  MOTIVATION: '#0078d4',
-  PARTNER: '#2b88d8',
-  SYSTEM: '#4ba0e1',
-  DECISION: '#71afe5',
-  OTHER: '#8a8886',
-  [OTHER_OBSTACLE_TYPES_KEY]: '#e1e1e1',
-};
+// Chart palettes live in theme.ts (BR-15). Pipeline stages keep per-hue
+// meaning (real status information); obstacle types use the blue depth ramp
+// (arbitrary categories); the heatmap ramp encodes intensity. The original
+// rationale for each choice is documented next to the values in theme.ts.
+const HEATMAP_LEVEL_COLORS = heatmapLevelColors;
+const PARTNER_STATUS_COLORS: Record<PartnerStatus, string> = partnerPipelineColors;
+const OBSTACLE_TYPE_COLORS: Record<string, string> = obstacleTypeColors;
 
 type DashboardPeriod = 'month' | 'quarter' | 'year';
 
@@ -209,33 +174,26 @@ export function DashboardPage() {
   }));
 
   // The whole hierarchy hangs off Vision Areas, so zero areas means a brand
-  // new account — show one guided prompt instead of nine "0" tiles and six
-  // empty chart shells. Gated on !loading so it can't flash during fetch.
-  const isFirstRun = !loading && !error && summary !== null && summary.totalVisionAreas === 0;
+  // new account — show the getting-started checklist instead of nine "0"
+  // tiles and six empty chart shells. Once areas exist the checklist stays,
+  // as a banner above the stats, until the first dream has goals (FR-21.1 —
+  // the old single-step card dead-ended after step one, audit H-01). Gated
+  // on !loading so it can't flash during fetch.
+  const hasArea = (summary?.totalVisionAreas ?? 0) > 0;
+  const hasDream = (summary?.activeDreams ?? 0) > 0;
+  const hasGoal = (summary?.activeGoals ?? 0) > 0;
+  const isFirstRun = !loading && !error && summary !== null && !hasArea;
+  const showOnboardingBanner = !loading && !error && summary !== null && hasArea && (!hasDream || !hasGoal);
 
   return (
     <PageSection title="Dashboard" subtitle="Track progress across dreams, goals, steps, and tasks.">
-      {loading && <Loading />}
+      {loading && <Loading variant="cards" rows={6} />}
       {error && <ErrorMessage message={error} />}
       {isFirstRun ? (
-        <Card>
-          <CardContent sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 48, height: 48, borderRadius: '8px', bgcolor: '#deecf9', color: '#005a9e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Compass size={26} />
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>Start your Vision Map</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 440 }}>
-              Everything here builds from a Vision Area — a major area of your life or work,
-              like Career, Health, or Family. Create your first one, then add dreams, goals,
-              steps, and tasks under it. This dashboard fills in as you go.
-            </Typography>
-            <MuiButton component={Link} to="/vision-areas" variant="contained" disableElevation sx={{ mt: 1 }}>
-              Create your first Vision Area
-            </MuiButton>
-          </CardContent>
-        </Card>
+        <GettingStarted hasArea={hasArea} hasDream={hasDream} hasGoal={hasGoal} />
       ) : (
       <>
+      {showOnboardingBanner && <GettingStarted hasArea={hasArea} hasDream={hasDream} hasGoal={hasGoal} />}
       <Card className="filter-bar flex-row">
         <FilterSelect
           label="Vision Area"
@@ -312,9 +270,9 @@ export function DashboardPage() {
                     dataKey="progress"
                     name="Average progress %"
                     type="monotone"
-                    fill="#0078d4"
+                    fill={chartPrimary}
                     fillOpacity={0.15}
-                    stroke="#0078d4"
+                    stroke={chartPrimary}
                     strokeWidth={2}
                   />
                 </AreaChart>
@@ -385,7 +343,7 @@ export function DashboardPage() {
                     <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={120} />
                     <RechartsTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="progress" name="Progress %" radius={4} fill="#0078d4" />
+                    <Bar dataKey="progress" name="Progress %" radius={4} fill={chartPrimary} />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>

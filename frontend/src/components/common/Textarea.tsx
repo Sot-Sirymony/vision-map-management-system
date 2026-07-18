@@ -8,6 +8,7 @@ type TextareaProps = {
   placeholder?: string;
   disabled?: boolean;
   name?: string;
+  autoFocus?: boolean;
 };
 
 export function Textarea(props: TextareaProps) {

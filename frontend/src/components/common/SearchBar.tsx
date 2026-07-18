@@ -32,7 +32,7 @@ export function SearchBar({ value, onChange, entityLabel }: SearchBarProps) {
           endAdornment: value ? (
             <InputAdornment position="end">
               <IconButton size="small" aria-label="Clear search" onClick={() => onChange('')}>
-                <X size={15} />
+                <X size={16} />
               </IconButton>
             </InputAdornment>
           ) : null,

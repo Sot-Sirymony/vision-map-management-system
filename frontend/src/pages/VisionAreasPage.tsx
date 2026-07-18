@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { listDreams } from '../api/dreamApi';
 import { archiveVisionArea, permanentlyDeleteVisionArea, createVisionArea, getVisionAreaArchiveImpact, listVisionAreas, restoreVisionArea, updateVisionArea } from '../api/visionAreaApi';
 import Card from '@mui/material/Card';
@@ -8,7 +8,10 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import { BulkArchiveAction } from '../components/common/BulkArchiveAction';
+import { Button } from '../components/common/Button';
+import { Compass } from 'lucide-react';
 import { CrudModalForm } from '../components/common/CrudModalForm';
+import { EmptyState } from '../components/common/EmptyState';
 import { DataTable, type DataTableColumn } from '../components/common/DataTable';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { FilterSelect, optionsFromLabels } from '../components/common/FilterSelect';
@@ -43,6 +46,21 @@ export function VisionAreasPage() {
     permanentlyDelete: permanentlyDeleteVisionArea,
     restore: restoreVisionArea,
   });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Arrived from the dashboard's getting-started checklist: open the create
+  // form, then strip the param so a refresh doesn't reopen it.
+  useEffect(() => {
+    if (searchParams.get('create') !== 'area') {
+      return;
+    }
+    setCreateOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('create');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('HIGH');
@@ -231,13 +249,15 @@ export function VisionAreasPage() {
         createLabel="Create vision area"
         editTitle="Edit Vision Area"
         saving={crud.saving}
+        creating={createOpen}
+        onCreatingChange={setCreateOpen}
         onSubmit={handleSubmit}
         onCancelEdit={cancelEdit}
       >
         {formFields}
       </CrudModalForm>
-      {crud.loading && <Loading />}
-      {crud.error && <ErrorMessage message={crud.error} />}
+      {crud.loading && <Loading variant="table" />}
+      {crud.error && <ErrorMessage message={crud.error} onRetry={() => void crud.reload()} />}
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="vision areas" />
         <FilterSelect
@@ -261,7 +281,15 @@ export function VisionAreasPage() {
       <div className="view-toggle-row">
         <ViewToggle value={viewMode} onChange={setViewMode} label="Vision area view" />
       </div>
-      {viewMode === 'list' ? (
+      {!crud.loading && crud.items.length === 0 && !searchTerm && !filterPriority && !filterStatus ? (
+        <EmptyState
+          headline="No vision areas yet"
+          icon={Compass}
+          action={<Button type="button" onClick={() => setCreateOpen(true)}>Create your first vision area</Button>}
+        >
+          A vision area is a major part of your life or work — like Career, Health, or Family. Everything else builds under it.
+        </EmptyState>
+      ) : viewMode === 'list' ? (
         <Card>
           <CardContent>
             <DataTable

@@ -355,8 +355,8 @@ export function ObstaclesPage() {
       >
         {formFields}
       </CrudModalForm>
-      {crud.loading && <Loading />}
-      {crud.error && <ErrorMessage message={crud.error} />}
+      {crud.loading && <Loading variant="table" />}
+      {crud.error && <ErrorMessage message={crud.error} onRetry={() => void crud.reload()} />}
       <Card className="filter-bar flex-row">
         <SearchBar value={searchTerm} onChange={setSearchTerm} entityLabel="obstacles" />
         <FilterSelect
