@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useStoredState } from '../../hooks/useStoredState';
 import Checkbox from '@mui/material/Checkbox';
 import Table from '@mui/material/Table';
@@ -201,11 +202,55 @@ export function DataTable<T extends { id: number }>({
     selection.onChange(next);
   }
 
+  // FR-28.1: below the sm breakpoint the table becomes a card list — same
+  // columns, stacked as label/value pairs, with the title column as the card
+  // header and row actions in the header corner. Selection (a bulk-work tool)
+  // stays desktop-only.
+  const isNarrow = useMediaQuery('(max-width:599.95px)');
+
   if (rows.length === 0) {
     return <EmptyState>{emptyMessage}</EmptyState>;
   }
 
   const totalSelected = selection?.selectedIds.size ?? 0;
+
+  if (isNarrow) {
+    const headerColumn = columns.find((column) => column.key === 'title' || column.key === 'name') ?? columns[0];
+    const actionsColumn = columns.find((column) => column.key === 'actions');
+    const detailColumns = columns.filter((column) => column !== headerColumn && column !== actionsColumn);
+    return (
+      <>
+        <div className="table-cards">
+          {visibleRows.map((row) => (
+            <article className={`table-card ${rowClassName?.(row) ?? ''}`} key={row.id}>
+              <div className="table-card-header">
+                <div className="table-card-title">{headerColumn.render(row)}</div>
+                {actionsColumn && <div>{actionsColumn.render(row)}</div>}
+              </div>
+              <div className="table-card-details">
+                {detailColumns.map((column) => (
+                  <div className="table-card-field" key={column.key}>
+                    <span className="table-card-label">{column.label}</span>
+                    <span>{column.render(row)}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+        <TablePagination
+          component="div"
+          count={totalRows}
+          page={safePage}
+          rowsPerPage={currentRowsPerPage}
+          rowsPerPageOptions={rowsPerPageOptions}
+          onPageChange={(_event, nextPage) => handlePageChange(nextPage)}
+          onRowsPerPageChange={(event) => handleRowsPerPageChange(Number(event.target.value))}
+          ActionsComponent={TablePaginationActions}
+        />
+      </>
+    );
+  }
 
   return (
     <>

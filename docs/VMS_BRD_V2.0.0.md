@@ -395,7 +395,7 @@ instructions?*
 | FR-25 | Attention & next-action system | M | ✅ Done 2026-07-18 | |
 | FR-26 | Accessibility compliance (WCAG 2.2 AA) | M | ✅ Done 2026-07-18 | |
 | FR-27 | List, board, and auth visual refresh | M | ✅ Done 2026-07-18 | |
-| FR-28 | Mobile layouts | L | 📋 Planned | |
+| FR-28 | Mobile layouts | L | ✅ Done 2026-07-18 | |
 | FR-29 | Efficiency & delight layer (stretch) | M | 📋 Stretch | |
 
 ### B-Scope
@@ -842,7 +842,7 @@ pages shows no layout breakage. AC-1 (3-second test) measures with
 FR-19.3's participants at release close. `tsc` clean, 35/35 tests,
 production build green.
 
-### FR-28 Mobile Layouts — 📋 Planned (Effort: L)
+### FR-28 Mobile Layouts — ✅ Done 2026-07-18 (Effort: L)
 
 The responsive groundwork (breakpoints, `use-mobile`, sidebar collapse)
 exists; dense surfaces do not degrade yet. Source: HUCI_V1 C6.
@@ -858,6 +858,25 @@ exists; dense surfaces do not degrade yet. Source: HUCI_V1 C6.
 **Acceptance criteria**
 1. The full ideal user flow is completable on a 375 px-wide viewport.
 2. No page requires horizontal body scrolling on mobile.
+
+**Shipped (2026-07-18):** FR-28.1 — below the sm breakpoint `DataTable`
+renders a card list instead of a table: the title column becomes the card
+header with row actions in the corner, remaining columns stack as labeled
+pairs, overdue/archived row styling carries over, and pagination stays;
+bulk selection remains desktop-only. FR-28.2 — `StatusBoard` shows one
+column at a time on small screens with a count-annotated status switcher;
+card moves keep working through the (FR-26-named) per-card dropdown.
+FR-28.3 — the sidebar's mobile overlay drawer already existed (verified);
+mobile CSS stacks filter bars and quick-add rows full-width, shrinks the
+Vision Map's indents, and drops its progress rail to a full-width line so
+nothing forces horizontal scroll. FR-28.4 — the 24 px target-size floor
+from FR-26 applies to the new mobile controls. Both acceptance criteria
+verified live on a 375×812 viewport with a fresh account: the complete
+ideal flow ran end-to-end (checklist → vision area → dream wizard with a
+first goal → Vision Map → step and task quick-adds, owner defaulted), the
+tasks card list and single-column board with switcher rendered, and a
+sweep of all thirteen pages found zero horizontal-scroll offenders.
+`tsc` clean, 35/35 tests, production build green.
 
 ### FR-29 Efficiency & Delight Layer — 📋 Stretch (Effort: M)
 

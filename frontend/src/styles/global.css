@@ -1363,3 +1363,113 @@ button:focus-visible,
   color: var(--primary);
   text-decoration: underline;
 }
+
+/* FR-28: small-screen layouts (below the theme's sm breakpoint, 600px). */
+.table-cards {
+  display: grid;
+  gap: 10px;
+}
+
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: var(--shadow-2);
+  display: grid;
+  gap: 8px;
+}
+
+.table-card.row-overdue {
+  box-shadow: inset 3px 0 0 var(--destructive), var(--shadow-2);
+}
+
+.table-card.row-archived {
+  opacity: 0.65;
+  background: var(--background-subtle);
+}
+
+.table-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.table-card-title {
+  font-weight: 600;
+  min-width: 0;
+}
+
+.table-card-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.table-card-field {
+  display: grid;
+  gap: 2px;
+  font-size: var(--font-body-sm);
+}
+
+.table-card-label {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.kanban--mobile {
+  grid-template-columns: 1fr;
+}
+
+.kanban-switcher {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+  /* Filters and quick-add rows stack full-width instead of overflowing. */
+  .filter-bar label,
+  .quick-add-row label {
+    min-width: 100%;
+  }
+
+  .quick-add-row button {
+    width: 100%;
+  }
+
+  /* The tree keeps its depth cues but with pocket-size indents; the right
+     rail drops to its own full-width line so nothing forces a horizontal
+     scroll (FR-28.3). */
+  .map-children {
+    margin-left: 8px;
+    padding-left: 8px;
+  }
+
+  .map-main {
+    min-width: 160px;
+  }
+
+  .map-rail {
+    width: 100%;
+  }
+
+  .map-status {
+    width: 130px;
+  }
+
+  .map-add--task .MuiTextField-root:nth-of-type(2),
+  .map-add--task .MuiTextField-root:nth-of-type(3) {
+    width: 100%;
+  }
+
+  .page-heading-actions {
+    width: 100%;
+  }
+
+  .page-heading-actions button {
+    width: 100%;
+  }
+}

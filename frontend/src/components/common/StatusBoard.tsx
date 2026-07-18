@@ -1,4 +1,5 @@
 import { CSSProperties, DragEvent, ReactNode, useState } from 'react';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -41,6 +42,11 @@ export function StatusBoard<T extends { id: number; archived: boolean }, S exten
   // FR-26.2: moves are announced for screen readers, whether they came from
   // drag-and-drop or the per-card dropdown.
   const [announcement, setAnnouncement] = useState('');
+  // FR-28.2: one column at a time on small screens, chosen by a switcher —
+  // moves keep working through each card's dropdown (drag needs no pointer
+  // estate we don't have).
+  const isNarrow = useMediaQuery('(max-width:599.95px)');
+  const [activeColumn, setActiveColumn] = useState<S>(columns[0]?.value);
 
   function announceMove(status: S) {
     const label = columns.find((column) => column.value === status)?.label ?? status;
@@ -98,10 +104,29 @@ export function StatusBoard<T extends { id: number; archived: boolean }, S exten
     return classes.join(' ');
   }
 
+  const shownColumns = isNarrow
+    ? columns.filter((column) => column.value === activeColumn)
+    : columns;
+
   return (
-    <div className="kanban" style={{ '--kanban-cols': columns.length } as CSSProperties}>
+    <div className={`kanban${isNarrow ? ' kanban--mobile' : ''}`} style={{ '--kanban-cols': shownColumns.length } as CSSProperties}>
       <span className="sr-only" role="status">{announcement}</span>
-      {columns.map((column) => {
+      {isNarrow && (
+        <FormControl size="small" fullWidth className="kanban-switcher">
+          <Select
+            SelectDisplayProps={{ 'aria-label': 'Show column' }}
+            value={activeColumn}
+            onChange={(event) => setActiveColumn(event.target.value as S)}
+          >
+            {columns.map((column) => (
+              <MenuItem value={column.value} key={column.value}>
+                {column.label} ({items.filter((item) => statusOf(item) === column.value).length})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+      {shownColumns.map((column) => {
         const columnItems = items.filter((item) => statusOf(item) === column.value);
         return (
           <section
