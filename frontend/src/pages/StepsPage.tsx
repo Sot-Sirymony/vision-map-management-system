@@ -244,22 +244,37 @@ export function StepsPage() {
   }
 
   // FR-22.1 quick-add: sequence number continues from the goal's last step;
-  // defaults keep BR-16 satisfied.
+  // defaults keep BR-16 satisfied. An active goal filter takes over as the
+  // parent so the row creates under the goal it displays and the new step
+  // stays visible in the filtered list.
+  const quickAddParentId = filterGoalId || quickParentId;
+
+  function handleQuickParentChange(value: string) {
+    setQuickParentId(value);
+    if (filterGoalId) {
+      setFilterGoalId(value);
+    }
+  }
+
   async function handleQuickAdd(title: string) {
-    if (!token || !quickParentId) {
+    if (!token || !quickAddParentId) {
       return;
     }
-    const goalSteps = crud.items.filter((step) => String(step.goalId) === quickParentId);
+    const goalSteps = crud.items.filter((step) => String(step.goalId) === quickAddParentId);
     const nextSequence = goalSteps.reduce((max, step) => Math.max(max, step.sequenceNumber), 0) + 1;
-    await createStep(token, {
-      goalId: Number(quickParentId),
-      title,
-      sequenceNumber: nextSequence,
-      complex: false,
-      priority: 'MEDIUM',
-      status: 'NOT_STARTED',
-    });
-    await crud.reload();
+    try {
+      await createStep(token, {
+        goalId: Number(quickAddParentId),
+        title,
+        sequenceNumber: nextSequence,
+        complex: false,
+        priority: 'MEDIUM',
+        status: 'NOT_STARTED',
+      });
+      await crud.reload();
+    } catch (addError) {
+      crud.setError(addError instanceof Error ? addError.message : 'Unable to add step.');
+    }
   }
 
   // Board drag/dropdown move. There is no status PATCH endpoint for steps, so
@@ -561,8 +576,8 @@ export function StepsPage() {
         <QuickAddRow
           parentLabel="Goal"
           parents={goals.map((goal) => ({ value: String(goal.id), label: goal.title }))}
-          parentValue={filterGoalId || quickParentId}
-          onParentChange={setQuickParentId}
+          parentValue={quickAddParentId}
+          onParentChange={handleQuickParentChange}
           placeholder="New step title — Enter to add"
           onAdd={handleQuickAdd}
         />

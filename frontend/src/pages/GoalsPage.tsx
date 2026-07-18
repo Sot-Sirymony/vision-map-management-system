@@ -243,18 +243,33 @@ export function GoalsPage() {
   });
 
   // FR-22.1 quick-add: title + parent only; defaults keep BR-16 satisfied.
+  // An active dream filter takes over as the parent so the row creates under
+  // the dream it displays and the new goal stays visible in the filtered list.
+  const quickAddParentId = filterDreamId || quickParentId;
+
+  function handleQuickParentChange(value: string) {
+    setQuickParentId(value);
+    if (filterDreamId) {
+      setFilterDreamId(value);
+    }
+  }
+
   async function handleQuickAdd(title: string) {
-    if (!token || !quickParentId) {
+    if (!token || !quickAddParentId) {
       return;
     }
-    await createGoal(token, {
-      dreamId: Number(quickParentId),
-      title,
-      priority: 'MEDIUM',
-      status: 'NOT_STARTED',
-      moonshot: false,
-    });
-    await crud.reload();
+    try {
+      await createGoal(token, {
+        dreamId: Number(quickAddParentId),
+        title,
+        priority: 'MEDIUM',
+        status: 'NOT_STARTED',
+        moonshot: false,
+      });
+      await crud.reload();
+    } catch (addError) {
+      crud.setError(addError instanceof Error ? addError.message : 'Unable to add goal.');
+    }
   }
 
   // Board drag/dropdown move, using the goal status PATCH endpoint.
@@ -543,8 +558,8 @@ export function GoalsPage() {
         <QuickAddRow
           parentLabel="Dream"
           parents={dreams.map((dream) => ({ value: String(dream.id), label: dream.title }))}
-          parentValue={filterDreamId || quickParentId}
-          onParentChange={setQuickParentId}
+          parentValue={quickAddParentId}
+          onParentChange={handleQuickParentChange}
           placeholder="New goal title — Enter to add"
           onAdd={handleQuickAdd}
         />
