@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.response.DashboardSummaryResponse;
 import com.visionmapping.dto.response.DreamResponse;
 import com.visionmapping.dto.response.GoalResponse;
@@ -45,6 +46,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -112,6 +114,7 @@ public class DashboardService {
      * @param periodEnd    end of that window (inclusive). Null defaults to the
      *                     last of the current month.
      */
+    @Cacheable(CacheConfig.DASHBOARD_CACHE)
     public DashboardSummaryResponse buildDashboardSummary(Long visionAreaId, LocalDate periodStart, LocalDate periodEnd) {
         ScopedData data = loadScopedData(visionAreaId);
         LocalDate today = LocalDate.now(clock);

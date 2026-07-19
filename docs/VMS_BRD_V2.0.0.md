@@ -5,7 +5,7 @@
 | **Document** | VMS_BRD_V2.0.0 |
 | **Version** | 2.0.0 (In progress) |
 | **Date** | 2026-07-11 (progress updated 2026-07-17) |
-| **Status** | Complete — all 11 items shipped and all open items resolved. Addendum A (FR-18 Theme Settings) also ✅ shipped 2026-07-17. Addendum B (2026-07-18) adds the **planned** V2.1 "Ease of Use" improvement program (FR-19 … FR-29) — 📋 not yet started. |
+| **Status** | Complete — all 11 items shipped and all open items resolved. Addendum A (FR-18 Theme Settings) also ✅ shipped 2026-07-17. Addendum B (2026-07-18) added the V2.1 "Ease of Use" improvement program (FR-19 … FR-29). Addendum C (2026-07-19) adds the Redis cache performance layer (FR-30) — ✅ core shipped 2026-07-19 (C-3 read-model caches deferred pending O-9). |
 | **Baseline** | Builds on VMS_BRD_V1.0.0 (all V1 requirements remain in force) |
 | **Concept source** | *Mentored by a Millionaire* (Steven K. Scott) — used as conceptual reference only; all product wording, questions, and templates are original |
 
@@ -31,7 +31,7 @@ Each item's status is also marked inline in its section heading below.
 
 **Done (11 of 11):** every V2 item is implemented and verified (backend + frontend tests). Migrations: V5 (diligence checklist), V6 (word picture), V7 (goal moonshot), V8 (ideal partner profiles + partner offer type).
 
-**Remaining:** none — V2.0.0 scope is complete. Addendum B below plans the V2.1 "Ease of Use" improvement program (FR-19 … FR-29); the next major BRD (V3) continues numbering at FR-30.
+**Remaining:** none — V2.0.0 scope is complete. Addendum B below plans the V2.1 "Ease of Use" improvement program (FR-19 … FR-29); Addendum C plans the Redis cache performance layer (FR-30). The next major BRD (V3) continues numbering at FR-31.
 
 Where a requirement below still says **Planned**, that is its original wording and it is not yet implemented; the ✅ marks added to headings show what has shipped.
 
@@ -973,3 +973,167 @@ touched once.
 | O-5 | Sidebar regrouping (FR-23.2): announce in-app once, or ship silently? Returning users know the flat list. | FR-23 ship | Open |
 | O-6 | Does FR-29 ship in V2.1 or move to V3? Decide after FR-24 lands and remaining capacity is known. | Release cut | ✅ Resolved 2026-07-18 — shipped in V2.1 (capacity allowed after FR-20…FR-28 landed). |
 | O-7 | First-use test participants (FR-19.3): who are the 3–5 testers and when? Needs scheduling before build starts. | FR-19 | Open |
+
+---
+
+## Addendum C (2026-07-19) — FR-30 Redis Cache Performance Layer — ✅ Core shipped 2026-07-19 (C-3 deferred per O-9)
+
+### Why now
+
+The backend recomputes everything on every request. The clearest case is the
+dashboard: `DashboardService` loads the user's **entire hierarchy** (dreams,
+goals, steps, tasks) plus reviews, obstacles, partners, and the full
+progress-log history, then rebuilds KPI counts, per-status and per-area
+breakdowns, and a twelve-week trend — on each `GET /api/dashboard`. The Vision
+Map tree and the list pages repeat similar per-request work, and progress
+roll-ups (task → step → goal → dream) are computed on the fly.
+
+This is acceptable at current data sizes, but the production deployment runs
+on a Render **starter** web instance and a **basic-256MB** Postgres — both
+small. A cache layer cuts repeated read work, lowers Postgres load, and keeps
+p95 latency flat as users accumulate history (progress logs grow without
+bound; the dashboard trend reads all of them today).
+
+There is no caching of any kind in the codebase today: no Spring Cache
+dependency, no `@Cacheable`, no Redis client. This addendum introduces it.
+
+### Approach (design decisions)
+
+1. **Spring Cache abstraction over Redis** — `@EnableCaching` with
+   `@Cacheable` / `@CacheEvict` annotations, backed by
+   `spring-boot-starter-data-redis` (Lettuce client) +
+   `spring-boot-starter-cache`. No hand-rolled Redis calls in services; the
+   abstraction keeps services testable and lets profiles swap the backend.
+2. **Cache-aside, DTOs only** — cache the *response DTOs* the controllers
+   already return (e.g. `DashboardSummaryResponse`), serialized as JSON via
+   `GenericJackson2JsonRedisSerializer`. JPA entities are never cached
+   (lazy-loading proxies and session-scoped state do not survive
+   serialization; this also mirrors the existing "never expose entities" rule).
+3. **Per-user namespacing** — every key embeds the authenticated user id:
+   `vms::{cacheName}::{userId}[::{params}]`. All data in this system is
+   user-scoped (business rule 13); the cache must be too.
+4. **Coarse, correct invalidation over clever, partial invalidation** — any
+   write to a user's data evicts that user's whole cache namespace. Because
+   progress rolls up the hierarchy, a single task update legitimately changes
+   the dashboard, the tree, and four list caches; per-key eviction would be
+   error-prone for marginal gain. A short TTL (10 minutes) backstops any
+   missed eviction.
+5. **Redis is an accelerator, never a dependency** — a custom
+   `CacheErrorHandler` logs and swallows Redis connection failures so every
+   request falls through to Postgres. If no Redis URL is configured, the app
+   runs with caching disabled (`spring.cache.type: none`) exactly as today.
+6. **Out of scope** — Hibernate second-level cache, HTTP response caching,
+   storing sessions or JWT state in Redis (auth stays stateless), and rate
+   limiting. Each can be a later FR if measurement justifies it.
+
+### FR-30 Redis Cache Performance Layer (Effort: M)
+
+- FR-30.1 **Cache infrastructure.** Add the Redis + cache starters to
+  `pom.xml`; add a `CacheConfig` (`@EnableCaching`, JSON serializer, key
+  prefix `vms::`, per-cache TTLs, fail-open `CacheErrorHandler`); add Redis
+  connection settings to `application.yml` per profile (`local`: localhost
+  optional, `prod`: `REDIS_URL` env var, `test`: simple in-memory cache).
+- FR-30.2 **Dashboard cache.** `GET /api/dashboard` result cached per user,
+  TTL 10 minutes. This is the highest-value target: heaviest query fan-out,
+  most-visited page (it is the app's landing page after login).
+- FR-30.3 **Read-model caches.** Cache the unfiltered "load everything for
+  this user" reads that back the Vision Map tree and the entity list pages
+  (vision areas, dreams, goals, steps, tasks, partners). Filtered/paged
+  variants are *not* cached in this phase — key explosion for little reuse.
+- FR-30.4 **Write-path eviction.** A small `UserCacheEvictor` support service
+  evicts the user's namespace; every mutating service method (create, update,
+  status change, archive, restore, progress log, Excel import) calls it after
+  a successful commit. Excel import evicts once, not per row.
+- FR-30.5 **Operations.** Add a Render Key Value instance to `render.yaml`
+  wired to the backend via `REDIS_URL`; Redis health shows in the actuator
+  health detail without failing `/api/health` when Redis is down; cache
+  hit/miss counters exposed via logging or metrics for verification.
+
+**Acceptance criteria**
+1. Second dashboard request for the same user is served from cache (verified
+   by SQL-log silence or timing), and any write — even a leaf task update —
+   is reflected on the very next dashboard read.
+2. Stopping Redis mid-session degrades performance only: every API keeps
+   returning correct data with no user-visible errors.
+3. With no Redis URL configured, the backend boots and behaves exactly as
+   before this FR (local dev and CI need no Redis).
+4. A cached response for user A is never served to user B (covered by an
+   automated test, not just the key convention).
+
+**Shipped (2026-07-19):** C-1, C-2, and C-4 are implemented; C-3 stays gated
+on O-9 as planned. FR-30.1 — `CacheConfig` (`@EnableCaching`, per-cache typed
+JSON serializers, `vms::` prefix, 10-minute TTL, fail-open
+`LoggingCacheErrorHandler`), with `spring.cache.type` per profile: `none` by
+default on `local`/`prod` (opt in with `CACHE_TYPE=redis` + `REDIS_URL`),
+`simple` on `test`. FR-30.2 — `@Cacheable` on the dashboard read.
+FR-30.4 — implemented as **generation-stamped keys** rather than pattern
+deletes: `UserScopedKeyGenerator` (the application-wide key generator, BR-20)
+builds every key as `u{userId}:g{generation}:…`, and `UserCacheEvictor`
+advances the user's generation after commit, orphaning all of that user's
+entries at once (old entries fall out via TTL). Eviction is wired
+structurally, not per call site: `UserCacheEvictionAspect` fires on every
+public service method whose effective `@Transactional` is not read-only —
+including the Excel import and any write method added later (BR-22).
+FR-30.5 — `render.yaml` gained a free-tier Key Value service
+(`vision-mapping-cache`, `allkeys-lru`) injected via `REDIS_URL` +
+`CACHE_TYPE=redis`, and `/api/health` now reports a `cache` detail
+(`none`/`redis:up`/`redis:down`) without ever failing the health check.
+
+All four acceptance criteria verified: AC-1 and AC-4 by new automated tests
+(`DashboardCacheFlowTests` proves a deliberately stale read after a
+behind-the-cache repository write, freshness immediately after a service
+write, and no cross-user sharing; `UserCacheEvictorTest` proves the bump
+defers to commit), plus live against a real Redis on the `local` profile:
+dashboard miss 42 ms → hit 11 ms, key
+`vms::dashboard::u1:g…:buildDashboardSummary(null,null,null)` with TTL 600 s,
+a vision-area create bumped the generation and the next read returned fresh
+totals. AC-2 verified live by killing Redis mid-session: reads and writes
+kept returning correct data (HTTP 200/201), health stayed UP reporting
+`redis:down`; the degraded read cost ~1 s from the two capped 500 ms
+connection attempts. AC-3 holds by construction (`CACHE_TYPE` defaults to
+`none`) and the full suite runs with no Redis server. Backend: 73/73 tests
+green.
+
+### C-New Business Rules
+
+| # | Rule |
+|---|---|
+| BR-20 | Every cache key embeds the authenticated user's id. Cross-user cache reads are forbidden and covered by a test (extends business rules 13–14 to the cache layer). |
+| BR-21 | Cache unavailability never fails a request: all cache errors are logged and swallowed, and the request falls through to the database. |
+| BR-22 | No mutating operation completes without evicting the owning user's cache namespace. Correctness beats hit rate: when in doubt, evict. |
+| BR-23 | Only response DTOs are cached — never JPA entities, and never `Authentication`/security objects. |
+
+### C-Build Order
+
+| Order | Work | Contents | Status |
+|---|---|---|---|
+| C-1 | Infrastructure (FR-30.1) | Dependencies, `CacheConfig`, profile config, error handler; app boots with and without Redis | ✅ Done 2026-07-19 |
+| C-2 | Dashboard cache + eviction (FR-30.2, FR-30.4) | `@Cacheable` on the dashboard read, `UserCacheEvictor` wired into every write path; user-scoping and staleness tests | ✅ Done 2026-07-19 |
+| C-3 | Read-model caches (FR-30.3) | Extend annotations to tree/list reads; reuse the same evictor | 📋 Gated on O-9 |
+| C-4 | Ops + verification (FR-30.5) | `render.yaml` Key Value instance, health detail, before/after timing measurements recorded in this document | ✅ Done 2026-07-19 (production hit-rate measurement pending first deploy) |
+
+C-2 ships value on its own; C-3 proceeds only if C-4-style measurement of the
+dashboard cache shows meaningful wins (see O-9).
+
+### C-Non-Functional Notes
+
+- Backend-only change: no Flyway migrations, no frontend work, no API shape
+  changes. Frontend behavior is identical; responses are just faster.
+- Tests: unit tests for key generation and evictor wiring (Mockito);
+  integration tests run on the `test` profile's simple in-memory cache so CI
+  needs no Redis; the BR-20 scoping test and the AC-1 staleness test are
+  mandatory.
+- Local development: Redis via `docker run redis` or Homebrew is optional —
+  developers without it run uncached (AC-3).
+- Memory budget: JSON DTO payloads per user are small (KBs); the free/lowest
+  Render Key Value tier is expected to suffice at current scale. TTLs bound
+  growth; no explicit maxmemory policy work planned beyond the default
+  `allkeys-lru` recommendation.
+
+### C-Open Items
+
+| # | Question | Blocking | Status |
+|---|---|---|---|
+| O-8 | Render Key Value plan: free tier (25 MB, ephemeral) or paid (persistent)? Cache data is disposable, so free looks sufficient — confirm eviction policy behavior on the free tier before wiring `render.yaml`. | C-4 | ✅ Resolved 2026-07-19 — free tier wired with explicit `maxmemoryPolicy: allkeys-lru`; ephemerality is fine because BR-21 makes Redis loss a slowdown, not a failure. |
+| O-9 | Do the C-3 read-model caches earn their invalidation surface? Decide from C-2's measured hit rate and latency delta before building C-3. | C-3 | Open — measure the dashboard cache's hit rate in production after the next deploy. |
+| O-10 | Baseline measurements: capture current p50/p95 timings for dashboard and Vision Map reads (seeded realistic account) *before* C-1 starts, so C-4 has a before/after comparison. | C-1 | 🔶 Partially resolved 2026-07-19 — local before/after captured (dashboard 42 ms uncached → 11 ms cached, small dataset); production numbers pending first deploy with the cache enabled. |

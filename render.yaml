@@ -8,6 +8,15 @@ databases:
     plan: basic-256mb
 
 services:
+  # Redis-compatible cache for FR-30. Cache entries are disposable (10-minute
+  # TTL, rebuilt from Postgres on a miss), so the free ephemeral tier is
+  # enough; losing it entirely only slows requests down (BR-21).
+  - type: keyvalue
+    name: vision-mapping-cache
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [] # internal connections only
+
   # Spring Boot API — deployed from backend/Dockerfile
   - type: web
     name: vision-mapping-backend
@@ -46,6 +55,15 @@ services:
         fromDatabase:
           name: vision-mapping-db
           property: password
+      # FR-30: both vars together switch the cache on; removing them reverts
+      # the backend to its uncached behavior without a code change.
+      - key: CACHE_TYPE
+        value: redis
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: vision-mapping-cache
+          property: connectionString
       # Update this if the frontend service ends up on a different
       # Render subdomain than the one predicted below.
       - key: CORS_ALLOWED_ORIGINS

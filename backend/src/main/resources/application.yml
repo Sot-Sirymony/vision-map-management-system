@@ -19,6 +19,16 @@ spring:
   config:
     activate:
       on-profile: local
+  # FR-30: caching is opt-in — the app runs uncached (exactly as before) unless
+  # CACHE_TYPE=redis is set. Short timeouts keep a dead Redis cheap: failures
+  # degrade to cache misses (BR-21), never to failed requests.
+  cache:
+    type: ${CACHE_TYPE:none}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      timeout: 500ms
+      connect-timeout: 500ms
   datasource:
     url: jdbc:postgresql://localhost:5432/vision_mapping
     username: ${DB_USERNAME:postgres}
@@ -41,6 +51,16 @@ spring:
   config:
     activate:
       on-profile: prod
+  # FR-30: render.yaml enables the cache by setting CACHE_TYPE=redis and
+  # injecting REDIS_URL from the Key Value service. Without them the backend
+  # boots and behaves exactly as before (FR-30 AC-3).
+  cache:
+    type: ${CACHE_TYPE:none}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      timeout: 500ms
+      connect-timeout: 500ms
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
     username: ${DB_USERNAME}
@@ -63,6 +83,10 @@ spring:
   config:
     activate:
       on-profile: test
+  # FR-30: an in-memory cache lets the caching, key-scoping, and eviction
+  # tests run without a Redis server.
+  cache:
+    type: simple
   datasource:
     url: jdbc:h2:mem:vision_mapping_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
