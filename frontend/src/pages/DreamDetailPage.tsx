@@ -13,11 +13,14 @@ import MenuItem from '@mui/material/MenuItem';
 import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
+import { FilterSelect, optionsFromLabels } from '../components/common/FilterSelect';
 import { Loading } from '../components/common/Loading';
 import { ShowArchivedToggle } from '../components/common/ShowArchivedToggle';
 import { VisionMapTree } from '../components/vision-map/VisionMapTree';
 import { useAuth } from '../context/AuthContext';
+import { useUrlFilter } from '../hooks/useUrlFilter';
 import type { Dream, Goal, TaskItem, VisionArea, VisionStep } from '../types/vision';
+import { priorityLabels, workStatusLabels } from '../utils/enumLabels';
 import { PageSection } from './PageSection';
 
 export function DreamDetailPage() {
@@ -34,6 +37,12 @@ export function DreamDetailPage() {
   // Off by default: an archived dream/goal/step/task is a dead end you view to
   // restore or permanently remove, not part of the working map.
   const [showArchived, setShowArchived] = useState(false);
+  // Filters narrow which goals/steps/tasks the tree renders (the dream itself
+  // always shows — it's already the one thing the Dream picker above selects).
+  // A branch stays visible if it matches directly or leads to a descendant
+  // that does, so a filtered view never orphans a matching row.
+  const [filterPriority, setFilterPriority] = useUrlFilter('priority');
+  const [filterStatus, setFilterStatus] = useUrlFilter('status');
 
   async function load() {
     if (!token) {
@@ -92,6 +101,18 @@ export function DreamDetailPage() {
                 </Select>
               </FormControl>
             </label>
+            <FilterSelect
+              label="Priority"
+              value={filterPriority}
+              onChange={setFilterPriority}
+              options={optionsFromLabels(priorityLabels)}
+            />
+            <FilterSelect
+              label="Status"
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={optionsFromLabels(workStatusLabels)}
+            />
             <ShowArchivedToggle checked={showArchived} onToggle={() => setShowArchived((current) => !current)} />
           </CardContent>
         </Card>
@@ -119,6 +140,8 @@ export function DreamDetailPage() {
           token={token ?? ''}
           onDataChange={load}
           onDreamPermanentlyDeleted={() => navigate('/dreams')}
+          priorityFilter={filterPriority}
+          statusFilter={filterStatus}
         />
         </>
       )}

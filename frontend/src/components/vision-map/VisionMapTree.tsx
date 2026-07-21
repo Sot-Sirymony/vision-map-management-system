@@ -49,6 +49,13 @@ type VisionMapTreeProps = {
   onDataChange: () => Promise<void>;
   /** Fired after the dream itself is permanently deleted — nothing is left to show here. */
   onDreamPermanentlyDeleted?: () => void;
+  /**
+   * Narrows which goals/steps/tasks render. The dream itself is never
+   * filtered out — it's already the one thing the page's Dream picker
+   * selects. Empty string means "no filter" for either.
+   */
+  priorityFilter?: string;
+  statusFilter?: string;
 };
 
 const WORK_STATUSES: { value: WorkStatus; label: string }[] = [
@@ -99,10 +106,66 @@ type RowInfo = {
  * menu's Restore / Delete permanently — the same rule every list page
  * already applies to archived records.
  */
-export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, token, onDataChange, onDreamPermanentlyDeleted }: VisionMapTreeProps) {
+export function VisionMapTree({
+  dream, visionAreaName, goals, steps, tasks, token, onDataChange, onDreamPermanentlyDeleted,
+  priorityFilter = '', statusFilter = '',
+}: VisionMapTreeProps) {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const filtering = Boolean(priorityFilter || statusFilter);
+  // The dream's own progress and quick-add sequencing always read the full,
+  // unfiltered set — a view filter narrows what's shown, not what exists.
   const dreamGoals = goals.filter((goal) => goal.dreamId === dream.id);
+
+  // A row matches directly against both filters (either may be empty, in
+  // which case it's ignored). A goal/step is also included when it isn't a
+  // direct match itself but leads to a descendant that is, so a filtered
+  // view never orphans a matching row without its ancestry.
+  function matchesFilter(priority: string, status: string): boolean {
+    return (!priorityFilter || priority === priorityFilter) && (!statusFilter || status === statusFilter);
+  }
+
+  function tasksForStep(stepId: number): TaskItem[] {
+    return tasks.filter((task) => task.stepId === stepId);
+  }
+
+  function taskMatches(task: TaskItem): boolean {
+    return matchesFilter(task.priority, task.status);
+  }
+
+  function stepQualifies(step: VisionStep): boolean {
+    return matchesFilter(step.priority, step.status) || tasksForStep(step.id).some(taskMatches);
+  }
+
+  // Tasks shown under a step: everything, when the step matched directly (a
+  // match on the step is a match on its whole subtree); otherwise only the
+  // tasks that themselves match — they're the reason the step is here at all.
+  function visibleTasksForStep(step: VisionStep): TaskItem[] {
+    const all = tasksForStep(step.id);
+    if (!filtering || matchesFilter(step.priority, step.status)) {
+      return all;
+    }
+    return all.filter(taskMatches);
+  }
+
+  function stepsForGoal(goalId: number): VisionStep[] {
+    return steps.filter((step) => step.goalId === goalId);
+  }
+
+  function goalQualifies(goal: Goal): boolean {
+    return matchesFilter(goal.priority, goal.status) || stepsForGoal(goal.id).some(stepQualifies);
+  }
+
+  function visibleStepsForGoal(goal: Goal): VisionStep[] {
+    const all = stepsForGoal(goal.id);
+    if (!filtering || matchesFilter(goal.priority, goal.status)) {
+      return all;
+    }
+    return all.filter(stepQualifies);
+  }
+
+  const visibleGoals = filtering ? dreamGoals.filter(goalQualifies) : dreamGoals;
+
   const [collapsedKeys, setCollapsedKeys] = useStoredState<string[]>(`vms-map-collapsed-${dream.id}`, []);
   const collapsed = new Set(collapsedKeys);
   const [focusedKey, setFocusedKey] = useState<string>('dream');
@@ -170,15 +233,15 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
   // Flat list of visible rows in reading order — the keyboard walks this.
   const visibleRows: RowInfo[] = [{ key: 'dream', kind: 'dream', level: 0, parentKey: null, collapsible: true }];
   if (!collapsed.has('dream')) {
-    for (const goal of dreamGoals) {
+    for (const goal of visibleGoals) {
       const goalKey = `g${goal.id}`;
       visibleRows.push({ key: goalKey, kind: 'goal', level: 1, parentKey: 'dream', collapsible: true });
       if (!collapsed.has(goalKey)) {
-        for (const step of steps.filter((item) => item.goalId === goal.id)) {
+        for (const step of visibleStepsForGoal(goal)) {
           const stepKey = `s${step.id}`;
           visibleRows.push({ key: stepKey, kind: 'step', level: 2, parentKey: goalKey, collapsible: true });
           if (!collapsed.has(stepKey)) {
-            for (const task of tasks.filter((item) => item.stepId === step.id)) {
+            for (const task of visibleTasksForStep(step)) {
               visibleRows.push({ key: `t${task.id}`, kind: 'task', level: 3, parentKey: stepKey, collapsible: false });
             }
           }
@@ -1130,10 +1193,14 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
 
         {!collapsed.has('dream') && (
           <div className="map-children map-children--1" role="group">
-            {dreamGoals.map((goal) => {
+            {visibleGoals.map((goal) => {
               const goalKey = `g${goal.id}`;
               const goalRow = visibleRows.find((row) => row.key === goalKey);
-              const goalSteps = steps.filter((step) => step.goalId === goal.id);
+              // Rendered children respect the filter; the sequence-number
+              // calc for quick-add needs the full unfiltered set, or a
+              // hidden step's number could be handed out twice.
+              const allGoalSteps = stepsForGoal(goal.id);
+              const goalSteps = visibleStepsForGoal(goal);
               if (!goalRow) {
                 return null;
               }
@@ -1173,7 +1240,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
                       {goalSteps.map((step) => {
                         const stepKey = `s${step.id}`;
                         const stepRow = visibleRows.find((row) => row.key === stepKey);
-                        const stepTasks = tasks.filter((task) => task.stepId === step.id);
+                        const stepTasks = visibleTasksForStep(step);
                         if (!stepRow) {
                           return null;
                         }
@@ -1261,7 +1328,7 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
                             await createStep(token, {
                               goalId: goal.id,
                               title,
-                              sequenceNumber: goalSteps.reduce((max, step) => Math.max(max, step.sequenceNumber), 0) + 1,
+                              sequenceNumber: allGoalSteps.reduce((max, step) => Math.max(max, step.sequenceNumber), 0) + 1,
                               complex: false,
                               priority: 'MEDIUM',
                               status: 'NOT_STARTED',
@@ -1276,6 +1343,9 @@ export function VisionMapTree({ dream, visionAreaName, goals, steps, tasks, toke
                 </div>
               );
             })}
+            {filtering && visibleGoals.length === 0 && (
+              <p className="map-meta">No goals match these filters.</p>
+            )}
             {!dream.archived && (
               <TitleAddRow
                 placeholder="New goal title"
