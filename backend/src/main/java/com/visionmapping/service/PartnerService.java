@@ -5,6 +5,7 @@ import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.PartnerRequest;
 import com.visionmapping.dto.response.PartnerResponse;
 import com.visionmapping.entity.AppUser;
@@ -17,6 +18,7 @@ import com.visionmapping.repository.ObstacleRepository;
 import com.visionmapping.repository.PartnerRepository;
 import com.visionmapping.service.support.EntityLookup;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -80,6 +82,7 @@ public class PartnerService {
         return mapper.toResponse(partnerRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.PARTNER_CACHE)
     @Transactional(readOnly = true)
     public PartnerResponse getPartner(Long id) {
         return mapper.toResponse(lookup.partner(id));

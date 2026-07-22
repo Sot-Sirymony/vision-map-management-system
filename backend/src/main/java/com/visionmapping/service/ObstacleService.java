@@ -5,6 +5,7 @@ import static com.visionmapping.service.support.ServiceSupport.isBlank;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.ObstacleRequest;
 import com.visionmapping.dto.response.ObstacleResponse;
 import com.visionmapping.entity.Obstacle;
@@ -15,6 +16,7 @@ import com.visionmapping.repository.ObstacleRepository;
 import com.visionmapping.service.support.EntityLookup;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class ObstacleService {
     private final VisionMappingMapper mapper;
     private final ObstacleRepository obstacleRepository;
 
+    @Cacheable(CacheConfig.OBSTACLE_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<ObstacleResponse> listObstacles(boolean includeArchived) {
         return findAllForUser(obstacleRepository, lookup.userId(), includeArchived).stream()
@@ -63,6 +66,7 @@ public class ObstacleService {
         return mapper.toResponse(obstacleRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.OBSTACLE_CACHE)
     @Transactional(readOnly = true)
     public ObstacleResponse getObstacle(Long id) {
         return mapper.toResponse(lookup.obstacle(id));

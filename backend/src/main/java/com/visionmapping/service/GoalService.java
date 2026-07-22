@@ -5,6 +5,7 @@ import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.GoalRequest;
 import com.visionmapping.dto.response.ArchiveImpactResponse;
 import com.visionmapping.dto.response.GoalResponse;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +46,7 @@ public class GoalService {
     private final GoalRepository goalRepository;
     private final VisionStepRepository visionStepRepository;
 
+    @Cacheable(CacheConfig.GOAL_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<GoalResponse> listGoals(boolean includeArchived) {
         return findAllForUser(goalRepository, lookup.userId(), includeArchived).stream()
@@ -72,6 +75,7 @@ public class GoalService {
         return mapper.toResponse(goalRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.GOAL_CACHE)
     @Transactional(readOnly = true)
     public GoalResponse getGoal(Long id) {
         return mapper.toResponse(lookup.goal(id));

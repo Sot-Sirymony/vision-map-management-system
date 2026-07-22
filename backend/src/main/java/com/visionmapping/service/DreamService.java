@@ -5,6 +5,7 @@ import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.DreamRequest;
 import com.visionmapping.dto.response.ArchiveImpactResponse;
 import com.visionmapping.dto.response.DreamResponse;
@@ -19,6 +20,7 @@ import com.visionmapping.service.support.EntityLookup;
 import com.visionmapping.service.support.PermanentDeleteCascade;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ public class DreamService {
     private final VisionMappingMapper mapper;
     private final DreamRepository dreamRepository;
 
+    @Cacheable(CacheConfig.DREAM_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<DreamResponse> listDreams(boolean includeArchived) {
         return findAllForUser(dreamRepository, lookup.userId(), includeArchived).stream()
@@ -65,6 +68,7 @@ public class DreamService {
         return mapper.toResponse(dreamRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.DREAM_CACHE)
     @Transactional(readOnly = true)
     public DreamResponse getDream(Long id) {
         return mapper.toResponse(lookup.dream(id));

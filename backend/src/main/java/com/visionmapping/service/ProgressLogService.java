@@ -1,5 +1,6 @@
 package com.visionmapping.service;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.ProgressLogRequest;
 import com.visionmapping.dto.response.ProgressLogResponse;
 import com.visionmapping.entity.AppUser;
@@ -16,6 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ public class ProgressLogService {
     private final ProgressLogRepository progressLogRepository;
     private final Clock clock;
 
+    @Cacheable(CacheConfig.PROGRESS_LOG_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<ProgressLogResponse> listProgressLogs() {
         return progressLogRepository.findByUser_IdAndArchivedFalse(lookup.userId()).stream().map(mapper::toResponse).toList();
@@ -62,6 +65,7 @@ public class ProgressLogService {
         return mapper.toResponse(progressLogRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.PROGRESS_LOG_CACHE)
     @Transactional(readOnly = true)
     public ProgressLogResponse getProgressLog(Long id) {
         return mapper.toResponse(lookup.progressLog(id));

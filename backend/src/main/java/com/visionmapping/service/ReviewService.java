@@ -3,6 +3,7 @@ package com.visionmapping.service;
 import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.ReviewRequest;
 import com.visionmapping.dto.response.ReviewResponse;
 import com.visionmapping.entity.Review;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ public class ReviewService {
     private final VisionMappingMapper mapper;
     private final ReviewRepository reviewRepository;
 
+    @Cacheable(CacheConfig.REVIEW_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<ReviewResponse> listReviews(boolean includeArchived) {
         return findAllForUser(reviewRepository, lookup.userId(), includeArchived).stream()
@@ -61,6 +64,7 @@ public class ReviewService {
         return mapper.toResponse(reviewRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.REVIEW_CACHE)
     @Transactional(readOnly = true)
     public ReviewResponse getReview(Long id) {
         return mapper.toResponse(lookup.review(id));

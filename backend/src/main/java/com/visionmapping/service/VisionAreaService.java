@@ -5,6 +5,7 @@ import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.VisionAreaRequest;
 import com.visionmapping.dto.response.ArchiveImpactResponse;
 import com.visionmapping.dto.response.VisionAreaResponse;
@@ -18,6 +19,7 @@ import com.visionmapping.service.support.EntityLookup;
 import com.visionmapping.service.support.PermanentDeleteCascade;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ public class VisionAreaService {
     private final VisionMappingMapper mapper;
     private final VisionAreaRepository visionAreaRepository;
 
+    @Cacheable(CacheConfig.VISION_AREA_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<VisionAreaResponse> listVisionAreas(boolean includeArchived) {
         return findAllForUser(visionAreaRepository, lookup.userId(), includeArchived).stream()
@@ -57,6 +60,7 @@ public class VisionAreaService {
         return mapper.toResponse(visionAreaRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.VISION_AREA_CACHE)
     @Transactional(readOnly = true)
     public VisionAreaResponse getVisionArea(Long id) {
         return mapper.toResponse(lookup.visionArea(id));

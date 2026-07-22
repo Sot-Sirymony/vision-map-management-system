@@ -4,6 +4,7 @@ import static com.visionmapping.service.support.ServiceSupport.likeTerm;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.CommunicationMessageRequest;
 import com.visionmapping.dto.response.CommunicationMessageResponse;
 import com.visionmapping.entity.CommunicationMessage;
@@ -12,6 +13,7 @@ import com.visionmapping.mapper.VisionMappingMapper;
 import com.visionmapping.repository.CommunicationMessageRepository;
 import com.visionmapping.service.support.EntityLookup;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,7 @@ public class CommunicationMessageService {
         return mapper.toResponse(communicationMessageRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.COMMUNICATION_MESSAGE_CACHE)
     @Transactional(readOnly = true)
     public CommunicationMessageResponse getCommunicationMessage(Long id) {
         return mapper.toResponse(lookup.communicationMessage(id));

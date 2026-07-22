@@ -5,6 +5,7 @@ import static com.visionmapping.service.support.ServiceSupport.nextCode;
 import static com.visionmapping.service.support.ServiceSupport.parseEnum;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.VisionStepRequest;
 import com.visionmapping.dto.response.ArchiveImpactResponse;
 import com.visionmapping.dto.response.VisionStepResponse;
@@ -24,6 +25,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +48,7 @@ public class VisionStepService {
     private final VisionStepRepository visionStepRepository;
     private final TaskItemRepository taskItemRepository;
 
+    @Cacheable(CacheConfig.STEP_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<VisionStepResponse> listSteps(boolean includeArchived) {
         return findAllForUser(visionStepRepository, lookup.userId(), includeArchived).stream()
@@ -75,6 +78,7 @@ public class VisionStepService {
         return mapper.toResponse(saved);
     }
 
+    @Cacheable(CacheConfig.STEP_CACHE)
     @Transactional(readOnly = true)
     public VisionStepResponse getStep(Long id) {
         return mapper.toResponse(lookup.step(id));

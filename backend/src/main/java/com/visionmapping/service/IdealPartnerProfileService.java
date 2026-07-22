@@ -3,6 +3,7 @@ package com.visionmapping.service;
 import static com.visionmapping.service.support.ServiceSupport.findAllForUser;
 import static com.visionmapping.service.support.ServiceSupport.requireArchived;
 
+import com.visionmapping.config.CacheConfig;
 import com.visionmapping.dto.request.IdealPartnerProfileRequest;
 import com.visionmapping.dto.response.IdealPartnerProfileResponse;
 import com.visionmapping.entity.IdealPartnerProfile;
@@ -14,6 +15,7 @@ import com.visionmapping.repository.IdealPartnerProfileRepository;
 import com.visionmapping.service.support.EntityLookup;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class IdealPartnerProfileService {
     private final VisionMappingMapper mapper;
     private final IdealPartnerProfileRepository idealPartnerProfileRepository;
 
+    @Cacheable(CacheConfig.IDEAL_PARTNER_PROFILE_LIST_CACHE)
     @Transactional(readOnly = true)
     public List<IdealPartnerProfileResponse> listProfiles(boolean includeArchived) {
         return findAllForUser(idealPartnerProfileRepository, lookup.userId(), includeArchived).stream()
@@ -52,6 +55,7 @@ public class IdealPartnerProfileService {
         return mapper.toResponse(idealPartnerProfileRepository.save(entity));
     }
 
+    @Cacheable(CacheConfig.IDEAL_PARTNER_PROFILE_CACHE)
     @Transactional(readOnly = true)
     public IdealPartnerProfileResponse getProfile(Long id) {
         return mapper.toResponse(profile(id));
