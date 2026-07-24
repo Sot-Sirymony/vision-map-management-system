@@ -62,8 +62,10 @@
   /* FR-18.1: the toast layer sits on the theme's z-index scale (snackbar
      tier), not an invented number. */
   --z-toast: 1400;
-  /* Fluent's elevation/depth scale — defined for Phase 1+ to consume,
-     not yet wired into any component. */
+  /* Fluent's elevation/depth scale. Consumed both here (list-card hover =
+     shadow-8, board cards = shadow-2) and in theme.ts, where the MUI overrides
+     apply the matching tiers: Card = shadow-4, Popover/Menu = shadow-8,
+     Dialog = shadow-16. The theme uses literal values equal to these tokens. */
   --shadow-2: 0 0.6px 1.8px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.06);
   --shadow-4: 0 1.6px 3.6px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.06);
   --shadow-8: 0 3.2px 7.2px rgba(0, 0, 0, 0.13), 0 0.6px 1.8px rgba(0, 0, 0, 0.08);

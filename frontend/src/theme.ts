@@ -413,6 +413,21 @@ export function buildTheme(mode: 'light' | 'dark', accent: AccentId = 'blue', de
           },
         },
       },
+      // Flyouts (Select/autocomplete dropdowns, the row-actions Menu) render
+      // through MUI's Popover, which defaults to a generic Material elevation-8
+      // drop-shadow. Replace it with Fluent's flyout tier (--shadow-8 from
+      // global.css) so menus sit on the same elevation scale as Card (shadow-4)
+      // and Dialog (shadow-16) — a menu reads as raised above the page but
+      // below a modal. backgroundImage:none drops MUI dark-mode's overlay
+      // gradient, matching the flat Fluent surfaces used by Card/Dialog.
+      MuiPopover: {
+        styleOverrides: {
+          paper: {
+            boxShadow: '0 3.2px 7.2px rgba(0,0,0,0.13), 0 0.6px 1.8px rgba(0,0,0,0.08)',
+            backgroundImage: 'none',
+          },
+        },
+      },
       // Fluent's focus indicator is a visible outer ring around the whole
       // control, not just a thicker border — MUI's default focus behavior
       // already colors the border via palette.primary, so this adds the ring
